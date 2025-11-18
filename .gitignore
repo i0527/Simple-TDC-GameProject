@@ -12,6 +12,9 @@ CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
 
+# CodeQL
+_codeql_*
+
 # Build artifacts
 build/
 bin/
