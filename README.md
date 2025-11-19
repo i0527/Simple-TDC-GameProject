@@ -11,7 +11,7 @@ Simple-TDC-GameProjectは、ECS（Entity Component System）アーキテクチ�
 - **ECS**: [EnTT](https://github.com/skypjack/entt) - 高速で軽量なEntity Component Systemライブラリ
 - **JSON**: [nlohmann/json](https://github.com/nlohmann/json) - モダンなC++ JSON ライブラリ
 - **レンダリング/入力**: [Raylib](https://www.raylib.com/) - シンプルで使いやすいゲーム開発ライブラリ
-- **CI/CD**: GitHub Actions（Windows自動ビルド）
+- **CI/CD**: GitHub Actions（Windows自動ビルド、actions/checkout@v4、actions/upload-artifact@v4）
 
 ## プロジェクト構成
 ```
@@ -20,11 +20,14 @@ Simple-TDC-GameProject/
 ├── src/                    # ソースコード
 │   ├── main.cpp           # エントリーポイント
 │   ├── Game.cpp           # ゲームメインループ
-│   └── Systems.cpp        # ECSシステム実装
+│   ├── Systems.cpp        # ECSシステム実装
+│   └── SystemManager.cpp  # システム管理
 ├── include/                # ヘッダーファイル
 │   ├── Game.h
 │   ├── Components.h       # ECSコンポーネント定義
-│   └── Systems.h          # ECSシステム定義
+│   ├── Systems.h          # ECSシステム定義
+│   ├── System.h           # システムインターフェース
+│   └── SystemManager.h    # システム管理
 ├── external/               # 外部ライブラリ（FetchContentで管理）
 ├── assets/                 # ゲームアセット
 │   └── config.json        # 設定ファイル
@@ -89,6 +92,26 @@ cmake --build .
 - **Entity（エンティティ）**: ゲーム内のオブジェクトを表す一意のID
 - **Component（コンポーネント）**: データのみを持つシンプルな構造体
 - **System（システム）**: コンポーネントに対するロジックを実装
+
+#### モジュラーシステムアーキテクチャ
+ゲームの各処理（入力、更新、レンダリング）は独立したシステムとして実装され、疎結合な設計になっています。
+
+- **Core::ISystem**: すべてのシステムが実装する抽象インターフェース
+  - `ProcessInput()`: 入力処理
+  - `Update()`: ゲームロジック更新
+  - `Render()`: レンダリング処理
+
+- **SystemManager**: システムのライフサイクルを管理
+  - システムの登録・実行を一元管理
+  - `unique_ptr`でメモリ管理を自動化
+  - システムの追加・削除が容易
+
+- **実装済みシステム**:
+  - `InputSystem`: プレイヤー入力処理
+  - `MovementSystem`: 移動ロジック
+  - `RenderSystem`: エンティティ描画
+
+この設計により、システムの差し替えや単体テストが容易になり、将来的な拡張性が向上しています。
 
 ### データ駆動設計
 ゲームの設定やデータはJSON形式で外部ファイルとして管理し、コードの変更なしにゲームの挙動を調整できるようにします。

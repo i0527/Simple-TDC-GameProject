@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SystemManager.h"
 #include <entt/entt.hpp>
 #include <raylib.h>
 #include <string>
@@ -20,6 +21,7 @@ private:
     void LoadConfig();
 
     entt::registry registry_;
+    Core::SystemManager systemManager_;
     bool isRunning_;
     int screenWidth_;
     int screenHeight_;

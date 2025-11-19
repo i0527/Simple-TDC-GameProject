@@ -4,7 +4,7 @@
 
 namespace Systems {
 
-void UpdateMovement(entt::registry& registry, float deltaTime) {
+void MovementSystem::Update(entt::registry& registry, float deltaTime) {
     // Update all entities with Position and Velocity components
     auto view = registry.view<Components::Position, Components::Velocity>();
     
@@ -23,7 +23,7 @@ void UpdateMovement(entt::registry& registry, float deltaTime) {
     }
 }
 
-void RenderEntities(entt::registry& registry) {
+void RenderSystem::Render(entt::registry& registry) {
     // Render all entities with Position and Renderable components
     auto view = registry.view<Components::Position, Components::Renderable>();
     
@@ -36,7 +36,7 @@ void RenderEntities(entt::registry& registry) {
     }
 }
 
-void ProcessPlayerInput(entt::registry& registry) {
+void InputSystem::ProcessInput(entt::registry& registry) {
     // Process input for player entities
     auto view = registry.view<Components::Player, Components::Velocity>();
     
