@@ -3,18 +3,18 @@
 #include <entt/entt.hpp>
 
 namespace Core {
-    // Abstract interface for all game systems
+    // すべてのゲームシステムの抽象インターフェース
     class ISystem {
     public:
         virtual ~ISystem() = default;
         
-        // Process input for this system
+        // このシステムの入力を処理
         virtual void ProcessInput(entt::registry& registry) {}
         
-        // Update system logic
+        // システムロジックを更新
         virtual void Update(entt::registry& registry, float deltaTime) {}
         
-        // Render system entities
+        // システムエンティティをレンダリング
         virtual void Render(entt::registry& registry) {}
     };
 }
