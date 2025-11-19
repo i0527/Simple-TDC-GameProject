@@ -37,6 +37,9 @@ namespace Resources {
         
         // すべてのテクスチャをアンロード
         void UnloadAll();
+
+        // Imageから生成したTextureを登録する（ImageManagerから呼び出す）
+        void AddTexture(const std::string& name, const Texture2D& texture);
         
     private:
         std::unordered_map<std::string, Texture2D> textures_;

@@ -55,6 +55,18 @@ namespace Resources {
         textures_.clear();
         std::cout << "All textures unloaded" << std::endl;
     }
+
+    void TextureManager::AddTexture(const std::string& name, const Texture2D& texture) {
+        // 既に同名のテクスチャがあればアンロードして差し替え
+        auto it = textures_.find(name);
+        if (it != textures_.end()) {
+            ::UnloadTexture(it->second);
+            textures_.erase(it);
+            std::cout << "Replaced existing texture: " << name << std::endl;
+        }
+        textures_[name] = texture;
+        std::cout << "Texture added from image: " << name << std::endl;
+    }
     
     // ==================== FontManager ====================
     
@@ -469,6 +481,11 @@ namespace Resources {
             const auto& frames = spriteData["frames"];
             std::vector<std::string> frameNames;
             
+            // フレーム数をチェック
+            int frameCount = frames.size();
+            std::cout << "LoadSpriteSheet: Detected " << frameCount << " frame(s) in JSON" << std::endl;
+            
+            // 複数フレーム：通常解析
             for (auto it = frames.begin(); it != frames.end(); ++it) {
                 const std::string& frameName = it.key();
                 const auto& frameData = it.value();
@@ -496,6 +513,9 @@ namespace Resources {
             
             // スプライトシート情報を保存
             spriteSheets_[name] = frameNames;
+            
+            // 画像からテクスチャを生成して TextureManager に登録
+            ImageToTexture(name, name);
             
             std::cout << "Sprite sheet loaded: " << name << " with " << frameNames.size() << " frames" << std::endl;
             
@@ -551,6 +571,9 @@ namespace Resources {
             if (texture.id == 0) {
                 throw ResourceException("Failed to convert image to texture: " + imageName);
             }
+
+            // TextureManager に登録して管理させる
+            ResourceManager::GetInstance().GetTextureManager().AddTexture(textureName, texture);
             
             std::cout << "Image converted to texture: " << imageName << " -> " << textureName << std::endl;
         } catch (const ResourceException& e) {
