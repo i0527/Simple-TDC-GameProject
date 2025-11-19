@@ -47,6 +47,11 @@ void Game::LoadConfig() {
 }
 
 void Game::InitializeSystems() {
+    // Register systems with the SystemManager
+    systemManager_.AddSystem(std::make_unique<Systems::InputSystem>());
+    systemManager_.AddSystem(std::make_unique<Systems::MovementSystem>());
+    systemManager_.AddSystem(std::make_unique<Systems::RenderSystem>());
+    
     // Create a sample player entity
     auto player = registry_.create();
     registry_.emplace<Components::Position>(player, screenWidth_ / 2.0f, screenHeight_ / 2.0f);
@@ -66,18 +71,18 @@ void Game::Run() {
 }
 
 void Game::ProcessInput() {
-    Systems::ProcessPlayerInput(registry_);
+    systemManager_.ProcessInput(registry_);
 }
 
 void Game::Update(float deltaTime) {
-    Systems::UpdateMovement(registry_, deltaTime);
+    systemManager_.Update(registry_, deltaTime);
 }
 
 void Game::Render() {
     BeginDrawing();
     ClearBackground(RAYWHITE);
     
-    Systems::RenderEntities(registry_);
+    systemManager_.Render(registry_);
     
     DrawText("Simple TDC Game - Use Arrow Keys to Move", 10, 10, 20, DARKGRAY);
     DrawFPS(10, 40);

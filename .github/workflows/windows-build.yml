@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v1.14
@@ -26,7 +26,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config Release
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: SimpleTDCGame-Windows
         path: ${{github.workspace}}/build/bin/Release/SimpleTDCGame.exe
