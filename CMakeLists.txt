@@ -40,6 +40,9 @@ file(GLOB_RECURSE HEADERS "include/*.h" "include/*.hpp")
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
+# TestScene.cpp を明示的に追加（既存のGLOBで認識されない構成更新時の保険）
+target_sources(${PROJECT_NAME} PRIVATE src/TestScene.cpp)
+
 # Include directories
 target_include_directories(${PROJECT_NAME} 
     PRIVATE 
