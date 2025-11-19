@@ -5,22 +5,22 @@
 #include <memory>
 
 namespace Core {
-    // Manages lifecycle and execution of game systems
+    // ゲームシステムのライフサイクルと実行を管理
     class SystemManager {
     public:
         SystemManager() = default;
         ~SystemManager() = default;
         
-        // Add a system to the manager
+        // マネージャーにシステムを追加
         void AddSystem(std::unique_ptr<ISystem> system);
         
-        // Process input for all systems
+        // すべてのシステムの入力を処理
         void ProcessInput(entt::registry& registry);
         
-        // Update all systems
+        // すべてのシステムを更新
         void Update(entt::registry& registry, float deltaTime);
         
-        // Render all systems
+        // すべてのシステムを描画
         void Render(entt::registry& registry);
         
     private:

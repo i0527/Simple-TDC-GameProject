@@ -5,7 +5,7 @@
 namespace Systems {
 
 void MovementSystem::Update(entt::registry& registry, float deltaTime) {
-    // Update all entities with Position and Velocity components
+    // PositionとVelocityコンポーネントを持つすべてのエンティティを更新
     auto view = registry.view<Components::Position, Components::Velocity>();
     
     for (auto entity : view) {
@@ -15,7 +15,7 @@ void MovementSystem::Update(entt::registry& registry, float deltaTime) {
         pos.x += vel.dx * deltaTime;
         pos.y += vel.dy * deltaTime;
         
-        // Simple screen wrapping
+        // シンプルな画面ラッピング
         if (pos.x < 0) pos.x = GetScreenWidth();
         if (pos.x > GetScreenWidth()) pos.x = 0;
         if (pos.y < 0) pos.y = GetScreenHeight();
@@ -24,7 +24,7 @@ void MovementSystem::Update(entt::registry& registry, float deltaTime) {
 }
 
 void RenderSystem::Render(entt::registry& registry) {
-    // Render all entities with Position and Renderable components
+    // PositionとRenderableコンポーネントを持つすべてのエンティティを描画
     auto view = registry.view<Components::Position, Components::Renderable>();
     
     for (auto entity : view) {
@@ -37,7 +37,7 @@ void RenderSystem::Render(entt::registry& registry) {
 }
 
 void InputSystem::ProcessInput(entt::registry& registry) {
-    // Process input for player entities
+    // プレイヤーエンティティの入力を処理
     auto view = registry.view<Components::Player, Components::Velocity>();
     
     for (auto entity : view) {
@@ -45,11 +45,11 @@ void InputSystem::ProcessInput(entt::registry& registry) {
         
         const float speed = 200.0f;
         
-        // Reset velocity
+        // 速度をリセット
         vel.dx = 0.0f;
         vel.dy = 0.0f;
         
-        // Update velocity based on input
+        // 入力に基づいて速度を更新
         if (IsKeyDown(KEY_RIGHT)) vel.dx = speed;
         if (IsKeyDown(KEY_LEFT)) vel.dx = -speed;
         if (IsKeyDown(KEY_DOWN)) vel.dy = speed;

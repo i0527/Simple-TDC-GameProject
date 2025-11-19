@@ -24,13 +24,13 @@ Game::~Game() {
 }
 
 void Game::LoadConfig() {
-    // Try to load configuration from JSON file
+	// JSONファイルを読み込み、設定を適用
     try {
         std::ifstream configFile("assets/config.json");
         if (configFile.is_open()) {
             json config = json::parse(configFile);
             
-            // Load window settings with default fallbacks
+			// ウィンドウ設定の読み込み
             if (config.contains("window")) {
                 screenWidth_ = config["window"].value("width", 800);
                 screenHeight_ = config["window"].value("height", 600);
@@ -39,20 +39,20 @@ void Game::LoadConfig() {
         }
     } catch (const json::parse_error& e) {
         std::cerr << "JSON parse error: " << e.what() << std::endl;
-        // Continue with default values
+		//　失敗時はデフォルト値を使用
     } catch (const std::exception& e) {
         std::cerr << "Error loading config: " << e.what() << std::endl;
-        // Continue with default values
+        //　失敗時はデフォルト値を使用
     }
 }
 
 void Game::InitializeSystems() {
-    // Register systems with the SystemManager
+    // SystemManager にシステムを登録
     systemManager_.AddSystem(std::make_unique<Systems::InputSystem>());
     systemManager_.AddSystem(std::make_unique<Systems::MovementSystem>());
     systemManager_.AddSystem(std::make_unique<Systems::RenderSystem>());
     
-    // Create a sample player entity
+    // サンプルプレイヤーエンティティを作成
     auto player = registry_.create();
     registry_.emplace<Components::Position>(player, screenWidth_ / 2.0f, screenHeight_ / 2.0f);
     registry_.emplace<Components::Velocity>(player, 0.0f, 0.0f);
