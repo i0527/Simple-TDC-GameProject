@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(SimpleTDCGame VERSION 0.1.0 LANGUAGES CXX)
+project(SimpleTDCGame VERSION 0.1.0 LANGUAGES CXX C)
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
@@ -30,8 +30,53 @@ FetchContent_Declare(
     GIT_TAG 5.0
 )
 
+# Fetch raygui (immediate mode GUI library for raylib)
+FetchContent_Declare(
+    raygui
+    GIT_REPOSITORY https://github.com/raysan5/raygui.git
+    GIT_TAG 4.0
+)
+
+# Fetch Dear ImGui
+FetchContent_Declare(
+    dearimgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.90.1
+)
+
+# Fetch rlImGui (Dear ImGui integration for raylib)
+# Using a stable commit compatible with ImGui v1.90.1
+FetchContent_Declare(
+    rlimgui
+    GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
+    GIT_TAG 57efef0
+)
+
 # Make dependencies available
-FetchContent_MakeAvailable(EnTT json raylib)
+FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui)
+
+# Create raygui library (header-only, but we need to implement it once)
+add_library(raygui_impl STATIC ${raygui_SOURCE_DIR}/src/raygui.h)
+target_include_directories(raygui_impl PUBLIC ${raygui_SOURCE_DIR}/src)
+set_target_properties(raygui_impl PROPERTIES LINKER_LANGUAGE C)
+target_link_libraries(raygui_impl PUBLIC raylib)
+
+# Create Dear ImGui library
+add_library(imgui_lib STATIC
+    ${dearimgui_SOURCE_DIR}/imgui.cpp
+    ${dearimgui_SOURCE_DIR}/imgui_demo.cpp
+    ${dearimgui_SOURCE_DIR}/imgui_draw.cpp
+    ${dearimgui_SOURCE_DIR}/imgui_tables.cpp
+    ${dearimgui_SOURCE_DIR}/imgui_widgets.cpp
+)
+target_include_directories(imgui_lib PUBLIC ${dearimgui_SOURCE_DIR})
+
+# Create rlImGui library
+add_library(rlimgui_lib STATIC
+    ${rlimgui_SOURCE_DIR}/rlImGui.cpp
+)
+target_include_directories(rlimgui_lib PUBLIC ${rlimgui_SOURCE_DIR})
+target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 
 # Add source files
 file(GLOB_RECURSE SOURCES "src/*.cpp")
@@ -40,21 +85,27 @@ file(GLOB_RECURSE HEADERS "include/*.h" "include/*.hpp")
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-# TestScene.cpp ‚ğ–¾¦“I‚É’Ç‰ÁiŠù‘¶‚ÌGLOB‚Å”F¯‚³‚ê‚È‚¢\¬XV‚Ì•ÛŒ¯j
+# TestScene.cpp ï¿½ğ–¾ï¿½ï¿½Iï¿½É’Ç‰ï¿½ï¿½iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½GLOBï¿½Å”Fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½\ï¿½ï¿½ï¿½Xï¿½Vï¿½ï¿½ï¿½Ì•ÛŒï¿½ï¿½j
 target_sources(${PROJECT_NAME} PRIVATE src/TestScene.cpp)
 
 # Include directories
 target_include_directories(${PROJECT_NAME} 
     PRIVATE 
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${raygui_SOURCE_DIR}/src
+        ${dearimgui_SOURCE_DIR}
+        ${rlimgui_SOURCE_DIR}
 )
 
-# Link libraries
+# Link libraries (raylib must be linked before raygui)
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE 
         EnTT::EnTT
         nlohmann_json::nlohmann_json
         raylib
+        raygui_impl
+        rlimgui_lib
+        imgui_lib
 )
 
 # Set output directory
