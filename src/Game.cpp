@@ -5,7 +5,7 @@
 #include <iostream>
 #include <memory>
 
-// ƒTƒ“ƒvƒ‹ƒV[ƒ“À‘•
+// ï¿½Tï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Vï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 class SampleScene : public Core::IScene {
 public:
     void Initialize(entt::registry& registry) override {
@@ -14,7 +14,7 @@ public:
         Resources::ResourceManager& rm = Resources::ResourceManager::GetInstance();
         auto& imageMgr = rm.GetImageManager();
         
-        // ============ cupslime ‚Ì“Ç‚İ‚İ‚Æ•\¦ ============
+        // ============ cupslime ï¿½Ì“Ç‚İï¿½ï¿½İ‚Æ•\ï¿½ï¿½ ============
         const std::string cupslimeJson = "assets/json/cupslime.json";
         const std::string cupslimeImage = "assets/atlas/cupslime.png";
         imageMgr.LoadSpriteSheet("cupslime", cupslimeJson, cupslimeImage);
@@ -22,16 +22,16 @@ public:
         std::vector<std::string> cupslimeFrames = imageMgr.GetAllFrameNames("cupslime");
         
         if (!cupslimeFrames.empty()) {
-            // cupslime ƒGƒ“ƒeƒBƒeƒBi–îˆóƒL[‘€ìEƒAƒjƒ[ƒVƒ‡ƒ“•t‚«j
+            // cupslime ï¿½Gï¿½ï¿½ï¿½eï¿½Bï¿½eï¿½Bï¿½iï¿½ï¿½ï¿½Lï¿½[ï¿½ï¿½ï¿½ï¿½Eï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½j
             auto cupslime = registry.create();
             registry.emplace<Components::Position>(cupslime, 300.0f, 300.0f);
             registry.emplace<Components::Velocity>(cupslime, 0.0f, 0.0f);
-            registry.emplace<Components::Player>(cupslime);  // –îˆóƒL[‘€ì
+            registry.emplace<Components::Player>(cupslime);  // ï¿½ï¿½ï¿½Lï¿½[ï¿½ï¿½ï¿½ï¿½
             
-            // 1.75”{ƒXƒP[ƒŠƒ“ƒO
+            // 1.75ï¿½{ï¿½Xï¿½Pï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½O
             registry.emplace<Components::Scale>(cupslime, 1.75f, 1.75f);
             
-            // ƒAƒjƒ[ƒVƒ‡ƒ“
+            // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½
             auto& anim = registry.emplace<Components::SpriteAnimation>(cupslime);
             anim.spriteName = "cupslime";
             anim.frames = cupslimeFrames;
@@ -40,12 +40,12 @@ public:
             anim.isPlaying = true;
             anim.isLooping = true;
             
-            // ƒXƒvƒ‰ƒCƒgƒtƒŒ[ƒ€
+            // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½
             auto firstFrameInfo = imageMgr.GetFrameInfo(cupslimeFrames[0]);
             registry.emplace<Components::SpriteFrame>(cupslime, 
                 Components::SpriteFrame{cupslimeFrames[0], firstFrameInfo.rect});
             
-            // ƒeƒNƒXƒ`ƒƒQÆ
+            // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½Qï¿½ï¿½
             registry.emplace<Components::SpriteTexture>(cupslime, 
                 Components::SpriteTexture{"cupslime"});
             
@@ -54,7 +54,7 @@ public:
             std::cout << "Failed to load cupslime sprite sheet" << std::endl;
         }
         
-        // ============ yodarehaki ‚Ì“Ç‚İ‚İ‚Æ•\¦ ============
+        // ============ yodarehaki ï¿½Ì“Ç‚İï¿½ï¿½İ‚Æ•\ï¿½ï¿½ ============
         const std::string yodarehakiJson = "assets/json/yodarehaki.json";
         const std::string yodarehakiImage = "assets/atlas/yodarehaki.png";
         imageMgr.LoadSpriteSheet("yodarehaki", yodarehakiJson, yodarehakiImage);
@@ -62,18 +62,18 @@ public:
         std::vector<std::string> yodarehakiFrames = imageMgr.GetAllFrameNames("yodarehaki");
         
         if (!yodarehakiFrames.empty()) {
-            // yodarehaki ƒGƒ“ƒeƒBƒeƒBiWASD‘€ìEƒAƒjƒ[ƒVƒ‡ƒ“•t‚«j
+            // yodarehaki ï¿½Gï¿½ï¿½ï¿½eï¿½Bï¿½eï¿½Bï¿½iWASDï¿½ï¿½ï¿½ï¿½Eï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½j
             auto yodarehaki = registry.create();
             registry.emplace<Components::Position>(yodarehaki, 600.0f, 300.0f);
             registry.emplace<Components::Velocity>(yodarehaki, 0.0f, 0.0f);
             
-            // WASDƒvƒŒƒCƒ„[ƒ^ƒO
+            // WASDï¿½vï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½^ï¿½O
             registry.emplace<Components::WASDPlayer>(yodarehaki);
             
-            // 1.75”{ƒXƒP[ƒŠƒ“ƒO
+            // 1.75ï¿½{ï¿½Xï¿½Pï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½O
             registry.emplace<Components::Scale>(yodarehaki, 1.75f, 1.75f);
             
-            // ƒAƒjƒ[ƒVƒ‡ƒ“
+            // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½
             auto& anim = registry.emplace<Components::SpriteAnimation>(yodarehaki);
             anim.spriteName = "yodarehaki";
             anim.frames = yodarehakiFrames;
@@ -82,12 +82,12 @@ public:
             anim.isPlaying = true;
             anim.isLooping = true;
             
-            // ƒXƒvƒ‰ƒCƒgƒtƒŒ[ƒ€
+            // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½
             auto firstFrameInfo = imageMgr.GetFrameInfo(yodarehakiFrames[0]);
             registry.emplace<Components::SpriteFrame>(yodarehaki, 
                 Components::SpriteFrame{yodarehakiFrames[0], firstFrameInfo.rect});
             
-            // ƒeƒNƒXƒ`ƒƒQÆ
+            // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½Qï¿½ï¿½
             registry.emplace<Components::SpriteTexture>(yodarehaki, 
                 Components::SpriteTexture{"yodarehaki"});
             
@@ -98,11 +98,11 @@ public:
     }
     
     void Update(entt::registry& registry, float deltaTime) override {
-        // “ü—Íˆ—
+        // ï¿½ï¿½ï¿½Íï¿½ï¿½ï¿½
         Core::InputManager& inputManager = Core::InputManager::GetInstance();
         inputManager.Update();
         
-        // –îˆóƒL[: Playericupslime‚ğŠÜ‚Şj‚ğ‘€ì
+        // ï¿½ï¿½ï¿½Lï¿½[: Playerï¿½icupslimeï¿½ï¿½ï¿½Ü‚Şjï¿½ğ‘€ï¿½
         auto arrowView = registry.view<Components::Position, Components::Velocity, Components::Player>();
         for (auto entity : arrowView) {
             auto& vel = arrowView.get<Components::Velocity>(entity);
@@ -116,7 +116,7 @@ public:
             if (inputManager.IsKeyDown(KEY_UP)) vel.dy = -200.0f;
         }
         
-        // WASD: yodarehaki ‚ğ‘€ì
+        // WASD: yodarehaki ï¿½ğ‘€ï¿½
         auto wasdView = registry.view<Components::Position, Components::Velocity, Components::WASDPlayer>();
         for (auto entity : wasdView) {
             auto& vel = wasdView.get<Components::Velocity>(entity);
@@ -124,24 +124,24 @@ public:
             vel.dx = 0.0f;
             vel.dy = 0.0f;
             
-            if (IsKeyDown(KEY_D)) vel.dx = 200.0f;   // ‰E
-            if (IsKeyDown(KEY_A)) vel.dx = -200.0f;  // ¶
-            if (IsKeyDown(KEY_S)) vel.dy = 200.0f;   // ‰º
-            if (IsKeyDown(KEY_W)) vel.dy = -200.0f;  // ã
+            if (IsKeyDown(KEY_D)) vel.dx = 200.0f;   // ï¿½E
+            if (IsKeyDown(KEY_A)) vel.dx = -200.0f;  // ï¿½ï¿½
+            if (IsKeyDown(KEY_S)) vel.dy = 200.0f;   // ï¿½ï¿½
+            if (IsKeyDown(KEY_W)) vel.dy = -200.0f;  // ï¿½ï¿½
         }
         
-        // ˆÚ“®XV
+        // ï¿½Ú“ï¿½ï¿½Xï¿½V
         Systems::MovementSystem::Update(registry, deltaTime);
         
-        // ƒAƒjƒ[ƒVƒ‡ƒ“XV
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
         Systems::AnimationSystem::Update(registry, deltaTime);
     }
     
     void Render(entt::registry& registry) override {
-        // ƒXƒvƒ‰ƒCƒg•`‰æicupslime + yodarehakij
+        // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½`ï¿½ï¿½icupslime + yodarehakiï¿½j
         Systems::SpriteRenderSystem::Render(registry);
         
-        // à–¾ƒeƒLƒXƒg
+        // ï¿½ï¿½ï¿½ï¿½ï¿½eï¿½Lï¿½Xï¿½g
         DrawText("Arrow Keys: Move cupslime (1.75x scale, animated)", 10, 100, 16, DARKGRAY);
         DrawText("WASD: Move yodarehaki (1.75x scale, animated)", 10, 120, 16, DARKGRAY);
     }
@@ -151,13 +151,14 @@ public:
     }
 };
 
-// TestScene¶¬ŠÖ”‚Ì‘O•ûéŒ¾
+// TestSceneä½œæˆé–¢æ•°ã®å‰æ–¹å®£è¨€
 std::unique_ptr<Core::IScene> CreateTestScene();
 
 Game::Game() 
     : sceneManager_(Core::SceneManager::GetInstance()),
       configManager_(Core::ConfigManager::GetInstance()),
       inputManager_(Core::InputManager::GetInstance()),
+      uiManager_(UI::UIManager::GetInstance()),
       isRunning_(true), 
       screenWidth_(800), 
       screenHeight_(600), 
@@ -166,13 +167,20 @@ Game::Game()
     LoadConfig();
     InitWindow(screenWidth_, screenHeight_, windowTitle_.c_str());
     SetTargetFPS(60);
+    
+    // UIãƒãƒãƒ¼ã‚¸ãƒ£ãƒ¼ã®åˆæœŸåŒ–ï¼ˆæ—¥æœ¬èªãƒ•ã‚©ãƒ³ãƒˆå¯¾å¿œï¼‰
+    // ãƒ•ã‚©ãƒ³ãƒˆãƒ‘ã‚¹ã¯ assets/fonts/NotoSansCJKjp-Regular.otf ã‚’æƒ³å®š
+    uiManager_.Initialize("assets/fonts/NotoSansCJKjp-Regular.otf", 18.0f);
+    
     InitializeScenes();
     
-    // ‹N“®‚ÉSampleScene‚Ö‘JˆÚ
+    // èµ·å‹•æ™‚ã«SampleSceneã¸é·ç§»
     sceneManager_.ChangeScene("sample");
 }
 
 Game::~Game() {
+    // UIãƒãƒãƒ¼ã‚¸ãƒ£ãƒ¼ã®çµ‚äº†
+    uiManager_.Shutdown();
     CloseWindow();
 }
 
@@ -180,7 +188,7 @@ void Game::LoadConfig() {
     try {
         configManager_.LoadConfig("assets/config.json");
         
-        // ƒEƒBƒ“ƒhƒEİ’è‚Ì“Ç‚İ‚İ
+        // ï¿½Eï¿½Bï¿½ï¿½ï¿½hï¿½Eï¿½İ’ï¿½Ì“Ç‚İï¿½ï¿½ï¿½
         screenWidth_ = configManager_.GetInt("window.width", 800);
         screenHeight_ = configManager_.GetInt("window.height", 600);
         windowTitle_ = configManager_.GetString("window.title", "Simple TDC Game");
@@ -188,15 +196,15 @@ void Game::LoadConfig() {
         std::cout << "Config loaded: " << screenWidth_ << "x" << screenHeight_ << std::endl;
     } catch (const Core::ConfigException& e) {
         std::cerr << "Config error: " << e.what() << std::endl;
-        // ƒfƒtƒHƒ‹ƒg’l‚ğg—p
+        // ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½lï¿½ï¿½ï¿½gï¿½p
     } catch (const std::exception& e) {
         std::cerr << "Error loading config: " << e.what() << std::endl;
-        // ƒfƒtƒHƒ‹ƒg’l‚ğg—p
+        // ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½lï¿½ï¿½ï¿½gï¿½p
     }
 }
 
 void Game::InitializeScenes() {
-    // ƒTƒ“ƒvƒ‹ƒV[ƒ“‚ğ“o˜^
+    // ï¿½Tï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Vï¿½[ï¿½ï¿½ï¿½ï¿½oï¿½^
     sceneManager_.RegisterScene("sample", std::make_unique<SampleScene>());
     sceneManager_.RegisterScene("test", CreateTestScene());
     
@@ -207,16 +215,16 @@ void Game::Run() {
     while (!WindowShouldClose() && isRunning_) {
         float deltaTime = GetFrameTime();
         
-        // ƒV[ƒ“‘JˆÚˆ—
+        // ï¿½Vï¿½[ï¿½ï¿½ï¿½Jï¿½Úï¿½ï¿½ï¿½
         sceneManager_.ProcessSceneChange(registry_);
         
-        // Œ»İ‚ÌƒV[ƒ“‚ğXV
+        // ï¿½ï¿½ï¿½İ‚ÌƒVï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
         sceneManager_.UpdateCurrentScene(registry_, deltaTime);
         
-        // •`‰æ
+        // ï¿½`ï¿½ï¿½
         Render();
         
-        // ESC ƒL[‚ÅI—¹
+        // ESC ï¿½Lï¿½[ï¿½ÅIï¿½ï¿½
         if (inputManager_.IsKeyPressed(KEY_ESCAPE)) {
             isRunning_ = false;
         }
@@ -227,13 +235,18 @@ void Game::Render() {
     BeginDrawing();
     ClearBackground(RAYWHITE);
     
-    // Œ»İ‚ÌƒV[ƒ“‚ğ•`‰æ
+    // === 1. ã‚²ãƒ¼ãƒ ä¸–ç•Œãƒ»ã‚·ãƒ¼ãƒ³æç”» ===
+    // ç¾åœ¨ã®ã‚·ãƒ¼ãƒ³ã‚’æç”»
     sceneManager_.RenderCurrentScene(registry_);
     
-    // ƒfƒoƒbƒOî•ñ
+    // ãƒ‡ãƒãƒƒã‚°æƒ…å ±
     DrawText("Simple TDC Game - ESC to Exit", 10, 10, 20, DARKGRAY);
     DrawFPS(10, 40);
     DrawText(("Current Scene: " + sceneManager_.GetCurrentSceneName()).c_str(), 10, 70, 16, DARKGRAY);
+    
+    // === 2. UIManageræç”»ï¼ˆraygui + ImGuiï¼‰ ===
+    // ã‚µãƒ³ãƒ—ãƒ«UIã‚’æç”»ï¼ˆraygui HUD + ImGui ãƒ‡ãƒãƒƒã‚°ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ï¼‰
+    uiManager_.DrawSampleUI();
     
     EndDrawing();
 }

@@ -3,6 +3,7 @@
 #include "SceneManager.h"
 #include "ConfigManager.h"
 #include "InputManager.h"
+#include "UIManager.h"
 #include <entt/entt.hpp>
 #include <raylib.h>
 #include <string>
@@ -25,6 +26,7 @@ private:
     Core::SceneManager& sceneManager_;
     Core::ConfigManager& configManager_;
     Core::InputManager& inputManager_;
+    UI::UIManager& uiManager_;
     bool isRunning_;
     int screenWidth_;
     int screenHeight_;

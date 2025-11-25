@@ -79,6 +79,9 @@ cmake-build-*/
 assets/*
 !assets/.gitkeep
 !assets/config.json
+!assets/fonts/
+assets/fonts/*
+!assets/fonts/.gitkeep
 
 # Temporary files
 *.tmp

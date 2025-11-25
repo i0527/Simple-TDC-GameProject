@@ -1,13 +1,14 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <unordered_map>
 #include <memory>
 #include <stdexcept>
 #include <raylib.h>
 
 namespace Resources {
-    // ƒŠƒ\[ƒXŠÇ—ƒVƒXƒeƒ€‚Ì—áŠOƒNƒ‰ƒX
+    // ï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½Ç—ï¿½ï¿½Vï¿½Xï¿½eï¿½ï¿½ï¿½Ì—ï¿½Oï¿½Nï¿½ï¿½ï¿½X
     class ResourceException : public std::exception {
     public:
         explicit ResourceException(const std::string& message) : message_(message) {}
@@ -20,146 +21,146 @@ namespace Resources {
         std::string message_;
     };
 
-    // ƒeƒNƒXƒ`ƒƒƒŠƒ\[ƒXŠÇ—
+    // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½Ç—ï¿½
     class TextureManager {
     public:
         TextureManager() = default;
         ~TextureManager();
         
-        // ƒeƒNƒXƒ`ƒƒ‚ğƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İ‚İ
+        // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½ï¿½
         void LoadTexture(const std::string& name, const std::string& filePath);
         
-        // ƒL[–¼‚ÅƒeƒNƒXƒ`ƒƒ‚ğæ“¾
+        // ï¿½Lï¿½[ï¿½ï¿½ï¿½Åƒeï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
         Texture2D GetTexture(const std::string& name) const;
         
-        // ƒeƒNƒXƒ`ƒƒ‚ª“Ç‚İ‚Ü‚ê‚Ä‚¢‚é‚©Šm”F
+        // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½Ü‚ï¿½Ä‚ï¿½ï¿½é‚©ï¿½mï¿½F
         bool HasTexture(const std::string& name) const;
         
-        // ‚·‚×‚Ä‚ÌƒeƒNƒXƒ`ƒƒ‚ğƒAƒ“ƒ[ƒh
+        // ï¿½ï¿½ï¿½×‚Ä‚Ìƒeï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
         void UnloadAll();
 
-        // Image‚©‚ç¶¬‚µ‚½Texture‚ğ“o˜^‚·‚éiImageManager‚©‚çŒÄ‚Ño‚·j
+        // Imageï¿½ï¿½ï¿½ç¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Textureï¿½ï¿½oï¿½^ï¿½ï¿½ï¿½ï¿½iImageManagerï¿½ï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½ï¿½j
         void AddTexture(const std::string& name, const Texture2D& texture);
         
     private:
         std::unordered_map<std::string, Texture2D> textures_;
     };
 
-    // ƒtƒHƒ“ƒgƒŠƒ\[ƒXŠÇ—
+    // ï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½Ç—ï¿½
     class FontManager {
     public:
         FontManager() = default;
         ~FontManager();
         
-        // ƒtƒHƒ“ƒg‚ğƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İ‚İ
+        // ï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½ï¿½
         void LoadFont(const std::string& name, const std::string& filePath);
         
-		// “ú–{Œê‘Î‰‚Ì‚½‚ß‚ÌƒtƒHƒ“ƒg“Ç‚İ‚İ
+		// ï¿½ï¿½ï¿½{ï¿½ï¿½Î‰ï¿½ï¿½Ì‚ï¿½ï¿½ß‚Ìƒtï¿½Hï¿½ï¿½ï¿½gï¿½Ç‚İï¿½ï¿½ï¿½
 		void LoadFontEx(const std::string& name, const std::string& filePath, int fontSize, const int* glyphs, int glyphCount);
 
-        // ƒL[–¼‚ÅƒtƒHƒ“ƒg‚ğæ“¾
+        // ï¿½Lï¿½[ï¿½ï¿½ï¿½Åƒtï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½ï¿½æ“¾
         Font GetFont(const std::string& name) const;
         
-        // ƒtƒHƒ“ƒg‚ª“Ç‚İ‚Ü‚ê‚Ä‚¢‚é‚©Šm”F
+        // ï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Ç‚İï¿½ï¿½Ü‚ï¿½Ä‚ï¿½ï¿½é‚©ï¿½mï¿½F
         bool HasFont(const std::string& name) const;
         
-        // ‚·‚×‚Ä‚ÌƒtƒHƒ“ƒg‚ğƒAƒ“ƒ[ƒh
+        // ï¿½ï¿½ï¿½×‚Ä‚Ìƒtï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
         void UnloadAll();
         
     private:
         std::unordered_map<std::string, Font> fonts_;
     };
 
-    // ƒTƒEƒ“ƒhƒŠƒ\[ƒXŠÇ—
+    // ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½Ç—ï¿½
     class SoundManager {
     public:
         SoundManager() = default;
         ~SoundManager();
         
-        // ƒTƒEƒ“ƒh‚ğƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İ‚İ
+        // ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½ï¿½
         void LoadSound(const std::string& name, const std::string& filePath);
         
-        // ƒL[–¼‚ÅƒTƒEƒ“ƒh‚ğæ“¾
+        // ï¿½Lï¿½[ï¿½ï¿½ï¿½ÅƒTï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½ï¿½æ“¾
         Sound GetSound(const std::string& name) const;
         
-        // ƒTƒEƒ“ƒh‚ª“Ç‚İ‚Ü‚ê‚Ä‚¢‚é‚©Šm”F
+        // ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½ï¿½Ç‚İï¿½ï¿½Ü‚ï¿½Ä‚ï¿½ï¿½é‚©ï¿½mï¿½F
         bool HasSound(const std::string& name) const;
         
-        // ƒTƒEƒ“ƒh‚ğÄ¶
+        // ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½ï¿½Äï¿½
         void PlaySound(const std::string& name);
         
-        // ‚·‚×‚Ä‚ÌƒTƒEƒ“ƒh‚ğƒAƒ“ƒ[ƒh
+        // ï¿½ï¿½ï¿½×‚Ä‚ÌƒTï¿½Eï¿½ï¿½ï¿½hï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
         void UnloadAll();
         
     private:
         std::unordered_map<std::string, Sound> sounds_;
     };
 
-    // ƒ~ƒ…[ƒWƒbƒNi‰¹ŠyjƒŠƒ\[ƒXŠÇ—
+    // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½iï¿½ï¿½ï¿½yï¿½jï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½Ç—ï¿½
     class MusicManager {
     public:
         MusicManager() = default;
         ~MusicManager();
         
-        // ƒ~ƒ…[ƒWƒbƒN‚ğƒtƒ@ƒCƒ‹‚©‚ç“Ç‚İ‚İ
+        // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½ï¿½
         void LoadMusic(const std::string& name, const std::string& filePath);
         
-        // ƒL[–¼‚Åƒ~ƒ…[ƒWƒbƒN‚ğæ“¾
+        // ï¿½Lï¿½[ï¿½ï¿½ï¿½Åƒ~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½æ“¾
         Music GetMusic(const std::string& name) const;
         
-        // ƒ~ƒ…[ƒWƒbƒN‚ª“Ç‚İ‚Ü‚ê‚Ä‚¢‚é‚©Šm”F
+        // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½Ç‚İï¿½ï¿½Ü‚ï¿½Ä‚ï¿½ï¿½é‚©ï¿½mï¿½F
         bool HasMusic(const std::string& name) const;
         
-        // ƒ~ƒ…[ƒWƒbƒN‚ğÄ¶
+        // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½Äï¿½
         void PlayMusic(const std::string& name);
         
-        // ƒ~ƒ…[ƒWƒbƒN‚ğˆê’â~
+        // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½êï¿½ï¿½~
         void PauseMusic(const std::string& name);
         
-        // ƒ~ƒ…[ƒWƒbƒN‚ğÄŠJ
+        // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½ÄŠJ
         void ResumeMusic(const std::string& name);
         
-        // ƒ~ƒ…[ƒWƒbƒN‚ğ’â~
+        // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½~
         void StopMusic(const std::string& name);
         
-        // ƒ~ƒ…[ƒWƒbƒN‚Ì‰¹—Ê‚ğİ’èi0.0f - 1.0fj
+        // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½Ì‰ï¿½ï¿½Ê‚ï¿½İ’ï¿½i0.0f - 1.0fï¿½j
         void SetMusicVolume(const std::string& name, float volume);
         
-        // ‚·‚×‚Ä‚Ìƒ~ƒ…[ƒWƒbƒN‚ğƒAƒ“ƒ[ƒh
+        // ï¿½ï¿½ï¿½×‚Ä‚Ìƒ~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
         void UnloadAll();
         
     private:
         std::unordered_map<std::string, Music> music_;
     };
 
-    // ƒVƒF[ƒ_[ƒŠƒ\[ƒXŠÇ—
+    // ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½Ç—ï¿½
     class ShaderManager {
     public:
         ShaderManager() = default;
         ~ShaderManager();
         
-        // ƒVƒF[ƒ_[‚ğ“Ç‚İ‚İi’¸“_ƒVƒF[ƒ_[Aƒtƒ‰ƒOƒƒ“ƒgƒVƒF[ƒ_[j
+        // ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½ï¿½Ç‚İï¿½ï¿½İiï¿½ï¿½ï¿½_ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½Aï¿½tï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½gï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½j
         void LoadShader(const std::string& name, const std::string& vsPath, const std::string& fsPath);
         
-        // ƒfƒtƒHƒ‹ƒgƒVƒF[ƒ_[‚ğ“Ç‚İ‚İifsPath‚Ì‚İj
+        // ï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½ï¿½Ç‚İï¿½ï¿½İifsPathï¿½Ì‚İj
         void LoadShaderFromFile(const std::string& name, const std::string& fsPath);
         
-        // ƒL[–¼‚ÅƒVƒF[ƒ_[‚ğæ“¾
+        // ï¿½Lï¿½[ï¿½ï¿½ï¿½ÅƒVï¿½Fï¿½[ï¿½_ï¿½[ï¿½ï¿½ï¿½æ“¾
         Shader GetShader(const std::string& name) const;
         
-        // ƒVƒF[ƒ_[‚ª“Ç‚İ‚Ü‚ê‚Ä‚¢‚é‚©Šm”F
+        // ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½Ü‚ï¿½Ä‚ï¿½ï¿½é‚©ï¿½mï¿½F
         bool HasShader(const std::string& name) const;
         
-        // ƒVƒF[ƒ_[‚ÌƒƒP[ƒVƒ‡ƒ“æ“¾iuniform•Ï”‚È‚Çj
+        // ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½Ìƒï¿½ï¿½Pï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½æ“¾ï¿½iuniformï¿½Ïï¿½ï¿½È‚Çj
         int GetShaderLocation(const std::string& name, const std::string& uniformName);
         
-        // ƒVƒF[ƒ_[‚Ì•‚“®¬”“_’l‚ğİ’è
+        // ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½Ì•ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½lï¿½ï¿½İ’ï¿½
         void SetShaderValue(const std::string& name, const std::string& uniformName, float value);
         
-        // ƒVƒF[ƒ_[‚Ì®”’l‚ğİ’è
+        // ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½Ìï¿½ï¿½ï¿½ï¿½lï¿½ï¿½İ’ï¿½
         void SetShaderValueI(const std::string& name, const std::string& uniformName, int value);
         
-        // ‚·‚×‚Ä‚ÌƒVƒF[ƒ_[‚ğƒAƒ“ƒ[ƒh
+        // ï¿½ï¿½ï¿½×‚Ä‚ÌƒVï¿½Fï¿½[ï¿½_ï¿½[ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
         void UnloadAll();
         
     private:
@@ -167,92 +168,92 @@ namespace Resources {
         std::unordered_map<std::string, std::unordered_map<std::string, int>> shaderLocations_;
     };
 
-    // ƒtƒŒ[ƒ€î•ñ\‘¢‘ÌiƒXƒvƒ‰ƒCƒgƒV[ƒg—pj
+    // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½\ï¿½ï¿½ï¿½Ìiï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Vï¿½[ï¿½gï¿½pï¿½j
     struct FrameInfo {
-        Rectangle rect;       // ƒtƒŒ[ƒ€‚ÌˆÊ’u‚ÆƒTƒCƒY
-        int duration;         // ƒtƒŒ[ƒ€‘±ŠÔiƒ~ƒŠ•bj
-        std::string textureName;  // ŠÖ˜A‚·‚éƒeƒNƒXƒ`ƒƒ–¼
+        Rectangle rect;       // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ÌˆÊ’uï¿½ÆƒTï¿½Cï¿½Y
+        int duration;         // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôiï¿½~ï¿½ï¿½ï¿½bï¿½j
+        std::string textureName;  // ï¿½Ö˜Aï¿½ï¿½ï¿½ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½
     };
 
-    // ‰æ‘œƒŠƒ\[ƒXŠÇ—iƒXƒvƒ‰ƒCƒgƒV[ƒg‘Î‰j
+    // ï¿½æ‘œï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½Ç—ï¿½ï¿½iï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Vï¿½[ï¿½gï¿½Î‰ï¿½ï¿½j
     class ImageManager {
     public:
         ImageManager() = default;
         ~ImageManager();
         
-        // ‰æ‘œ‚ğ“Ç‚İ‚İiCPU‘¤j
+        // ï¿½æ‘œï¿½ï¿½Ç‚İï¿½ï¿½İiCPUï¿½ï¿½ï¿½j
         void LoadImage(const std::string& name, const std::string& filePath);
         
-        // Aseprite JSONŒ`®‚ÌƒXƒvƒ‰ƒCƒgƒV[ƒg‚ğ“Ç‚İ‚İ
+        // Aseprite JSONï¿½`ï¿½ï¿½ï¿½ÌƒXï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Vï¿½[ï¿½gï¿½ï¿½Ç‚İï¿½ï¿½ï¿½
         void LoadSpriteSheet(const std::string& name, const std::string& jsonPath, const std::string& imagePath);
         
-        // ƒL[–¼‚Å‰æ‘œ‚ğæ“¾
+        // ï¿½Lï¿½[ï¿½ï¿½ï¿½Å‰æ‘œï¿½ï¿½ï¿½æ“¾
         Image GetImage(const std::string& name) const;
         
-        // ‰æ‘œ‚ª“Ç‚İ‚Ü‚ê‚Ä‚¢‚é‚©Šm”F
+        // ï¿½æ‘œï¿½ï¿½ï¿½Ç‚İï¿½ï¿½Ü‚ï¿½Ä‚ï¿½ï¿½é‚©ï¿½mï¿½F
         bool HasImage(const std::string& name) const;
         
-        // ƒtƒŒ[ƒ€î•ñ‚ğæ“¾iƒXƒvƒ‰ƒCƒgƒV[ƒg—pj
+        // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾ï¿½iï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Vï¿½[ï¿½gï¿½pï¿½j
         FrameInfo GetFrameInfo(const std::string& frameName) const;
         
-        // ƒtƒŒ[ƒ€‚ª‘¶İ‚·‚é‚©Šm”F
+        // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½é‚©ï¿½mï¿½F
         bool HasFrame(const std::string& frameName) const;
         
-        // ‚·‚×‚Ä‚ÌƒtƒŒ[ƒ€–¼‚ğæ“¾
+        // ï¿½ï¿½ï¿½×‚Ä‚Ìƒtï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
         std::vector<std::string> GetAllFrameNames(const std::string& spriteName) const;
         
-        // ‰æ‘œ‚ğƒeƒNƒXƒ`ƒƒ‚É•ÏŠ·iGPU‘¤‚Öj
+        // ï¿½æ‘œï¿½ï¿½ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½É•ÏŠï¿½ï¿½iGPUï¿½ï¿½ï¿½Öj
         void ImageToTexture(const std::string& imageName, const std::string& textureName);
         
-        // ‰æ‘œ‚ğƒŠƒTƒCƒY
+        // ï¿½æ‘œï¿½ï¿½ï¿½ï¿½ï¿½Tï¿½Cï¿½Y
         void ResizeImage(const std::string& name, int width, int height);
         
-        // ‰æ‘œ‚ğ”½“]
+        // ï¿½æ‘œï¿½ğ”½“]
         void FlipImage(const std::string& name, bool horizontal);
         
-        // ‚·‚×‚Ä‚Ì‰æ‘œ‚ğƒAƒ“ƒ[ƒh
+        // ï¿½ï¿½ï¿½×‚Ä‚Ì‰æ‘œï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
         void UnloadAll();
         
     private:
         std::unordered_map<std::string, Image> images_;
-        std::unordered_map<std::string, FrameInfo> frames_;  // ƒtƒŒ[ƒ€–¼ ¨ ƒtƒŒ[ƒ€î•ñ
-        std::unordered_map<std::string, std::vector<std::string>> spriteSheets_;  // ƒXƒvƒ‰ƒCƒg–¼ ¨ ƒtƒŒ[ƒ€–¼ƒŠƒXƒg
+        std::unordered_map<std::string, FrameInfo> frames_;  // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½
+        std::unordered_map<std::string, std::vector<std::string>> spriteSheets_;  // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½ï¿½ ï¿½ï¿½ ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½g
     };
 
-    // “‡ƒŠƒ\[ƒXŠÇ—ƒNƒ‰ƒX
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½Ç—ï¿½ï¿½Nï¿½ï¿½ï¿½X
     class ResourceManager {
     public:
         static ResourceManager& GetInstance();
         
-        // ƒCƒ“ƒXƒ^ƒ“ƒX‚ÌƒRƒs[‚ğ‹Ö~
+        // ï¿½Cï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½Xï¿½ÌƒRï¿½sï¿½[ï¿½ï¿½ï¿½Ö~
         ResourceManager(const ResourceManager&) = delete;
         ResourceManager& operator=(const ResourceManager&) = delete;
         
-        // ƒeƒNƒXƒ`ƒƒƒ}ƒl[ƒWƒƒ[‚Ö‚ÌƒAƒNƒZƒX
+        // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ö‚ÌƒAï¿½Nï¿½Zï¿½X
         TextureManager& GetTextureManager();
         const TextureManager& GetTextureManager() const;
         
-        // ƒtƒHƒ“ƒgƒ}ƒl[ƒWƒƒ[‚Ö‚ÌƒAƒNƒZƒX
+        // ï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ö‚ÌƒAï¿½Nï¿½Zï¿½X
         FontManager& GetFontManager();
         const FontManager& GetFontManager() const;
         
-        // ƒTƒEƒ“ƒhƒ}ƒl[ƒWƒƒ[‚Ö‚ÌƒAƒNƒZƒX
+        // ï¿½Tï¿½Eï¿½ï¿½ï¿½hï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ö‚ÌƒAï¿½Nï¿½Zï¿½X
         SoundManager& GetSoundManager();
         const SoundManager& GetSoundManager() const;
         
-        // ƒ~ƒ…[ƒWƒbƒNƒ}ƒl[ƒWƒƒ[‚Ö‚ÌƒAƒNƒZƒX
+        // ï¿½~ï¿½ï¿½ï¿½[ï¿½Wï¿½bï¿½Nï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ö‚ÌƒAï¿½Nï¿½Zï¿½X
         MusicManager& GetMusicManager();
         const MusicManager& GetMusicManager() const;
         
-        // ƒVƒF[ƒ_[ƒ}ƒl[ƒWƒƒ[‚Ö‚ÌƒAƒNƒZƒX
+        // ï¿½Vï¿½Fï¿½[ï¿½_ï¿½[ï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ö‚ÌƒAï¿½Nï¿½Zï¿½X
         ShaderManager& GetShaderManager();
         const ShaderManager& GetShaderManager() const;
         
-        // ƒCƒ[ƒWƒ}ƒl[ƒWƒƒ[‚Ö‚ÌƒAƒNƒZƒX
+        // ï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½[ï¿½Ö‚ÌƒAï¿½Nï¿½Zï¿½X
         ImageManager& GetImageManager();
         const ImageManager& GetImageManager() const;
         
-        // ‚·‚×‚Ä‚ÌƒŠƒ\[ƒX‚ğƒAƒ“ƒ[ƒh
+        // ï¿½ï¿½ï¿½×‚Ä‚Ìƒï¿½ï¿½\ï¿½[ï¿½Xï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
         void UnloadAll();
         
     private:

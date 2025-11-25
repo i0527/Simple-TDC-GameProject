@@ -11,6 +11,8 @@ Simple-TDC-GameProjectは、ECS（Entity Component System）アーキテクチ�
 - **ECS**: [EnTT](https://github.com/skypjack/entt) - 高速で軽量なEntity Component Systemライブラリ
 - **JSON**: [nlohmann/json](https://github.com/nlohmann/json) - モダンなC++ JSON ライブラリ
 - **レンダリング/入力**: [Raylib](https://www.raylib.com/) - シンプルで使いやすいゲーム開発ライブラリ
+- **UI (HUD/操作パネル)**: [raygui](https://github.com/raysan5/raygui) - Raylib用の即時モードGUIライブラリ
+- **UI (デバッグ/ツール)**: [Dear ImGui](https://github.com/ocornut/imgui) + [rlImGui](https://github.com/raylib-extras/rlImGui) - Raylib統合されたImGui
 - **CI/CD**: GitHub Actions（Windows自動ビルド、actions/checkout@v4、actions/upload-artifact@v4）
 
 ## プロジェクト構成
@@ -20,17 +22,20 @@ Simple-TDC-GameProject/
 ├── src/                    # ソースコード
 │   ├── main.cpp           # エントリーポイント
 │   ├── Game.cpp           # ゲームメインループ
+│   ├── UIManager.cpp      # UIマネージャー (raygui + ImGui)
 │   ├── Systems.cpp        # ECSシステム実装
 │   └── SystemManager.cpp  # システム管理
 ├── include/                # ヘッダーファイル
 │   ├── Game.h
+│   ├── UIManager.h        # UIマネージャー定義
 │   ├── Components.h       # ECSコンポーネント定義
 │   ├── Systems.h          # ECSシステム定義
 │   ├── System.h           # システムインターフェース
 │   └── SystemManager.h    # システム管理
 ├── external/               # 外部ライブラリ（FetchContentで管理）
 ├── assets/                 # ゲームアセット
-│   └── config.json        # 設定ファイル
+│   ├── config.json        # 設定ファイル
+│   └── fonts/             # フォントファイル（日本語フォント等）
 └── .github/
     ├── workflows/         # GitHub Actions設定
     ├── ISSUE_TEMPLATE/    # Issueテンプレート
@@ -84,6 +89,41 @@ cmake --build .
 ./bin/SimpleTDCGame
 ```
 
+## 外部ライブラリ管理
+
+### CMake FetchContent（推奨）
+本プロジェクトでは CMake の FetchContent を使用して外部ライブラリを自動取得します。
+ビルド時に以下のライブラリが自動的にダウンロードされます：
+
+- EnTT (v3.12.2)
+- nlohmann/json (v3.11.2)
+- Raylib (5.0)
+- raygui (4.0)
+- Dear ImGui (v1.90.1)
+- rlImGui (57efef0)
+
+### Git Submodule（代替方法）
+手動で git submodule を使用してライブラリを管理する場合は、以下のコマンドを実行します：
+
+```bash
+# raygui を external/raygui に追加
+git submodule add https://github.com/raysan5/raygui.git external/raygui
+cd external/raygui && git checkout 4.0 && cd ../..
+
+# Dear ImGui を external/imgui に追加
+git submodule add https://github.com/ocornut/imgui.git external/imgui
+cd external/imgui && git checkout v1.90.1 && cd ../..
+
+# rlImGui を external/rlImGui に追加
+git submodule add https://github.com/raylib-extras/rlImGui.git external/rlImGui
+cd external/rlImGui && git checkout 57efef0 && cd ../..
+
+# サブモジュールを初期化・更新
+git submodule update --init --recursive
+```
+
+注意: サブモジュールを使用する場合は、CMakeLists.txt の FetchContent 部分を適宜修正してください。
+
 ## 開発方針
 
 ### ECSアーキテクチャ
@@ -116,6 +156,43 @@ cmake --build .
 ### データ駆動設計
 ゲームの設定やデータはJSON形式で外部ファイルとして管理し、コードの変更なしにゲームの挙動を調整できるようにします。
 
+### UIシステム (raygui + Dear ImGui)
+本プロジェクトでは2つのUIライブラリを共存させて使用しています。
+
+#### raygui
+- **用途**: ゲーム内HUD、操作パネル、メニュー
+- **特徴**: Raylibネイティブ、軽量、即時モードGUI
+
+#### Dear ImGui (rlImGui経由)
+- **用途**: デバッグウィンドウ、開発ツール、プロファイラ
+- **特徴**: 豊富なウィジェット、Docking対応、業界標準
+
+#### 描画順序
+メインループでは以下の順序で描画を行います：
+```cpp
+BeginDrawing();
+ClearBackground(RAYWHITE);
+
+// 1. ゲーム世界・3D描画
+// ... (ゲームシーン描画)
+
+// 2. raygui描画 (HUD/操作パネル)
+GuiButton((Rectangle){...}, "日本語ボタン"); 
+
+// 3. rlImGui描画 (デバッグ/ツール)
+rlImGuiBegin();
+ImGui::Begin("Debug Info");
+ImGui::Text("FPS: %d", GetFPS());
+ImGui::Text("日本語デバッグ表示テスト");
+ImGui::End();
+rlImGuiEnd();
+
+EndDrawing();
+```
+
+#### 日本語フォント対応
+日本語フォントを使用する場合は、`assets/fonts/`ディレクトリにフォントファイル（例: `NotoSansCJKjp-Regular.otf`）を配置してください。UIManagerが自動的にrayguiとImGuiの両方に適用します。
+
 ### コーディング規約
 詳細なコーディング規約については、[.github/copilot-instructions.md](.github/copilot-instructions.md)を参照してください。
 
@@ -135,3 +212,6 @@ cmake --build .
 - [EnTT Documentation](https://github.com/skypjack/entt/wiki)
 - [Raylib Cheatsheet](https://www.raylib.com/cheatsheet/cheatsheet.html)
 - [nlohmann/json Documentation](https://json.nlohmann.me/)
+- [raygui Repository](https://github.com/raysan5/raygui)
+- [Dear ImGui Documentation](https://github.com/ocornut/imgui)
+- [rlImGui Repository](https://github.com/raylib-extras/rlImGui)
