@@ -9,7 +9,7 @@
 #include <imgui.h>
 
 #include <iostream>
-#include <fstream>
+#include <vector>
 
 namespace UI {
 
@@ -76,33 +76,35 @@ void UIManager::EndFrame() {
 }
 
 bool UIManager::LoadJapaneseFont(const std::string& fontPath, float fontSize) {
-    // ファイル存在チェック
-    std::ifstream file(fontPath);
-    if (!file.good()) {
+    // ファイル存在チェック（FileExists はRaylibの関数）
+    if (!FileExists(fontPath.c_str())) {
         return false;
     }
-    file.close();
     
-    // 日本語グリフ範囲を定義（基本的な日本語文字）
-    // ひらがな、カタカナ、基本漢字、記号
-    static const int glyphRanges[] = {
-        0x0020, 0x007F,  // ASCII
-        0x3000, 0x303F,  // 日本語句読点
-        0x3040, 0x309F,  // ひらがな
-        0x30A0, 0x30FF,  // カタカナ
-        0x4E00, 0x9FFF,  // CJK統合漢字
-        0xFF00, 0xFFEF,  // 全角ASCII、半角カナ
-        0
-    };
-    
-    // フォントをロード（グリフ数を指定）
-    int glyphCount = 0;
-    for (int i = 0; glyphRanges[i] != 0; i += 2) {
-        glyphCount += glyphRanges[i + 1] - glyphRanges[i] + 1;
+    // 基本的なグリフのコードポイントを定義
+    // 日本語フルセットは大きすぎるため、よく使う文字のみ含める
+    // ASCII + ひらがな + カタカナ + 基本記号
+    static std::vector<int> codepoints;
+    if (codepoints.empty()) {
+        // ASCII (0x0020-0x007F)
+        for (int cp = 0x0020; cp <= 0x007F; ++cp) codepoints.push_back(cp);
+        // 日本語句読点 (0x3000-0x303F)
+        for (int cp = 0x3000; cp <= 0x303F; ++cp) codepoints.push_back(cp);
+        // ひらがな (0x3040-0x309F)
+        for (int cp = 0x3040; cp <= 0x309F; ++cp) codepoints.push_back(cp);
+        // カタカナ (0x30A0-0x30FF)
+        for (int cp = 0x30A0; cp <= 0x30FF; ++cp) codepoints.push_back(cp);
+        // 全角ASCII、半角カナ (0xFF00-0xFFEF)
+        for (int cp = 0xFF00; cp <= 0xFFEF; ++cp) codepoints.push_back(cp);
     }
     
-    // フォントをロード
-    japaneseFont_ = LoadFontEx(fontPath.c_str(), static_cast<int>(fontSize), nullptr, glyphCount);
+    // フォントをロード（コードポイント配列を渡す）
+    japaneseFont_ = LoadFontEx(
+        fontPath.c_str(), 
+        static_cast<int>(fontSize), 
+        codepoints.data(), 
+        static_cast<int>(codepoints.size())
+    );
     
     return japaneseFont_.texture.id != 0;
 }
@@ -117,13 +119,13 @@ void UIManager::SetupRayguiFont() {
 void UIManager::SetupImGuiFont(const std::string& fontPath, float fontSize) {
     ImGuiIO& io = ImGui::GetIO();
     
-    // 日本語グリフ範囲を取得
+    // 日本語グリフ範囲を取得（CJK漢字は除外してメモリ使用量を抑制）
+    // ひらがな、カタカナ、基本記号のみ含む
     static const ImWchar japaneseRanges[] = {
         0x0020, 0x007F,  // ASCII
         0x3000, 0x303F,  // 日本語句読点
         0x3040, 0x309F,  // ひらがな
         0x30A0, 0x30FF,  // カタカナ
-        0x4E00, 0x9FFF,  // CJK統合漢字
         0xFF00, 0xFFEF,  // 全角ASCII、半角カナ
         0
     };

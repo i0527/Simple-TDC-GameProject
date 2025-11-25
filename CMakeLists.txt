@@ -45,21 +45,19 @@ FetchContent_Declare(
 )
 
 # Fetch rlImGui (Dear ImGui integration for raylib)
-# Using a stable commit compatible with ImGui v1.90.1
+# Using full commit hash for better reproducibility (compatible with ImGui v1.90.1)
 FetchContent_Declare(
     rlimgui
     GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
-    GIT_TAG 57efef0
+    GIT_TAG 57efef06f69b50ed9ac0834a963a8aefcc59d588
 )
 
 # Make dependencies available
 FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui)
 
-# Create raygui library (header-only, but we need to implement it once)
-add_library(raygui_impl STATIC ${raygui_SOURCE_DIR}/src/raygui.h)
-target_include_directories(raygui_impl PUBLIC ${raygui_SOURCE_DIR}/src)
-set_target_properties(raygui_impl PROPERTIES LINKER_LANGUAGE C)
-target_link_libraries(raygui_impl PUBLIC raylib)
+# raygui is header-only and will be implemented in UIManager.cpp
+# We only need to set up the include directory
+# (RAYGUI_IMPLEMENTATION is defined in UIManager.cpp)
 
 # Create Dear ImGui library
 add_library(imgui_lib STATIC
@@ -97,13 +95,12 @@ target_include_directories(${PROJECT_NAME}
         ${rlimgui_SOURCE_DIR}
 )
 
-# Link libraries (raylib must be linked before raygui)
+# Link libraries
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE 
         EnTT::EnTT
         nlohmann_json::nlohmann_json
         raylib
-        raygui_impl
         rlimgui_lib
         imgui_lib
 )
