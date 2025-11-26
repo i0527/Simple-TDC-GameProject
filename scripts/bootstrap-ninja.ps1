@@ -94,7 +94,7 @@ function Install-Ninja {
         Write-InfoMessage "URL: $downloadUrl"
 
         # Download
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
         Invoke-WebRequest -Uri $downloadUrl -OutFile $zipFile -UseBasicParsing
 
         # Create tools directory

@@ -39,4 +39,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SimpleTDCGame-Windows-Ninja
-        path: ${{github.workspace}}/build/bin/SimpleTDCGame.exe
+        path: ${{github.workspace}}/build/bin/
