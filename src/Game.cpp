@@ -138,12 +138,12 @@ public:
     }
     
     void Render(entt::registry& registry) override {
-        // �X�v���C�g�`��icupslime + yodarehaki�j
+        // スプライト描画(cupslime + yodarehaki)
         Systems::SpriteRenderSystem::Render(registry);
         
-        // �����e�L�X�g
-        DrawText("Arrow Keys: Move cupslime (1.75x scale, animated)", 10, 100, 16, DARKGRAY);
-        DrawText("WASD: Move yodarehaki (1.75x scale, animated)", 10, 120, 16, DARKGRAY);
+        // 効率化：ヘルパー関数を使用
+        UI::DrawText(u8"Arrow Keys: Move cupslime (1.75x scale, animated)", {10, 100}, 16, DARKGRAY);
+        UI::DrawText(u8"WASD: Move yodarehaki (1.75x scale, animated)", {10, 120}, 16, DARKGRAY);
     }
     
     void Shutdown(entt::registry& registry) override {
@@ -169,8 +169,8 @@ Game::Game()
     SetTargetFPS(60);
     
     // UIマネージャーの初期化（日本語フォント対応）
-    // フォントパスは assets/fonts/NotoSansJP-Medium.otf を想定
-    uiManager_.Initialize("assets/fonts/NotoSansJP-Medium.otf", 18.0f);
+    // フォントパスは assets/fonts/NotoSansJP-Medium.ttf を想定
+    uiManager_.Initialize("assets/fonts/NotoSansJP-Medium.ttf", 18.0f);
     
     InitializeScenes();
     
@@ -236,17 +236,16 @@ void Game::Render() {
     ClearBackground(RAYWHITE);
     
     // === 1. ゲーム世界・シーン描画 ===
-    // 現在のシーンを描画
     sceneManager_.RenderCurrentScene(registry_);
     
-    // デバッグ情報
-    Font defaultFont = uiManager_.GetRayguiFont();
-    DrawTextEx(defaultFont, "Simple TDC Game - ESC to Exit", {10, 10}, 20, 1, DARKGRAY);
+    // === 2. デバッグ情報表示（効率化版） ===
+    UI::DrawText(u8"Simple TDC Game - ESC to Exit", {10, 10}, 20, DARKGRAY);
     DrawFPS(10, 40);
-    DrawTextEx(defaultFont, ("Current Scene: " + sceneManager_.GetCurrentSceneName()).c_str(), {10, 70}, 16, 1, DARKGRAY);
     
-    // === 2. UIManager描画（raygui + ImGui）===
-    // サンプルUIを描画（raygui HUD + ImGui デバッグウィンドウ）
+    std::string sceneText = "Current Scene: " + sceneManager_.GetCurrentSceneName();
+    UI::DrawText(sceneText.c_str(), {10, 70}, 16, DARKGRAY);
+    
+    // === 3. UIManager描画（raygui + ImGui） ===
     uiManager_.DrawSampleUI();
     
     EndDrawing();
