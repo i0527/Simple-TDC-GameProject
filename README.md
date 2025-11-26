@@ -45,11 +45,27 @@ Simple-TDC-GameProject/
 ## ビルド手順
 
 ### 必要な環境
-- CMake 3.15以上
+- CMake 3.15以上（CMake Presets を使用する場合は 3.19以上）
 - C++17対応コンパイラ
   - Windows: Visual Studio 2019以上、MinGW、または Clang
   - Linux: GCC 7以上、または Clang 5以上
   - macOS: Xcode 10以上、または Clang 5以上
+
+### 高速ビルド（Ninja 使用・推奨）
+
+Ninja を使用するとビルド速度が向上します。詳細は [docs/BUILD_WITH_NINJA.md](docs/BUILD_WITH_NINJA.md) を参照してください。
+
+```powershell
+# Ninja をダウンロード（システムにない場合のみ）
+.\scripts\bootstrap-ninja.ps1
+
+# PATH に追加（一時的）
+$env:PATH = ".\.tools\bin;$env:PATH"
+
+# ビルド
+cmake --preset ninja
+cmake --build --preset ninja-release
+```
 
 ### Windows (Visual Studio)
 ```bash
