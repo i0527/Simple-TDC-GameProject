@@ -15,6 +15,9 @@ CMakeUserPresets.json
 # CodeQL
 _codeql_*
 
+# Local tools (ninja bootstrap)
+.tools/
+
 # Build artifacts
 build/
 bin/
