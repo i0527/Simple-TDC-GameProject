@@ -187,6 +187,9 @@ namespace Resources {
         // Aseprite JSON�`���̃X�v���C�g�V�[�g��ǂݍ���
         void LoadSpriteSheet(const std::string& name, const std::string& jsonPath, const std::string& imagePath);
         
+        // ディレクトリ内の全JSONスプライトシートを読み込む
+        void LoadAllSpriteSheets(const std::string& jsonDir, const std::string& atlasDir);
+        
         // �L�[���ŉ摜���擾
         Image GetImage(const std::string& name) const;
         
@@ -199,8 +202,11 @@ namespace Resources {
         // �t���[�������݂��邩�m�F
         bool HasFrame(const std::string& frameName) const;
         
-        // ���ׂẴt���[�������擾
+        // ���ׂẴt���[�������擾
         std::vector<std::string> GetAllFrameNames(const std::string& spriteName) const;
+        
+        // 全スプライトシート名を取得
+        std::vector<std::string> GetAllSpriteSheetNames() const;
         
         // �摜���e�N�X�`���ɕϊ��iGPU���ցj
         void ImageToTexture(const std::string& imageName, const std::string& textureName);
@@ -211,7 +217,7 @@ namespace Resources {
         // �摜�𔽓]
         void FlipImage(const std::string& name, bool horizontal);
         
-        // ���ׂẲ摜���A�����[�h
+        // ���ׂẲ摜���A�����[�h
         void UnloadAll();
         
     private:
@@ -229,27 +235,27 @@ namespace Resources {
         ResourceManager(const ResourceManager&) = delete;
         ResourceManager& operator=(const ResourceManager&) = delete;
         
-        // �e�N�X�`���}�l�[�W���[�ւ̃A�N�Z�X
+        // �e�N�X�`���}�l�[�W���[�ў̃A�N�Z�X
         TextureManager& GetTextureManager();
         const TextureManager& GetTextureManager() const;
         
-        // �t�H���g�}�l�[�W���[�ւ̃A�N�Z�X
+        // �t�H���g�}�l�[�W���[�ў̃A�N�Z�X
         FontManager& GetFontManager();
         const FontManager& GetFontManager() const;
         
-        // �T�E���h�}�l�[�W���[�ւ̃A�N�Z�X
+        // �T�E���h�}�l�[�W���[�ў̃A�N�Z�X
         SoundManager& GetSoundManager();
         const SoundManager& GetSoundManager() const;
         
-        // �~���[�W�b�N�}�l�[�W���[�ւ̃A�N�Z�X
+        // �~���[�W�b�N�}�l�[�W���[�ў̃A�N�Z�X
         MusicManager& GetMusicManager();
         const MusicManager& GetMusicManager() const;
         
-        // �V�F�[�_�[�}�l�[�W���[�ւ̃A�N�Z�X
+        // �V�F�[�_�[�}�l�[�W���[�ў̃A�N�Z�X
         ShaderManager& GetShaderManager();
         const ShaderManager& GetShaderManager() const;
         
-        // �C���[�W�}�l�[�W���[�ւ̃A�N�Z�X
+        // �C���[�W�}�l�[�W���[�ў̃A�N�Z�X
         ImageManager& GetImageManager();
         const ImageManager& GetImageManager() const;
         

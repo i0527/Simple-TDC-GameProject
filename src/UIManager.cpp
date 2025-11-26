@@ -1,4 +1,6 @@
 #include "UIManager.h"
+#include "Components.h"
+#include "ResourceManager.h"
 
 // raygui implementation (must be defined once)
 #define RAYGUI_IMPLEMENTATION
@@ -211,10 +213,13 @@ void UIManager::DrawSampleUI() {
     }
     
     GuiLabel({10, 550, 200, 20}, u8"raygui 日本語ラベル");
+}
+
+void UIManager::DrawDebugWindow(entt::registry& registry) {
+    // ImGuiウィンドウは既にGame::Render()でBeginImGui/EndImGuiで囲まれているため、
+    // ここでは直接ウィンドウを描画するだけ
     
     // === ImGui サンプル描画 ===
-    BeginImGui();
-    
     ImGui::Begin(u8"Debug Info / デバッグ情報");
     ImGui::Text("FPS: %d", GetFPS());
     ImGui::Separator();
@@ -228,7 +233,182 @@ void UIManager::DrawSampleUI() {
     
     ImGui::End();
     
-    EndImGui();
+    // --- Entity Debug Window ---
+    ImGui::Begin(u8"Entity Debug / エンティティデバッグ", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    
+    // 利用可能なスプライト一覧を取得
+    Resources::ResourceManager& rm = Resources::ResourceManager::GetInstance();
+    auto& imageMgr = rm.GetImageManager();
+    std::vector<std::string> availableSprites = imageMgr.GetAllSpriteSheetNames();
+    
+    // --- Player (矢印キー操作) ---
+    ImGui::SeparatorText(u8"Player (Arrow Keys / 矢印キー)");
+    
+    auto playerView = registry.view<Components::Player, Components::Position, Components::Velocity, Components::Scale, Components::SpriteAnimation>();
+    for (auto entity : playerView) {
+        auto& pos = playerView.get<Components::Position>(entity);
+        auto& vel = playerView.get<Components::Velocity>(entity);
+        auto& scale = playerView.get<Components::Scale>(entity);
+        auto& anim = playerView.get<Components::SpriteAnimation>(entity);
+        
+        ImGui::PushID(static_cast<int>(entity));
+        
+        ImGui::Text(u8"Entity ID: %d", static_cast<int>(entity));
+        
+        // キャラクター切り替えコンボボックス
+        static int currentSpriteIndex = 0;
+        if (ImGui::BeginCombo(u8"Character / キャラクター", anim.spriteName.c_str())) {
+            for (int i = 0; i < availableSprites.size(); ++i) {
+                const bool isSelected = (anim.spriteName == availableSprites[i]);
+                if (ImGui::Selectable(availableSprites[i].c_str(), isSelected)) {
+                    // キャラクター変更
+                    std::string newSprite = availableSprites[i];
+                    std::vector<std::string> newFrames = imageMgr.GetAllFrameNames(newSprite);
+                    
+                    if (!newFrames.empty()) {
+                        anim.spriteName = newSprite;
+                        anim.frames = newFrames;
+                        anim.currentFrameIndex = 0;
+                        anim.elapsedTime = 0.0f;
+                        
+                        // SpriteFrameとSpriteTextureも更新
+                        auto& spriteFrame = registry.get<Components::SpriteFrame>(entity);
+                        auto& spriteTexture = registry.get<Components::SpriteTexture>(entity);
+                        
+                        auto frameInfo = imageMgr.GetFrameInfo(newFrames[0]);
+                        spriteFrame.frameName = newFrames[0];
+                        spriteFrame.sourceRect = frameInfo.rect;
+                        spriteTexture.textureName = newSprite;
+                        
+                        std::cout << "Character changed to: " << newSprite << std::endl;
+                    }
+                }
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+        
+        // 位置
+        float position[2] = {pos.x, pos.y};
+        if (ImGui::DragFloat2(u8"Position / 位置", position, 1.0f)) {
+            pos.x = position[0];
+            pos.y = position[1];
+        }
+        
+        // 速度（ボタンで増減）
+        ImGui::Text(u8"Velocity / 速度: (%.1f, %.1f)", vel.dx, vel.dy);
+        ImGui::SameLine();
+        if (ImGui::Button(u8"+X##vel_player")) vel.dx += 10.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(u8"-X##vel_player")) vel.dx -= 10.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(u8"+Y##vel_player")) vel.dy += 10.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(u8"-Y##vel_player")) vel.dy -= 10.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(u8"Reset##vel_player")) {
+            vel.dx = 0.0f;
+            vel.dy = 0.0f;
+        }
+        
+        // スケール
+        float scaleVal[2] = {scale.x, scale.y};
+        if (ImGui::DragFloat2(u8"Scale / スケール", scaleVal, 0.1f, 0.1f, 5.0f)) {
+            scale.x = scaleVal[0];
+            scale.y = scaleVal[1];
+        }
+        
+        ImGui::PopID();
+        ImGui::Spacing();
+    }
+    
+    ImGui::Separator();
+    
+    // --- WASD Player ---
+    ImGui::SeparatorText(u8"WASD Player");
+    
+    auto wasdView = registry.view<Components::WASDPlayer, Components::Position, Components::Velocity, Components::Scale, Components::SpriteAnimation>();
+    for (auto entity : wasdView) {
+        auto& pos = wasdView.get<Components::Position>(entity);
+        auto& vel = wasdView.get<Components::Velocity>(entity);
+        auto& scale = wasdView.get<Components::Scale>(entity);
+        auto& anim = wasdView.get<Components::SpriteAnimation>(entity);
+        
+        ImGui::PushID(static_cast<int>(entity));
+        
+        ImGui::Text(u8"Entity ID: %d", static_cast<int>(entity));
+        
+        // キャラクター切り替えコンボボックス
+        if (ImGui::BeginCombo(u8"Character / キャラクター", anim.spriteName.c_str())) {
+            for (int i = 0; i < availableSprites.size(); ++i) {
+                const bool isSelected = (anim.spriteName == availableSprites[i]);
+                if (ImGui::Selectable(availableSprites[i].c_str(), isSelected)) {
+                    // キャラクター変更
+                    std::string newSprite = availableSprites[i];
+                    std::vector<std::string> newFrames = imageMgr.GetAllFrameNames(newSprite);
+                    
+                    if (!newFrames.empty()) {
+                        anim.spriteName = newSprite;
+                        anim.frames = newFrames;
+                        anim.currentFrameIndex = 0;
+                        anim.elapsedTime = 0.0f;
+                        
+                        // SpriteFrameとSpriteTextureも更新
+                        auto& spriteFrame = registry.get<Components::SpriteFrame>(entity);
+                        auto& spriteTexture = registry.get<Components::SpriteTexture>(entity);
+                        
+                        auto frameInfo = imageMgr.GetFrameInfo(newFrames[0]);
+                        spriteFrame.frameName = newFrames[0];
+                        spriteFrame.sourceRect = frameInfo.rect;
+                        spriteTexture.textureName = newSprite;
+                        
+                        std::cout << "Character changed to: " << newSprite << std::endl;
+                    }
+                }
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+        
+        // 位置
+        float position[2] = {pos.x, pos.y};
+        if (ImGui::DragFloat2(u8"Position / 位置", position, 1.0f)) {
+            pos.x = position[0];
+            pos.y = position[1];
+        }
+        
+        // 速度（ボタンで増減）
+        ImGui::Text(u8"Velocity / 速度: (%.1f, %.1f)", vel.dx, vel.dy);
+        ImGui::SameLine();
+        if (ImGui::Button(u8"+X##vel_wasd")) vel.dx += 10.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(u8"-X##vel_wasd")) vel.dx -= 10.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(u8"+Y##vel_wasd")) vel.dy += 10.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(u8"-Y##vel_wasd")) vel.dy -= 10.0f;
+        ImGui::SameLine();
+        if (ImGui::Button(u8"Reset##vel_wasd")) {
+            vel.dx = 0.0f;
+            vel.dy = 0.0f;
+        }
+        
+        // スケール
+        float scaleVal[2] = {scale.x, scale.y};
+        if (ImGui::DragFloat2(u8"Scale / スケール", scaleVal, 0.1f, 0.1f, 5.0f)) {
+            scale.x = scaleVal[0];
+            scale.y = scaleVal[1];
+        }
+        
+        ImGui::PopID();
+        ImGui::Spacing();
+    }
+    
+    ImGui::End();
 }
 
 } // namespace UI
