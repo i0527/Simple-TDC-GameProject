@@ -169,8 +169,8 @@ Game::Game()
     SetTargetFPS(60);
     
     // UIマネージャーの初期化（日本語フォント対応）
-    // フォントパスは assets/fonts/NotoSansCJKjp-Regular.otf を想定
-    uiManager_.Initialize("assets/fonts/NotoSansCJKjp-Regular.otf", 18.0f);
+    // フォントパスは assets/fonts/NotoSansJP-Medium.otf を想定
+    uiManager_.Initialize("assets/fonts/NotoSansJP-Medium.otf", 18.0f);
     
     InitializeScenes();
     
@@ -240,11 +240,12 @@ void Game::Render() {
     sceneManager_.RenderCurrentScene(registry_);
     
     // デバッグ情報
-    DrawText("Simple TDC Game - ESC to Exit", 10, 10, 20, DARKGRAY);
+    Font defaultFont = uiManager_.GetRayguiFont();
+    DrawTextEx(defaultFont, "Simple TDC Game - ESC to Exit", {10, 10}, 20, 1, DARKGRAY);
     DrawFPS(10, 40);
-    DrawText(("Current Scene: " + sceneManager_.GetCurrentSceneName()).c_str(), 10, 70, 16, DARKGRAY);
+    DrawTextEx(defaultFont, ("Current Scene: " + sceneManager_.GetCurrentSceneName()).c_str(), {10, 70}, 16, 1, DARKGRAY);
     
-    // === 2. UIManager描画（raygui + ImGui） ===
+    // === 2. UIManager描画（raygui + ImGui）===
     // サンプルUIを描画（raygui HUD + ImGui デバッグウィンドウ）
     uiManager_.DrawSampleUI();
     

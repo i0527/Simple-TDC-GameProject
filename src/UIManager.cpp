@@ -142,20 +142,20 @@ void UIManager::SetupImGuiFont(const std::string& fontPath, float fontSize) {
 void UIManager::DrawSampleUI() {
     // === raygui サンプル描画 ===
     // raygui ボタン（HUD/操作パネル用）
-    if (GuiButton((Rectangle){10, 500, 200, 40}, "日本語ボタン")) {
+    if (GuiButton({10, 500, 200, 40}, u8"日本語ボタン")) {
         std::cout << "raygui button clicked!" << std::endl;
     }
     
     // raygui ラベル
-    GuiLabel((Rectangle){10, 550, 200, 20}, "raygui 日本語ラベル");
+    GuiLabel({10, 550, 200, 20}, u8"raygui 日本語ラベル");
     
     // === ImGui サンプル描画 ===
     BeginImGui();
     
     // デバッグ情報ウィンドウ
-    ImGui::Begin("Debug Info / デバッグ情報");
+    ImGui::Begin(u8"Debug Info / デバッグ情報");
     ImGui::Text("FPS: %d", GetFPS());
-    ImGui::Text("日本語デバッグ表示テスト");
+    //ImGui::Text("日本語デバッグ表示テスト.");
     ImGui::Separator();
     ImGui::Text("Frame Time: %.3f ms", GetFrameTime() * 1000.0f);
     
