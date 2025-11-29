@@ -225,7 +225,7 @@ void Game::Render() {
     std::string sceneText = "Current Scene: " + sceneManager_.GetCurrentSceneName();
     UI::DrawText(sceneText.c_str(), {10, 70}, 16, DARKGRAY);
     
-    // === 3. raygui UI描画 ===
+    // === 3. UIManager描画（raygui + ImGui） ===
     uiManager_.DrawSampleUI();
     
     // === 4. ImGui描画（1回のBegin/Endで全ウィンドウ） ===

@@ -220,6 +220,8 @@ void UIManager::DrawDebugWindow(entt::registry& registry) {
     // ここでは直接ウィンドウを描画するだけ
     
     // === ImGui サンプル描画 ===
+    BeginImGui();
+    
     ImGui::Begin(u8"Debug Info / デバッグ情報");
     ImGui::Text("FPS: %d", GetFPS());
     ImGui::Separator();
