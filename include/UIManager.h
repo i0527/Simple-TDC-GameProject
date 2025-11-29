@@ -3,6 +3,7 @@
 #include <raylib.h>
 #include <string>
 #include <unordered_map>
+#include <entt/entt.hpp>
 
 namespace UI {
     /// @brief ゲーム全体のUI・フォント管理クラス（Singleton）
@@ -52,6 +53,10 @@ namespace UI {
         /// @brief サンプルUIを描画（デモ用）
         void DrawSampleUI();
         
+        /// @brief デバッグウィンドウを描画（エンティティ情報表示・編集）
+        /// @param registry ECS registry
+        void DrawDebugWindow(entt::registry& registry);
+        
     private:
         UIManager() = default;
         ~UIManager() = default;
@@ -86,3 +91,4 @@ namespace UI {
         DrawTextEx(uiMgr.GetFont(fontSize), text, position, static_cast<float>(fontSize), 1.0f, color);
     }
 }
+

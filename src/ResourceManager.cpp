@@ -13,7 +13,7 @@ namespace Resources {
     }
     
     void TextureManager::LoadTexture(const std::string& name, const std::string& filePath) {
-        // Šù‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚È‚¢‚©Šm”F
+        // æ—¢ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ãªã„ã‹ç¢ºèª
         if (HasTexture(name)) {
             std::cerr << "Texture already loaded: " << name << std::endl;
             return;
@@ -22,7 +22,7 @@ namespace Resources {
         try {
             Texture2D texture = ::LoadTexture(filePath.c_str());
             
-            // ƒeƒNƒXƒ`ƒƒ‚ª³í‚É“Ç‚İ‚Ü‚ê‚½‚©Šm”F
+            // ãƒ†ã‚¯ã‚¹ãƒãƒ£ãŒæ­£å¸¸ã«èª­ã¿è¾¼ã¾ã‚ŒãŸã‹ç¢ºèª
             if (texture.id == 0) {
                 throw ResourceException("Failed to load texture: " + filePath);
             }
@@ -57,7 +57,7 @@ namespace Resources {
     }
 
     void TextureManager::AddTexture(const std::string& name, const Texture2D& texture) {
-        // Šù‚É“¯–¼‚ÌƒeƒNƒXƒ`ƒƒ‚ª‚ ‚ê‚ÎƒAƒ“ƒ[ƒh‚µ‚Ä·‚µ‘Ö‚¦
+        // æ—¢ã«åŒåã®ãƒ†ã‚¯ã‚¹ãƒãƒ£ãŒã‚ã‚Œã°ã‚¢ãƒ³ãƒ­ãƒ¼ãƒ‰ã—ã¦å·®ã—æ›¿ãˆ
         auto it = textures_.find(name);
         if (it != textures_.end()) {
             ::UnloadTexture(it->second);
@@ -75,7 +75,7 @@ namespace Resources {
     }
     
     void FontManager::LoadFont(const std::string& name, const std::string& filePath) {
-        // Šù‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚È‚¢‚©Šm”F
+        // æ—¢ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ãªã„ã‹ç¢ºèª
         if (HasFont(name)) {
             std::cerr << "Font already loaded: " << name << std::endl;
             return;
@@ -84,7 +84,7 @@ namespace Resources {
         try {
             Font font = ::LoadFont(filePath.c_str());
             
-            // ƒtƒHƒ“ƒg‚ª³í‚É“Ç‚İ‚Ü‚ê‚½‚©Šm”F
+            // ãƒ•ã‚©ãƒ³ãƒˆãŒæ­£å¸¸ã«èª­ã¿è¾¼ã¾ã‚ŒãŸã‹ç¢ºèª
             if (font.texture.id == 0) {
                 throw ResourceException("Failed to load font: " + filePath);
             }
@@ -100,17 +100,17 @@ namespace Resources {
 
     void FontManager::LoadFontEx(const std::string& name, const std::string& filePath, int fontSize, const int* glyphs, int glyphCount)
     {
-        // Šù‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚È‚¢‚©Šm”F
+        // æ—¢ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ãªã„ã‹ç¢ºèª
         if (HasFont(name)) {
             std::cerr << "Font already loaded: " << name << std::endl;
             return;
         }
         
         try {
-            // Raylib ‚Ì LoadFontEx ‚Í const int* ‚ğó‚¯æ‚ç‚È‚¢‚½‚ßAconst_cast ‚ª•K—v
+            // Raylib ã® LoadFontEx ã¯ const int* ã‚’å—ã‘å–ã‚‰ãªã„ãŸã‚ã€const_cast ãŒå¿…è¦
             Font font = ::LoadFontEx(filePath.c_str(), fontSize, const_cast<int*>(glyphs), glyphCount);
             
-            // ƒtƒHƒ“ƒg‚ª³í‚É“Ç‚İ‚Ü‚ê‚½‚©Šm”F
+            // ãƒ•ã‚©ãƒ³ãƒˆãŒæ­£å¸¸ã«èª­ã¿è¾¼ã¾ã‚ŒãŸã‹ç¢ºèª
             if (font.texture.id == 0) {
                 throw ResourceException("Failed to load font: " + filePath);
             }
@@ -151,7 +151,7 @@ namespace Resources {
     }
     
     void SoundManager::LoadSound(const std::string& name, const std::string& filePath) {
-        // Šù‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚È‚¢‚©Šm”F
+        // æ—¢ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ãªã„ã‹ç¢ºèª
         if (HasSound(name)) {
             std::cerr << "Sound already loaded: " << name << std::endl;
             return;
@@ -160,7 +160,7 @@ namespace Resources {
         try {
             Sound sound = ::LoadSound(filePath.c_str());
             
-            // ƒTƒEƒ“ƒh‚ª³í‚É“Ç‚İ‚Ü‚ê‚½‚©Šm”F
+            // ã‚µã‚¦ãƒ³ãƒ‰ãŒæ­£å¸¸ã«èª­ã¿è¾¼ã¾ã‚ŒãŸã‹ç¢ºèª
             if (sound.frameCount == 0) {
                 throw ResourceException("Failed to load sound: " + filePath);
             }
@@ -213,7 +213,7 @@ namespace Resources {
     }
     
     void MusicManager::LoadMusic(const std::string& name, const std::string& filePath) {
-        // Šù‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚È‚¢‚©Šm”F
+        // æ—¢ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ãªã„ã‹ç¢ºèª
         if (HasMusic(name)) {
             std::cerr << "Music already loaded: " << name << std::endl;
             return;
@@ -222,7 +222,7 @@ namespace Resources {
         try {
             Music music = ::LoadMusicStream(filePath.c_str());
             
-            // ƒ~ƒ…[ƒWƒbƒN‚ª³í‚É“Ç‚İ‚Ü‚ê‚½‚©Šm”F
+            // ãƒŸãƒ¥ãƒ¼ã‚¸ãƒƒã‚¯ãŒæ­£å¸¸ã«èª­ã¿è¾¼ã¾ã‚ŒãŸã‹ç¢ºèª
             if (music.frameCount == 0) {
                 throw ResourceException("Failed to load music: " + filePath);
             }
@@ -323,20 +323,20 @@ namespace Resources {
     }
     
     void ShaderManager::LoadShader(const std::string& name, const std::string& vsPath, const std::string& fsPath) {
-        // Šù‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚È‚¢‚©Šm”F
+        // æ—¢ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ãªã„ã‹ç¢ºèª
         if (HasShader(name)) {
             std::cerr << "Shader already loaded: " << name << std::endl;
             return;
         }
         
         try {
-            // vsPath‚ª‹ó‚Ìê‡‚ÍNULLƒ|ƒCƒ“ƒ^‚ğg—p
+            // vsPathãŒç©ºã®å ´åˆã¯NULLãƒã‚¤ãƒ³ã‚¿ã‚’ä½¿ç”¨
             const char* vsPathPtr = vsPath.empty() ? nullptr : vsPath.c_str();
             const char* fsPathPtr = fsPath.empty() ? nullptr : fsPath.c_str();
             
             Shader shader = ::LoadShader(vsPathPtr, fsPathPtr);
             
-            // ƒVƒF[ƒ_[‚ª³í‚É“Ç‚İ‚Ü‚ê‚½‚©Šm”F
+            // ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ãŒæ­£å¸¸ã«èª­ã¿è¾¼ã¾ã‚ŒãŸã‹ç¢ºèª
             if (shader.id == 0) {
                 throw ResourceException("Failed to load shader: " + name);
             }
@@ -370,7 +370,7 @@ namespace Resources {
         try {
             Shader shader = GetShader(name);
             
-            // ƒƒP[ƒVƒ‡ƒ“‚ªƒLƒƒƒbƒVƒ…‚³‚ê‚Ä‚¢‚é‚©Šm”F
+            // ãƒ­ã‚±ãƒ¼ã‚·ãƒ§ãƒ³ãŒã‚­ãƒ£ãƒƒã‚·ãƒ¥ã•ã‚Œã¦ã„ã‚‹ã‹ç¢ºèª
             auto locationIt = shaderLocations_.find(name);
             if (locationIt != shaderLocations_.end()) {
                 auto uniformIt = locationIt->second.find(uniformName);
@@ -379,7 +379,7 @@ namespace Resources {
                 }
             }
             
-            // ƒƒP[ƒVƒ‡ƒ“‚ğæ“¾‚µ‚ÄƒLƒƒƒbƒVƒ…
+            // ãƒ­ã‚±ãƒ¼ã‚·ãƒ§ãƒ³ã‚’å–å¾—ã—ã¦ã‚­ãƒ£ãƒƒã‚·ãƒ¥
             int location = ::GetShaderLocation(shader, uniformName.c_str());
             shaderLocations_[name][uniformName] = location;
             
@@ -436,7 +436,7 @@ namespace Resources {
     }
     
     void ImageManager::LoadImage(const std::string& name, const std::string& filePath) {
-        // Šù‚É“Ç‚İ‚Ü‚ê‚Ä‚¢‚È‚¢‚©Šm”F
+        // æ—¢ã«èª­ã¿è¾¼ã¾ã‚Œã¦ã„ãªã„ã‹ç¢ºèª
         if (HasImage(name)) {
             std::cerr << "Image already loaded: " << name << std::endl;
             return;
@@ -445,7 +445,7 @@ namespace Resources {
         try {
             Image image = ::LoadImage(filePath.c_str());
             
-            // ‰æ‘œ‚ª³í‚É“Ç‚İ‚Ü‚ê‚½‚©Šm”F
+            // ç”»åƒãŒæ­£å¸¸ã«èª­ã¿è¾¼ã¾ã‚ŒãŸã‹ç¢ºèª
             if (image.data == nullptr) {
                 throw ResourceException("Failed to load image: " + filePath);
             }
@@ -461,7 +461,7 @@ namespace Resources {
     
     void ImageManager::LoadSpriteSheet(const std::string& name, const std::string& jsonPath, const std::string& imagePath) {
         try {
-            // JSON ƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚İ
+            // JSON ãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã¿
             std::ifstream jsonFile(jsonPath);
             if (!jsonFile.is_open()) {
                 throw ResourceException("Failed to open JSON file: " + jsonPath);
@@ -469,33 +469,33 @@ namespace Resources {
             
             json spriteData = json::parse(jsonFile);
             
-            // ƒƒ^ƒf[ƒ^‚©‚çƒeƒNƒXƒ`ƒƒî•ñ‚ğæ“¾
+            // ãƒ¡ã‚¿ãƒ‡ãƒ¼ã‚¿ã‹ã‚‰ãƒ†ã‚¯ã‚¹ãƒãƒ£æƒ…å ±ã‚’å–å¾—
             if (!spriteData.contains("meta") || !spriteData.contains("frames")) {
                 throw ResourceException("Invalid sprite sheet JSON format: " + jsonPath);
             }
             
-            // ‰æ‘œ‚ğ“Ç‚İ‚İ
+            // ç”»åƒã‚’èª­ã¿è¾¼ã¿
             LoadImage(name, imagePath);
             
-            // ƒtƒŒ[ƒ€î•ñ‚ğ‰ğÍ
+            // ãƒ•ãƒ¬ãƒ¼ãƒ æƒ…å ±ã‚’è§£æ
             const auto& frames = spriteData["frames"];
             std::vector<std::string> frameNames;
             
-            // ƒtƒŒ[ƒ€”‚ğƒ`ƒFƒbƒN
+            // ãƒ•ãƒ¬ãƒ¼ãƒ æ•°ã‚’ãƒã‚§ãƒƒã‚¯
             int frameCount = frames.size();
             std::cout << "LoadSpriteSheet: Detected " << frameCount << " frame(s) in JSON" << std::endl;
             
-            // •¡”ƒtƒŒ[ƒ€F’Êí‰ğÍ
+            // è¤‡æ•°ãƒ•ãƒ¬ãƒ¼ãƒ ï¼šé€šå¸¸è§£æ
             for (auto it = frames.begin(); it != frames.end(); ++it) {
                 const std::string& frameName = it.key();
                 const auto& frameData = it.value();
                 
-                // ƒtƒŒ[ƒ€î•ñ‚ğ’Šo
+                // ãƒ•ãƒ¬ãƒ¼ãƒ æƒ…å ±ã‚’æŠ½å‡º
                 int x = frameData["frame"]["x"];
                 int y = frameData["frame"]["y"];
                 int w = frameData["frame"]["w"];
                 int h = frameData["frame"]["h"];
-                int duration = frameData.value("duration", 100);  // ƒfƒtƒHƒ‹ƒg100ms
+                int duration = frameData.value("duration", 100);  // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆ100ms
                 
                 FrameInfo frameInfo;
                 frameInfo.rect = { static_cast<float>(x), static_cast<float>(y), 
@@ -511,10 +511,10 @@ namespace Resources {
                          << " duration: " << duration << "ms" << std::endl;
             }
             
-            // ƒXƒvƒ‰ƒCƒgƒV[ƒgî•ñ‚ğ•Û‘¶
+            // ã‚¹ãƒ—ãƒ©ã‚¤ãƒˆã‚·ãƒ¼ãƒˆæƒ…å ±ã‚’ä¿å­˜
             spriteSheets_[name] = frameNames;
             
-            // ‰æ‘œ‚©‚çƒeƒNƒXƒ`ƒƒ‚ğ¶¬‚µ‚Ä TextureManager ‚É“o˜^
+            // ç”»åƒã‹ã‚‰ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’ç”Ÿæˆã—ã¦ TextureManager ã«ç™»éŒ²
             ImageToTexture(name, name);
             
             std::cout << "Sprite sheet loaded: " << name << " with " << frameNames.size() << " frames" << std::endl;
@@ -561,18 +561,55 @@ namespace Resources {
         return it->second;
     }
     
+    void ImageManager::LoadAllSpriteSheets(const std::string& jsonDir, const std::string& atlasDir) {
+        std::cout << "Loading all sprite sheets from: " << jsonDir << std::endl;
+        
+        // assets/json/ ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªå†…ã®å…¨ .json ãƒ•ã‚¡ã‚¤ãƒ«ã‚’æ¤œç´¢
+        // Raylibã«ã¯ DirectoryGetFiles ãŒãªã„ãŸã‚ã€æ‰‹å‹•ã§å„ãƒ•ã‚¡ã‚¤ãƒ«ã‚’æŒ‡å®š
+        // å®Ÿéš›ã«ã¯ä»¥ä¸‹ã®ã‚ˆã†ãªã‚­ãƒ£ãƒ©ã‚¯ã‚¿ãƒ¼åãƒªã‚¹ãƒˆã‚’ä½¿ç”¨
+        std::vector<std::string> characterNames = {
+            "bard", "cupslime", "kame", "killer_whale", 
+            "seahorse", "whale", "yodarehaki"
+        };
+        
+        for (const auto& charName : characterNames) {
+            std::string jsonPath = jsonDir + "/" + charName + ".json";
+            std::string imagePath = atlasDir + "/" + charName + ".png";
+            
+            // ãƒ•ã‚¡ã‚¤ãƒ«ãŒå­˜åœ¨ã™ã‚‹ã‹ç¢ºèª
+            if (FileExists(jsonPath.c_str()) && FileExists(imagePath.c_str())) {
+                LoadSpriteSheet(charName, jsonPath, imagePath);
+            } else {
+                std::cout << "Skipping " << charName << " (files not found)" << std::endl;
+            }
+        }
+        
+        std::cout << "Finished loading sprite sheets" << std::endl;
+    }
+    
+    std::vector<std::string> ImageManager::GetAllSpriteSheetNames() const {
+        std::vector<std::string> names;
+        names.reserve(spriteSheets_.size());
+        
+        for (const auto& pair : spriteSheets_) {
+            names.push_back(pair.first);
+        }
+        
+        return names;
+    }
+    
     void ImageManager::ImageToTexture(const std::string& imageName, const std::string& textureName) {
         try {
             Image image = GetImage(imageName);
             
-            // ‰æ‘œ‚ğƒeƒNƒXƒ`ƒƒ‚É•ÏŠ·
+            // ç”»åƒã‚’ãƒ†ã‚¯ã‚¹ãƒãƒ£ã«å¤‰æ›
             Texture2D texture = ::LoadTextureFromImage(image);
             
             if (texture.id == 0) {
                 throw ResourceException("Failed to convert image to texture: " + imageName);
             }
 
-            // TextureManager ‚É“o˜^‚µ‚ÄŠÇ—‚³‚¹‚é
+            // TextureManager ã«ç™»éŒ²ã—ã¦ç®¡ç†ã•ã›ã‚‹
             ResourceManager::GetInstance().GetTextureManager().AddTexture(textureName, texture);
             
             std::cout << "Image converted to texture: " << imageName << " -> " << textureName << std::endl;

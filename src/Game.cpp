@@ -14,24 +14,25 @@ public:
         Resources::ResourceManager& rm = Resources::ResourceManager::GetInstance();
         auto& imageMgr = rm.GetImageManager();
         
-        // ============ cupslime �̓ǂݍ��݂ƕ\�� ============
-        const std::string cupslimeJson = "assets/json/cupslime.json";
-        const std::string cupslimeImage = "assets/atlas/cupslime.png";
-        imageMgr.LoadSpriteSheet("cupslime", cupslimeJson, cupslimeImage);
+        // === すべてのキャラクターJSONを自動読み込み ===
+        imageMgr.LoadAllSpriteSheets("assets/json", "assets/atlas");
         
+        // ロードされたスプライトシート一覧を取得
+        std::vector<std::string> allSprites = imageMgr.GetAllSpriteSheetNames();
+        std::cout << "Loaded " << allSprites.size() << " sprite sheets:" << std::endl;
+        for (const auto& name : allSprites) {
+            std::cout << "  - " << name << std::endl;
+        }
+        
+        // === cupslime (矢印キー操作) ===
         std::vector<std::string> cupslimeFrames = imageMgr.GetAllFrameNames("cupslime");
-        
         if (!cupslimeFrames.empty()) {
-            // cupslime �G���e�B�e�B�i���L�[����E�A�j���[�V�����t���j
             auto cupslime = registry.create();
             registry.emplace<Components::Position>(cupslime, 300.0f, 300.0f);
             registry.emplace<Components::Velocity>(cupslime, 0.0f, 0.0f);
-            registry.emplace<Components::Player>(cupslime);  // ���L�[����
-            
-            // 1.75�{�X�P�[�����O
+            registry.emplace<Components::Player>(cupslime);
             registry.emplace<Components::Scale>(cupslime, 1.75f, 1.75f);
             
-            // �A�j���[�V����
             auto& anim = registry.emplace<Components::SpriteAnimation>(cupslime);
             anim.spriteName = "cupslime";
             anim.frames = cupslimeFrames;
@@ -40,40 +41,24 @@ public:
             anim.isPlaying = true;
             anim.isLooping = true;
             
-            // �X�v���C�g�t���[��
             auto firstFrameInfo = imageMgr.GetFrameInfo(cupslimeFrames[0]);
             registry.emplace<Components::SpriteFrame>(cupslime, 
                 Components::SpriteFrame{cupslimeFrames[0], firstFrameInfo.rect});
-            
-            // �e�N�X�`���Q��
             registry.emplace<Components::SpriteTexture>(cupslime, 
                 Components::SpriteTexture{"cupslime"});
             
             std::cout << "cupslime loaded with " << cupslimeFrames.size() << " frames" << std::endl;
-        } else {
-            std::cout << "Failed to load cupslime sprite sheet" << std::endl;
         }
         
-        // ============ yodarehaki �̓ǂݍ��݂ƕ\�� ============
-        const std::string yodarehakiJson = "assets/json/yodarehaki.json";
-        const std::string yodarehakiImage = "assets/atlas/yodarehaki.png";
-        imageMgr.LoadSpriteSheet("yodarehaki", yodarehakiJson, yodarehakiImage);
-        
+        // === yodarehaki (WASD操作) ===
         std::vector<std::string> yodarehakiFrames = imageMgr.GetAllFrameNames("yodarehaki");
-        
         if (!yodarehakiFrames.empty()) {
-            // yodarehaki �G���e�B�e�B�iWASD����E�A�j���[�V�����t���j
             auto yodarehaki = registry.create();
             registry.emplace<Components::Position>(yodarehaki, 600.0f, 300.0f);
             registry.emplace<Components::Velocity>(yodarehaki, 0.0f, 0.0f);
-            
-            // WASD�v���C���[�^�O
             registry.emplace<Components::WASDPlayer>(yodarehaki);
-            
-            // 1.75�{�X�P�[�����O
             registry.emplace<Components::Scale>(yodarehaki, 1.75f, 1.75f);
             
-            // �A�j���[�V����
             auto& anim = registry.emplace<Components::SpriteAnimation>(yodarehaki);
             anim.spriteName = "yodarehaki";
             anim.frames = yodarehakiFrames;
@@ -82,18 +67,13 @@ public:
             anim.isPlaying = true;
             anim.isLooping = true;
             
-            // �X�v���C�g�t���[��
             auto firstFrameInfo = imageMgr.GetFrameInfo(yodarehakiFrames[0]);
             registry.emplace<Components::SpriteFrame>(yodarehaki, 
                 Components::SpriteFrame{yodarehakiFrames[0], firstFrameInfo.rect});
-            
-            // �e�N�X�`���Q��
             registry.emplace<Components::SpriteTexture>(yodarehaki, 
                 Components::SpriteTexture{"yodarehaki"});
             
             std::cout << "yodarehaki loaded with " << yodarehakiFrames.size() << " frames" << std::endl;
-        } else {
-            std::cout << "Failed to load yodarehaki sprite sheet" << std::endl;
         }
     }
     
@@ -247,6 +227,11 @@ void Game::Render() {
     
     // === 3. UIManager描画（raygui + ImGui） ===
     uiManager_.DrawSampleUI();
+    
+    // === 4. ImGui描画（1回のBegin/Endで全ウィンドウ） ===
+    uiManager_.BeginImGui();
+    uiManager_.DrawDebugWindow(registry_);
+    uiManager_.EndImGui();
     
     EndDrawing();
 }
