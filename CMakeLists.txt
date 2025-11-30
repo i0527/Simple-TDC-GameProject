@@ -9,6 +9,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Add UTF-8 support for MSVC
 if(MSVC)
     add_compile_options(/utf-8)
+    # Enable large object file support (required for large header-only libraries like EnTT)
+    add_compile_options(/bigobj)
+    # Enable safe multi-process PDB writing
+    add_compile_options(/FS)
+    # Prevent Windows.h min/max macros from interfering with std::min/std::max
+    add_compile_definitions(NOMINMAX)
+    # Exclude rarely-used stuff from Windows headers (including DrawText macro)
+    add_compile_definitions(WIN32_LEAN_AND_MEAN)
 endif()
 
 # Include FetchContent for dependency management
@@ -118,3 +126,42 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # Copy assets to build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets 
      DESTINATION ${CMAKE_BINARY_DIR}/bin)
+
+# ===== 新アーキテクチャテスト用ターゲット =====
+
+# 新アーキテクチャのソースファイル
+set(NEW_ARCH_SOURCES
+    src/main_new.cpp
+    src/GameNew.cpp
+    src/FileUtils.cpp
+)
+
+# 新アーキテクチャテスト実行ファイル
+add_executable(SimpleTDCGame_NewArch ${NEW_ARCH_SOURCES})
+
+target_include_directories(SimpleTDCGame_NewArch 
+    PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${raygui_SOURCE_DIR}/src
+        ${dearimgui_SOURCE_DIR}
+        ${rlimgui_SOURCE_DIR}
+)
+
+target_link_libraries(SimpleTDCGame_NewArch 
+    PRIVATE 
+        EnTT::EnTT
+        nlohmann_json::nlohmann_json
+        raylib
+)
+
+set_target_properties(SimpleTDCGame_NewArch PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+# ビルド後にassetsをコピー（ファイル追加時も反映されるように）
+add_custom_command(TARGET SimpleTDCGame_NewArch POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets
+        ${CMAKE_BINARY_DIR}/bin/assets
+    COMMENT "Copying assets to build directory..."
+)
