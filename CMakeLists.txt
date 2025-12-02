@@ -9,7 +9,7 @@ if(NOT WIN32)
 endif()
 
 # ============================================================================
-# コンパイラ設定
+# コンパイラ設定 (MSVC/MinGW/Clang)
 # ============================================================================
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,7 +30,7 @@ if(MSVC)
     add_compile_definitions(WIN32_LEAN_AND_MEAN)
     # 警告レベル設定
     add_compile_options(/W4)
-    # 警告をエラーにしない
+    # 警告をエラーとして扱わない（/WXの無効化）
     add_compile_options(/WX-)
     
     message(STATUS "Compiler: MSVC ${MSVC_VERSION}")
@@ -115,9 +115,8 @@ FetchContent_Declare(
 )
 
 # 依存ライブラリを取得
-message(STATUS "Fetching dependencies...")
+message(STATUS "Fetching dependencies (this may take a while on first run)...")
 FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui)
-message(STATUS "Dependencies fetched successfully")
 
 # ============================================================================
 # ImGuiライブラリの構築
