@@ -89,9 +89,16 @@ add_library(rlimgui_lib STATIC
 target_include_directories(rlimgui_lib PUBLIC ${rlimgui_SOURCE_DIR})
 target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 
-# Add source files
+# Add source files (excluding Roguelike to avoid conflicts)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.h" "include/*.hpp")
+
+# Roguelike関連ファイルをSimpleTDCGameから除外
+list(FILTER SOURCES EXCLUDE REGEX "src/Roguelike/.*")
+list(FILTER SOURCES EXCLUDE REGEX "src/main_roguelike\\.cpp")
+# NewArchターゲット用のファイルも除外（main関数が重複するため）
+list(FILTER SOURCES EXCLUDE REGEX "src/main_new\\.cpp")
+list(FILTER HEADERS EXCLUDE REGEX "include/Roguelike/.*")
 
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
@@ -164,4 +171,50 @@ add_custom_command(TARGET SimpleTDCGame_NewArch POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
         ${CMAKE_BINARY_DIR}/bin/assets
     COMMENT "Copying assets to build directory..."
+)
+
+# ===== NetHack風ローグライク用ターゲット =====
+# (nethack-GameProjectからマージ)
+# 注意: SimpleTDCGameのコードには干渉しません
+
+# Roguelikeのソースファイル
+file(GLOB_RECURSE ROGUELIKE_SOURCES 
+    "src/Roguelike/*.cpp"
+)
+
+set(NETHACK_SOURCES
+    src/main_roguelike.cpp
+    ${ROGUELIKE_SOURCES}
+)
+
+# NetHack風ローグライク実行ファイル
+add_executable(NetHackGame ${NETHACK_SOURCES})
+
+target_include_directories(NetHackGame 
+    PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${raygui_SOURCE_DIR}/src
+        ${dearimgui_SOURCE_DIR}
+        ${rlimgui_SOURCE_DIR}
+)
+
+target_link_libraries(NetHackGame 
+    PRIVATE 
+        EnTT::EnTT
+        nlohmann_json::nlohmann_json
+        raylib
+        rlimgui_lib
+        imgui_lib
+)
+
+set_target_properties(NetHackGame PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+# ビルド後にassetsをコピー（実行ファイルと同じディレクトリに）
+add_custom_command(TARGET NetHackGame POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:NetHackGame>/assets
+    COMMENT "Copying assets to build directory for NetHackGame..."
 )
