@@ -477,10 +477,12 @@ void GameNew::Run() {
     Shutdown();
 }
 
-void GameNew::Initialize() {
+void GameNew::Initialize(bool skipWindowInit) {
     // Raylib初期化
-    InitWindow(screenWidth_, screenHeight_, windowTitle_.c_str());
-    SetTargetFPS(targetFPS_);
+    if (!skipWindowInit) {
+        InitWindow(screenWidth_, screenHeight_, windowTitle_.c_str());
+        SetTargetFPS(targetFPS_);
+    }
     
     // オーディオデバイス初期化
     InitAudioDevice();

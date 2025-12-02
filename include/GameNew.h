@@ -110,6 +110,31 @@ public:
      */
     void Quit() { isRunning_ = false; }
     
+    // ===== シーン統合用のメソッド =====
+    
+    /**
+     * @brief ゲームを初期化（シーン統合用）
+     * Run()を呼ばずに手動で初期化する場合に使用
+     * @param skipWindowInit ウィンドウ初期化をスキップするか（シーン統合用）
+     */
+    void Initialize(bool skipWindowInit = false);
+    
+    /**
+     * @brief ゲームを更新（シーン統合用）
+     * @param deltaTime フレーム時間
+     */
+    void Update(float deltaTime);
+    
+    /**
+     * @brief ゲームを描画（シーン統合用）
+     */
+    void Render();
+    
+    /**
+     * @brief ゲームを終了（シーン統合用）
+     */
+    void Shutdown();
+    
     // ===== 拡張ポイント =====
     
     using InitCallback = std::function<void(GameNew&)>;
@@ -147,13 +172,9 @@ public:
     }
 
 private:
-    void Initialize();
     void InitializeServices();
     void LoadDefinitions();
     void RegisterCoreSystems();
-    void Update(float deltaTime);
-    void Render();
-    void Shutdown();
     
     // Core層
     Core::GameContext context_;

@@ -1,78 +1,110 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.19)
 project(SimpleTDCGame VERSION 0.1.0 LANGUAGES CXX C)
 
-# Set C++17 standard
+# ============================================================================
+# Windows限定設定
+# ============================================================================
+if(NOT WIN32)
+    message(FATAL_ERROR "This project is Windows-only. Please build on Windows.")
+endif()
+
+# ============================================================================
+# コンパイラ設定 (MSVC)
+# ============================================================================
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Add UTF-8 support for MSVC
+# MSVC固有の設定
 if(MSVC)
+    # UTF-8エンコーディング対応
     add_compile_options(/utf-8)
-    # Enable large object file support (required for large header-only libraries like EnTT)
+    # 大きなオブジェクトファイル対応
     add_compile_options(/bigobj)
-    # Enable safe multi-process PDB writing
+    # 並列コンパイル時のファイルロック回避
     add_compile_options(/FS)
-    # Prevent Windows.h min/max macros from interfering with std::min/std::max
+    # Windows API定義
     add_compile_definitions(NOMINMAX)
-    # Exclude rarely-used stuff from Windows headers (including DrawText macro)
     add_compile_definitions(WIN32_LEAN_AND_MEAN)
+    # 警告レベル設定
+    add_compile_options(/W4)
+    # エラーとして扱う警告
+    add_compile_options(/WX-)
+    
+    message(STATUS "Compiler: MSVC ${MSVC_VERSION}")
+    message(STATUS "C++ Standard: C++17")
+else()
+    message(WARNING "MSVC compiler is recommended. Other compilers may not work correctly.")
 endif()
 
-# Include FetchContent for dependency management
+# ============================================================================
+# ビルド設定
+# ============================================================================
+# デフォルトビルドタイプ（Ninja使用時）
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+# 出力ディレクトリ
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# ============================================================================
+# 依存ライブラリ管理 (FetchContent)
+# ============================================================================
 include(FetchContent)
 
-# Fetch EnTT (ECS library)
+# EnTT (ECS library)
 FetchContent_Declare(
     EnTT
     GIT_REPOSITORY https://github.com/skypjack/entt.git
     GIT_TAG v3.12.2
 )
 
-# Fetch nlohmann/json
+# nlohmann/json
 FetchContent_Declare(
     json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG v3.11.2
 )
 
-# Fetch Raylib
+# Raylib
 FetchContent_Declare(
     raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
     GIT_TAG 5.0
 )
 
-# Fetch raygui (immediate mode GUI library for raylib)
+# raygui (immediate mode GUI library for raylib)
 FetchContent_Declare(
     raygui
     GIT_REPOSITORY https://github.com/raysan5/raygui.git
     GIT_TAG 4.0
 )
 
-# Fetch Dear ImGui
+# Dear ImGui
 FetchContent_Declare(
     dearimgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG v1.90.1
 )
 
-# Fetch rlImGui (Dear ImGui integration for raylib)
-# Using full commit hash for better reproducibility (compatible with ImGui v1.90.1)
+# rlImGui (Dear ImGui integration for raylib)
 FetchContent_Declare(
     rlimgui
     GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
     GIT_TAG 57efef06f69b50ed9ac0834a963a8aefcc59d588
 )
 
-# Make dependencies available
+# 依存ライブラリを取得
 FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui)
 
-# raygui is header-only and will be implemented in UIManager.cpp
-# We only need to set up the include directory
-# (RAYGUI_IMPLEMENTATION is defined in UIManager.cpp)
-
-# Create Dear ImGui library
+# ============================================================================
+# ImGuiライブラリの構築
+# ============================================================================
+# Dear ImGui static library
 add_library(imgui_lib STATIC
     ${dearimgui_SOURCE_DIR}/imgui.cpp
     ${dearimgui_SOURCE_DIR}/imgui_demo.cpp
@@ -82,31 +114,33 @@ add_library(imgui_lib STATIC
 )
 target_include_directories(imgui_lib PUBLIC ${dearimgui_SOURCE_DIR})
 
-# Create rlImGui library
+# rlImGui static library
 add_library(rlimgui_lib STATIC
     ${rlimgui_SOURCE_DIR}/rlImGui.cpp
 )
 target_include_directories(rlimgui_lib PUBLIC ${rlimgui_SOURCE_DIR})
 target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 
-# Add source files (excluding Roguelike to avoid conflicts)
+# ============================================================================
+# メイン実行ファイル: SimpleTDCGame
+# ============================================================================
+# ソースファイル収集
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.h" "include/*.hpp")
 
-# Roguelike関連ファイルをSimpleTDCGameから除外
+# 除外ファイル（別ターゲット用）
 list(FILTER SOURCES EXCLUDE REGEX "src/Roguelike/.*")
 list(FILTER SOURCES EXCLUDE REGEX "src/main_roguelike\\.cpp")
-# NewArchターゲット用のファイルも除外（main関数が重複するため）
 list(FILTER SOURCES EXCLUDE REGEX "src/main_new\\.cpp")
 list(FILTER HEADERS EXCLUDE REGEX "include/Roguelike/.*")
 
-# Create executable
+# 実行ファイル作成
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
-# TestScene.cpp �𖾎��I�ɒǉ��i������GLOB�ŔF������Ȃ��\���X�V���̕ی��j
+# TestScene.cppを明示的に追加（GLOBで拾えない場合の保険）
 target_sources(${PROJECT_NAME} PRIVATE src/TestScene.cpp)
 
-# Include directories
+# インクルードディレクトリ
 target_include_directories(${PROJECT_NAME} 
     PRIVATE 
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -115,7 +149,7 @@ target_include_directories(${PROJECT_NAME}
         ${rlimgui_SOURCE_DIR}
 )
 
-# Link libraries
+# リンクライブラリ
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE 
         EnTT::EnTT
@@ -125,25 +159,23 @@ target_link_libraries(${PROJECT_NAME}
         imgui_lib
 )
 
-# Set output directory
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+# アセットコピー（ビルド後）
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+    COMMENT "Copying assets to build directory..."
 )
 
-# Copy assets to build directory
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets 
-     DESTINATION ${CMAKE_BINARY_DIR}/bin)
-
-# ===== 新アーキテクチャテスト用ターゲット =====
-
-# 新アーキテクチャのソースファイル
+# ============================================================================
+# 新アーキテクチャテスト用ターゲット: SimpleTDCGame_NewArch
+# ============================================================================
 set(NEW_ARCH_SOURCES
     src/main_new.cpp
     src/GameNew.cpp
     src/FileUtils.cpp
 )
 
-# 新アーキテクチャテスト実行ファイル
 add_executable(SimpleTDCGame_NewArch ${NEW_ARCH_SOURCES})
 
 target_include_directories(SimpleTDCGame_NewArch 
@@ -161,33 +193,23 @@ target_link_libraries(SimpleTDCGame_NewArch
         raylib
 )
 
-set_target_properties(SimpleTDCGame_NewArch PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
-
-# ビルド後にassetsをコピー（ファイル追加時も反映されるように）
 add_custom_command(TARGET SimpleTDCGame_NewArch POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
-        ${CMAKE_BINARY_DIR}/bin/assets
+        $<TARGET_FILE_DIR:SimpleTDCGame_NewArch>/assets
     COMMENT "Copying assets to build directory..."
 )
 
-# ===== NetHack風ローグライク用ターゲット =====
-# (nethack-GameProjectからマージ)
-# 注意: SimpleTDCGameのコードには干渉しません
-
-# Roguelikeのソースファイル
-file(GLOB_RECURSE ROGUELIKE_SOURCES 
-    "src/Roguelike/*.cpp"
-)
+# ============================================================================
+# NetHack風ローグライク用ターゲット: NetHackGame
+# ============================================================================
+file(GLOB_RECURSE ROGUELIKE_SOURCES "src/Roguelike/*.cpp")
 
 set(NETHACK_SOURCES
     src/main_roguelike.cpp
     ${ROGUELIKE_SOURCES}
 )
 
-# NetHack風ローグライク実行ファイル
 add_executable(NetHackGame ${NETHACK_SOURCES})
 
 target_include_directories(NetHackGame 
@@ -207,14 +229,24 @@ target_link_libraries(NetHackGame
         imgui_lib
 )
 
-set_target_properties(NetHackGame PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
-
-# ビルド後にassetsをコピー（実行ファイルと同じディレクトリに）
 add_custom_command(TARGET NetHackGame POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
         $<TARGET_FILE_DIR:NetHackGame>/assets
-    COMMENT "Copying assets to build directory for NetHackGame..."
+    COMMENT "Copying assets to build directory..."
 )
+
+# ============================================================================
+# ビルド情報表示
+# ============================================================================
+message(STATUS "")
+message(STATUS "==========================================")
+message(STATUS "Build Configuration")
+message(STATUS "==========================================")
+message(STATUS "Project: ${PROJECT_NAME} ${PROJECT_VERSION}")
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Generator: ${CMAKE_GENERATOR}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Output Directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+message(STATUS "==========================================")
+message(STATUS "")
