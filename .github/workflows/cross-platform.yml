@@ -1,0 +1,306 @@
+#**************************************************************************************************
+#
+#   Simple-TDC-GameProject - CI/CD Build Workflow
+#
+#   Cross-platform builds for Windows, Linux, macOS, and WebAssembly.
+#   Automatically builds and uploads artifacts on push/PR.
+#   Creates releases with pre-built binaries on version tags.
+#
+#**************************************************************************************************
+
+name: Cross-Platform Build
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  #------------------------------------------------------------------------------------------------
+  # Windows Build (MSVC + CMake)
+  #------------------------------------------------------------------------------------------------
+  build-windows-msvc:
+    name: Windows (MSVC)
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.25.x'
+
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Configure CMake
+      run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Copy Assets
+      shell: pwsh
+      run: |
+        Copy-Item -Path "assets" -Destination "build/bin/${{ env.BUILD_TYPE }}/assets" -Recurse -Force
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SimpleTDCGame-Windows-MSVC
+        path: |
+          build/bin/${{ env.BUILD_TYPE }}/*.exe
+          build/bin/${{ env.BUILD_TYPE }}/assets/
+
+  #------------------------------------------------------------------------------------------------
+  # Windows Build (MinGW-w64)
+  #------------------------------------------------------------------------------------------------
+  build-windows-mingw:
+    name: Windows (MinGW)
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup MinGW
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x64
+        version: 12.2.0
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.25.x'
+
+    - name: Bootstrap Ninja
+      shell: pwsh
+      run: .\scripts\bootstrap-ninja.ps1
+
+    - name: Add Tools to PATH
+      shell: pwsh
+      run: |
+        $ninjaPath = Join-Path $env:GITHUB_WORKSPACE ".tools\bin"
+        echo "$ninjaPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: Configure CMake with Ninja
+      run: cmake -B build -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Copy Assets
+      shell: pwsh
+      run: |
+        if (Test-Path "build/bin") {
+          Copy-Item -Path "assets" -Destination "build/bin/assets" -Recurse -Force
+        }
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SimpleTDCGame-Windows-MinGW
+        path: |
+          build/bin/*.exe
+          build/bin/assets/
+
+  #------------------------------------------------------------------------------------------------
+  # Linux Build (GCC + Makefile)
+  #------------------------------------------------------------------------------------------------
+  build-linux:
+    name: Linux (GCC)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          libgl1-mesa-dev \
+          libx11-dev \
+          libxcursor-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxi-dev \
+          libxext-dev \
+          libxfixes-dev \
+          libasound2-dev \
+          libpulse-dev
+
+    - name: Configure CMake
+      run: cmake -B build -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Copy Assets
+      run: |
+        mkdir -p build/bin/assets
+        cp -r assets/* build/bin/assets/
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SimpleTDCGame-Linux
+        path: |
+          build/bin/SimpleTDCGame*
+          build/bin/NetHackGame*
+          build/bin/assets/
+
+  #------------------------------------------------------------------------------------------------
+  # macOS Build (Clang)
+  #------------------------------------------------------------------------------------------------
+  build-macos:
+    name: macOS (Clang)
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        brew install cmake ninja
+
+    - name: Configure CMake
+      run: cmake -B build -G "Ninja" -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Copy Assets
+      run: |
+        mkdir -p build/bin/assets
+        cp -r assets/* build/bin/assets/
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SimpleTDCGame-macOS
+        path: |
+          build/bin/SimpleTDCGame*
+          build/bin/NetHackGame*
+          build/bin/assets/
+
+  #------------------------------------------------------------------------------------------------
+  # WebAssembly Build (Emscripten)
+  #------------------------------------------------------------------------------------------------
+  build-web:
+    name: WebAssembly (Emscripten)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: '3.1.51'
+        actions-cache-folder: 'emsdk-cache'
+
+    - name: Verify Emscripten
+      run: emcc --version
+
+    - name: Configure CMake for Web
+      run: |
+        emcmake cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DPLATFORM=Web \
+          -DCMAKE_EXE_LINKER_FLAGS="-s USE_GLFW=3 -s ASYNCIFY -s TOTAL_MEMORY=67108864 -s ALLOW_MEMORY_GROWTH=1"
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Prepare Web Package
+      run: |
+        mkdir -p web-dist
+        cp build/bin/*.html web-dist/ 2>/dev/null || true
+        cp build/bin/*.js web-dist/ 2>/dev/null || true
+        cp build/bin/*.wasm web-dist/ 2>/dev/null || true
+        cp build/bin/*.data web-dist/ 2>/dev/null || true
+        cp -r assets web-dist/ 2>/dev/null || true
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SimpleTDCGame-Web
+        path: web-dist/
+
+  #------------------------------------------------------------------------------------------------
+  # Create Release (on version tags)
+  #------------------------------------------------------------------------------------------------
+  release:
+    name: Create Release
+    needs: [build-windows-msvc, build-windows-mingw, build-linux, build-macos, build-web]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Prepare Release Packages
+      run: |
+        mkdir -p release
+        
+        # Windows MSVC
+        cd artifacts/SimpleTDCGame-Windows-MSVC
+        zip -r ../../release/SimpleTDCGame-Windows-MSVC.zip .
+        cd ../..
+        
+        # Windows MinGW
+        cd artifacts/SimpleTDCGame-Windows-MinGW
+        zip -r ../../release/SimpleTDCGame-Windows-MinGW.zip .
+        cd ../..
+        
+        # Linux
+        cd artifacts/SimpleTDCGame-Linux
+        chmod +x SimpleTDCGame* NetHackGame* 2>/dev/null || true
+        tar -czvf ../../release/SimpleTDCGame-Linux.tar.gz .
+        cd ../..
+        
+        # macOS
+        cd artifacts/SimpleTDCGame-macOS
+        chmod +x SimpleTDCGame* NetHackGame* 2>/dev/null || true
+        tar -czvf ../../release/SimpleTDCGame-macOS.tar.gz .
+        cd ../..
+        
+        # Web
+        cd artifacts/SimpleTDCGame-Web
+        zip -r ../../release/SimpleTDCGame-Web.zip .
+        cd ../..
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release/*
+        draft: false
+        prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

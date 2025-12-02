@@ -2,6 +2,11 @@
 #include "Components.h"
 #include "AnimationSystem.h"
 #include "ResourceManager.h"
+#include "Scenes/TitleScene.h"
+#include "Scenes/HomeScene.h"
+#include "Scenes/TDGameScene.h"
+#include "Scenes/TDTestGameScene.h"
+#include "Scenes/NethackGameScene.h"
 #include <iostream>
 #include <memory>
 
@@ -134,7 +139,7 @@ public:
 // TestScene作成関数の前方宣言
 std::unique_ptr<Core::IScene> CreateTestScene();
 
-Game::Game() 
+::Game::Game() 
     : sceneManager_(Core::SceneManager::GetInstance()),
       configManager_(Core::ConfigManager::GetInstance()),
       inputManager_(Core::InputManager::GetInstance()),
@@ -144,7 +149,7 @@ Game::Game()
       screenHeight_(600), 
       windowTitle_("Simple TDC Game") {
     
-    LoadConfig();
+    this->LoadConfig();
     InitWindow(screenWidth_, screenHeight_, windowTitle_.c_str());
     SetTargetFPS(60);
     
@@ -152,19 +157,18 @@ Game::Game()
     // フォントパスは assets/fonts/NotoSansJP-Medium.ttf を想定
     uiManager_.Initialize("assets/fonts/NotoSansJP-Medium.ttf", 18.0f);
     
-    InitializeScenes();
+    this->InitializeScenes();
     
-    // 起動時にSampleSceneへ遷移
-    sceneManager_.ChangeScene("sample");
+    // 起動時はタイトルシーンへ遷移（InitializeScenes()内で設定済み）
 }
 
-Game::~Game() {
+::Game::~Game() {
     // UIマネージャーの終了
     uiManager_.Shutdown();
     CloseWindow();
 }
 
-void Game::LoadConfig() {
+void ::Game::LoadConfig() {
     try {
         configManager_.LoadConfig("assets/config.json");
         
@@ -183,15 +187,30 @@ void Game::LoadConfig() {
     }
 }
 
-void Game::InitializeScenes() {
+void ::Game::InitializeScenes() {
     // �T���v���V�[����o�^
+    // タイトルシーン
+    sceneManager_.RegisterScene("title", std::make_unique<Scenes::TitleScene>());
+    
+    // ホームシーン
+    sceneManager_.RegisterScene("home", std::make_unique<Scenes::HomeScene>());
+    
+    // ゲームシーン
+    sceneManager_.RegisterScene("td_game", std::make_unique<Scenes::TDGameScene>());
+    sceneManager_.RegisterScene("td_test", std::make_unique<Scenes::TDTestGameScene>());
+    sceneManager_.RegisterScene("nethack", std::make_unique<Scenes::NethackGameScene>());
+    
+    // 既存のシーン（後方互換性のため）
     sceneManager_.RegisterScene("sample", std::make_unique<SampleScene>());
     sceneManager_.RegisterScene("test", CreateTestScene());
+    
+    // 初期シーンをタイトルに設定
+    sceneManager_.ChangeScene("title");
     
     std::cout << "Scenes initialized" << std::endl;
 }
 
-void Game::Run() {
+void ::Game::Run() {
     while (!WindowShouldClose() && isRunning_) {
         float deltaTime = GetFrameTime();
         
@@ -211,7 +230,7 @@ void Game::Run() {
     }
 }
 
-void Game::Render() {
+void ::Game::Render() {
     BeginDrawing();
     ClearBackground(RAYWHITE);
     
@@ -234,4 +253,17 @@ void Game::Render() {
     uiManager_.EndImGui();
     
     EndDrawing();
+}
+
+void ::Game::Update(float deltaTime) {
+    // シーン変更処理
+    sceneManager_.ProcessSceneChange(registry_);
+    
+    // 現在のシーンを更新
+    sceneManager_.UpdateCurrentScene(registry_, deltaTime);
+    
+    // ESC キーで終了
+    if (inputManager_.IsKeyPressed(KEY_ESCAPE)) {
+        isRunning_ = false;
+    }
 }

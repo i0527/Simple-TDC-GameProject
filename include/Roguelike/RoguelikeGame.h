@@ -58,11 +58,14 @@ public:
     
     /**
      * @brief ゲームを初期化
+     * @param skipWindowInit ウィンドウ初期化をスキップするか（シーン統合用）
      */
-    bool Initialize() {
+    bool Initialize(bool skipWindowInit = false) {
         // ウィンドウ初期化
-        InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Roguelike RPG");
-        SetTargetFPS(60);
+        if (!skipWindowInit) {
+            InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Roguelike RPG");
+            SetTargetFPS(60);
+        }
         
         // 乱数初期化
         std::srand(static_cast<unsigned int>(std::time(nullptr)));
@@ -473,8 +476,9 @@ private:
         AddMessage(TextFormat("階段を昇った。地下%d階。", currentFloor_));
     }
     
+public:
     /**
-     * @brief ゲーム更新
+     * @brief ゲーム更新（シーン統合用）
      */
     void Update() {
         // ゲームオーバーチェック
@@ -894,6 +898,16 @@ private:
      */
     void Render() {
         BeginDrawing();
+        RenderContent();
+        EndDrawing();
+    }
+    
+public:
+    /**
+     * @brief ゲーム描画（BeginDrawing/EndDrawingなし）
+     * シーン統合用のメソッド
+     */
+    void RenderContent() {
         ClearBackground(BLACK);
         
         // プレイヤー位置をカメラ中心に
@@ -939,8 +953,6 @@ private:
         
         // デバッグUI描画（操作説明付き）
         RenderDebugUI();
-        
-        EndDrawing();
     }
     
     /**
