@@ -36,6 +36,7 @@ if(MSVC)
     message(STATUS "Compiler: MSVC ${MSVC_VERSION}")
 else()
     # MinGW/Clang on Windows
+    # Note: This block only runs on Windows (due to WIN32 check above)
     add_compile_options(-finput-charset=UTF-8)
     add_compile_options(-fexec-charset=UTF-8)
     add_compile_definitions(NOMINMAX)
@@ -142,6 +143,8 @@ target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 # メイン実行ファイル: SimpleTDCGame
 # ============================================================================
 # ソースファイルを明示的に指定（GLOB_RECURSEによる問題を回避）
+# 注意: FileUtils.cpp, GameNew.cpp, main_new.cpp, main_roguelike.cppは
+#       別ターゲット（SimpleTDCGame_NewArch, NetHackGame）用のため除外
 set(MAIN_SOURCES
     src/main.cpp
     src/Game.cpp
