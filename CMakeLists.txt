@@ -9,7 +9,7 @@ if(NOT WIN32)
 endif()
 
 # ============================================================================
-# コンパイラ設定 (MSVC)
+# コンパイラ設定 (MSVC/MinGW/Clang)
 # ============================================================================
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,19 +23,29 @@ if(MSVC)
     add_compile_options(/bigobj)
     # 並列コンパイル時のファイルロック回避
     add_compile_options(/FS)
+    # 並列コンパイル
+    add_compile_options(/MP)
     # Windows API定義
     add_compile_definitions(NOMINMAX)
     add_compile_definitions(WIN32_LEAN_AND_MEAN)
     # 警告レベル設定
     add_compile_options(/W4)
-    # エラーとして扱う警告
+    # 警告をエラーとして扱わない（/WXの無効化）
     add_compile_options(/WX-)
     
     message(STATUS "Compiler: MSVC ${MSVC_VERSION}")
-    message(STATUS "C++ Standard: C++17")
 else()
-    message(WARNING "MSVC compiler is recommended. Other compilers may not work correctly.")
+    # MinGW/Clang on Windows
+    # Note: This block only runs on Windows (due to WIN32 check above)
+    add_compile_options(-finput-charset=UTF-8)
+    add_compile_options(-fexec-charset=UTF-8)
+    add_compile_definitions(NOMINMAX)
+    add_compile_definitions(WIN32_LEAN_AND_MEAN)
+    
+    message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
 endif()
+
+message(STATUS "C++ Standard: C++${CMAKE_CXX_STANDARD}")
 
 # ============================================================================
 # ビルド設定
@@ -61,6 +71,7 @@ FetchContent_Declare(
     EnTT
     GIT_REPOSITORY https://github.com/skypjack/entt.git
     GIT_TAG v3.12.2
+    GIT_SHALLOW TRUE
 )
 
 # nlohmann/json
@@ -68,13 +79,17 @@ FetchContent_Declare(
     json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG v3.11.2
+    GIT_SHALLOW TRUE
 )
 
 # Raylib
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
     GIT_TAG 5.0
+    GIT_SHALLOW TRUE
 )
 
 # raygui (immediate mode GUI library for raylib)
@@ -82,6 +97,7 @@ FetchContent_Declare(
     raygui
     GIT_REPOSITORY https://github.com/raysan5/raygui.git
     GIT_TAG 4.0
+    GIT_SHALLOW TRUE
 )
 
 # Dear ImGui
@@ -89,6 +105,7 @@ FetchContent_Declare(
     dearimgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG v1.90.1
+    GIT_SHALLOW TRUE
 )
 
 # rlImGui (Dear ImGui integration for raylib)
@@ -99,6 +116,7 @@ FetchContent_Declare(
 )
 
 # 依存ライブラリを取得
+message(STATUS "Fetching dependencies (this may take a while on first run)...")
 FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui)
 
 # ============================================================================
@@ -124,21 +142,29 @@ target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 # ============================================================================
 # メイン実行ファイル: SimpleTDCGame
 # ============================================================================
-# ソースファイル収集
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE HEADERS "include/*.h" "include/*.hpp")
-
-# 除外ファイル（別ターゲット用）
-list(FILTER SOURCES EXCLUDE REGEX "src/Roguelike/.*")
-list(FILTER SOURCES EXCLUDE REGEX "src/main_roguelike\\.cpp")
-list(FILTER SOURCES EXCLUDE REGEX "src/main_new\\.cpp")
-list(FILTER HEADERS EXCLUDE REGEX "include/Roguelike/.*")
+# ソースファイルを明示的に指定（GLOB_RECURSEによる問題を回避）
+# 注意: FileUtils.cpp, GameNew.cpp, main_new.cpp, main_roguelike.cppは
+#       別ターゲット（SimpleTDCGame_NewArch, NetHackGame）用のため除外
+set(MAIN_SOURCES
+    src/main.cpp
+    src/Game.cpp
+    src/ConfigManager.cpp
+    src/InputManager.cpp
+    src/SceneManager.cpp
+    src/SystemManager.cpp
+    src/Systems.cpp
+    src/ResourceManager.cpp
+    src/UIManager.cpp
+    src/TestScene.cpp
+    src/Scenes/TitleScene.cpp
+    src/Scenes/HomeScene.cpp
+    src/Scenes/TDGameScene.cpp
+    src/Scenes/TDTestGameScene.cpp
+    src/Scenes/NethackGameScene.cpp
+)
 
 # 実行ファイル作成
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
-
-# TestScene.cppを明示的に追加（GLOBで拾えない場合の保険）
-target_sources(${PROJECT_NAME} PRIVATE src/TestScene.cpp)
+add_executable(${PROJECT_NAME} ${MAIN_SOURCES})
 
 # インクルードディレクトリ
 target_include_directories(${PROJECT_NAME} 
@@ -202,12 +228,10 @@ add_custom_command(TARGET SimpleTDCGame_NewArch POST_BUILD
 
 # ============================================================================
 # NetHack風ローグライク用ターゲット: NetHackGame
+# (Roguelikeモジュールはヘッダーオンリーのため、main_roguelike.cppのみ)
 # ============================================================================
-file(GLOB_RECURSE ROGUELIKE_SOURCES "src/Roguelike/*.cpp")
-
 set(NETHACK_SOURCES
     src/main_roguelike.cpp
-    ${ROGUELIKE_SOURCES}
 )
 
 add_executable(NetHackGame ${NETHACK_SOURCES})
