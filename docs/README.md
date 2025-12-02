@@ -4,7 +4,24 @@
 
 ---
 
+## ⚡ クイックスタート
+
+**新規参加者はこちらから:**
+1. 📊 **[EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md)** - プロジェクト概要と重要な推奨事項（5分で読める）
+2. 📖 [CODE_ANALYSIS.md](./CODE_ANALYSIS.md) - 詳細な分析レポート
+3. 📋 [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) - 3プロジェクトの統合状況
+
+---
+
 ## 📚 ドキュメント構成
+
+### 📊 エグゼクティブサマリー
+
+**最初に読むべきドキュメント**
+
+| ドキュメント | 内容 | 対象読者 |
+|-------------|------|---------|
+| **[EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md)** | プロジェクト分析の要約<br>・主要な発見と課題<br>・重要な推奨事項<br>・実装ロードマップ<br>・成功のための鍵 | **全員** |
 
 ### 🏗️ アーキテクチャ・分析
 
