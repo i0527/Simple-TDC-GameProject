@@ -9,9 +9,9 @@ HomeScene::HomeScene()
     : selectedIndex_(0)
     , buttonAnimationTime_(0.0f) {
     
-    // メニューオプションを初期化
-    menuOptions_.push_back({"TDゲーム本体", "td_game", {0, 0, 0, 0}});
-    menuOptions_.push_back({"TDテストゲーム", "td_test", {0, 0, 0, 0}});
+    // メニューオプションを�E期化
+    menuOptions_.push_back({"TDゲーム本佁E, "td_game", {0, 0, 0, 0}});
+    menuOptions_.push_back({"TDチE��トゲーム", "td_test", {0, 0, 0, 0}});
     menuOptions_.push_back({"Nethack風ゲーム", "nethack", {0, 0, 0, 0}});
 }
 
@@ -20,7 +20,7 @@ void HomeScene::Initialize(entt::registry& registry) {
     selectedIndex_ = 0;
     buttonAnimationTime_ = 0.0f;
     
-    // ボタンの位置とサイズを計算
+    // ボタンの位置とサイズを計箁E
     int screenWidth = GetScreenWidth();
     int screenHeight = GetScreenHeight();
     
@@ -52,7 +52,7 @@ void HomeScene::Update(entt::registry& registry, float deltaTime) {
 void HomeScene::UpdateInput() {
     Core::InputManager& inputManager = Core::InputManager::GetInstance();
     
-    // キーボード操作
+    // キーボ�Eド操佁E
     if (inputManager.IsKeyPressed(KEY_UP) || inputManager.IsKeyPressed(KEY_W)) {
         selectedIndex_--;
         if (selectedIndex_ < 0) {
@@ -67,19 +67,19 @@ void HomeScene::UpdateInput() {
         }
     }
     
-    // Enterキーで決定
+    // Enterキーで決宁E
     if (inputManager.IsKeyPressed(KEY_ENTER) || inputManager.IsKeyPressed(KEY_SPACE)) {
         if (selectedIndex_ >= 0 && selectedIndex_ < static_cast<int>(menuOptions_.size())) {
             Core::SceneManager::GetInstance().ChangeScene(menuOptions_[selectedIndex_].sceneName);
         }
     }
     
-    // ESCキーで終了
+    // ESCキーで終亁E
     if (inputManager.IsKeyPressed(KEY_ESCAPE)) {
-        // ゲーム終了はGameクラスで処理される
+        // ゲーム終亁E�EGameクラスで処琁E��れる
     }
     
-    // マウス操作
+    // マウス操佁E
     Vector2 mousePos = GetMousePosition();
     for (size_t i = 0; i < menuOptions_.size(); i++) {
         if (IsPointInRectangle(mousePos, menuOptions_[i].buttonRect)) {
@@ -100,7 +100,7 @@ void HomeScene::Render(entt::registry& registry) {
     ClearBackground(Color{30, 30, 40, 255});
     
     // タイトル
-    const char* titleText = "ゲーム選択";
+    const char* titleText = "ゲーム選抁E;
     int titleFontSize = 48;
     Vector2 titleSize = MeasureTextEx(GetFontDefault(), titleText, titleFontSize, 2.0f);
     Vector2 titlePos = {
@@ -112,8 +112,8 @@ void HomeScene::Render(entt::registry& registry) {
     // メニューボタンを描画
     RenderMenu();
     
-    // 操作説明
-    const char* helpText = "[↑↓]選択  [Enter]決定  [ESC]終了";
+    // 操作説昁E
+    const char* helpText = "[↑�E]選抁E [Enter]決宁E [ESC]終亁E;
     int helpFontSize = 18;
     Vector2 helpSize = MeasureTextEx(GetFontDefault(), helpText, helpFontSize, 1.0f);
     Vector2 helpPos = {
@@ -131,7 +131,7 @@ void HomeScene::RenderMenu() {
         // ボタン背景
         Color bgColor = isSelected ? Color{80, 100, 150, 255} : Color{50, 50, 70, 255};
         
-        // 選択時のアニメーション効果
+        // 選択時のアニメーション効极E
         if (isSelected) {
             float pulse = (sinf(buttonAnimationTime_ * 4.0f) + 1.0f) / 2.0f;
             bgColor.r = static_cast<unsigned char>(80 + pulse * 30);
@@ -142,7 +142,7 @@ void HomeScene::RenderMenu() {
         DrawRectangleRounded(option.buttonRect, 0.2f, 8, bgColor);
         DrawRectangleRoundedLines(option.buttonRect, 0.2f, 8, 2.0f, isSelected ? YELLOW : WHITE);
         
-        // ボタンテキスト
+        // ボタンチE��スチE
         int fontSize = 28;
         Vector2 textSize = MeasureTextEx(GetFontDefault(), option.label.c_str(), fontSize, 1.0f);
         Vector2 textPos = {
