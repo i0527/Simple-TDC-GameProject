@@ -1,4 +1,6 @@
 #include "Game.h"
+#include "ComponentsNew.h"
+// Note: SpriteAnimation, SpriteFrame, SpriteTexture are still in Components namespace (legacy)
 #include "Components.h"
 #include "AnimationSystem.h"
 #include "ResourceManager.h"
@@ -10,7 +12,7 @@
 #include <iostream>
 #include <memory>
 
-// �T���v���V�[������
+// Sample Scene class
 class SampleScene : public Core::IScene {
 public:
     void Initialize(entt::registry& registry) override {
@@ -19,24 +21,24 @@ public:
         Resources::ResourceManager& rm = Resources::ResourceManager::GetInstance();
         auto& imageMgr = rm.GetImageManager();
         
-        // === すべてのキャラクターJSONを自動読み込み ===
+        // Load all character JSON automatically
         imageMgr.LoadAllSpriteSheets("assets/json", "assets/atlas");
         
-        // ロードされたスプライトシート一覧を取得
+        // Get loaded sprite sheet list
         std::vector<std::string> allSprites = imageMgr.GetAllSpriteSheetNames();
         std::cout << "Loaded " << allSprites.size() << " sprite sheets:" << std::endl;
         for (const auto& name : allSprites) {
             std::cout << "  - " << name << std::endl;
         }
         
-        // === cupslime (矢印キー操作) ===
+        // === cupslime (Arrow Key control) ===
         std::vector<std::string> cupslimeFrames = imageMgr.GetAllFrameNames("cupslime");
         if (!cupslimeFrames.empty()) {
             auto cupslime = registry.create();
-            registry.emplace<Components::Position>(cupslime, 300.0f, 300.0f);
-            registry.emplace<Components::Velocity>(cupslime, 0.0f, 0.0f);
-            registry.emplace<Components::Player>(cupslime);
-            registry.emplace<Components::Scale>(cupslime, 1.75f, 1.75f);
+            registry.emplace<Core::Components::Position>(cupslime, 300.0f, 300.0f);
+            registry.emplace<Core::Components::Velocity>(cupslime, 0.0f, 0.0f);
+            registry.emplace<GameComponents::PlayerControlled>(cupslime);
+            registry.emplace<Core::Components::Scale>(cupslime, 1.75f, 1.75f);
             
             auto& anim = registry.emplace<Components::SpriteAnimation>(cupslime);
             anim.spriteName = "cupslime";
@@ -55,14 +57,14 @@ public:
             std::cout << "cupslime loaded with " << cupslimeFrames.size() << " frames" << std::endl;
         }
         
-        // === yodarehaki (WASD操作) ===
+        // === yodarehaki (WASD control) ===
         std::vector<std::string> yodarehakiFrames = imageMgr.GetAllFrameNames("yodarehaki");
         if (!yodarehakiFrames.empty()) {
             auto yodarehaki = registry.create();
-            registry.emplace<Components::Position>(yodarehaki, 600.0f, 300.0f);
-            registry.emplace<Components::Velocity>(yodarehaki, 0.0f, 0.0f);
-            registry.emplace<Components::WASDPlayer>(yodarehaki);
-            registry.emplace<Components::Scale>(yodarehaki, 1.75f, 1.75f);
+            registry.emplace<Core::Components::Position>(yodarehaki, 600.0f, 300.0f);
+            registry.emplace<Core::Components::Velocity>(yodarehaki, 0.0f, 0.0f);
+            registry.emplace<GameComponents::WASDControlled>(yodarehaki);
+            registry.emplace<Core::Components::Scale>(yodarehaki, 1.75f, 1.75f);
             
             auto& anim = registry.emplace<Components::SpriteAnimation>(yodarehaki);
             anim.spriteName = "yodarehaki";
@@ -83,14 +85,14 @@ public:
     }
     
     void Update(entt::registry& registry, float deltaTime) override {
-        // ���͏���
+        // Input processing
         Core::InputManager& inputManager = Core::InputManager::GetInstance();
         inputManager.Update();
         
-        // ���L�[: Player�icupslime���܂ށj�𑀍�
-        auto arrowView = registry.view<Components::Position, Components::Velocity, Components::Player>();
+        // Arrow Keys: Control Player (including cupslime)
+        auto arrowView = registry.view<Core::Components::Position, Core::Components::Velocity, GameComponents::PlayerControlled>();
         for (auto entity : arrowView) {
-            auto& vel = arrowView.get<Components::Velocity>(entity);
+            auto& vel = arrowView.get<Core::Components::Velocity>(entity);
             
             vel.dx = 0.0f;
             vel.dy = 0.0f;
@@ -101,32 +103,32 @@ public:
             if (inputManager.IsKeyDown(KEY_UP)) vel.dy = -200.0f;
         }
         
-        // WASD: yodarehaki �𑀍�
-        auto wasdView = registry.view<Components::Position, Components::Velocity, Components::WASDPlayer>();
+        // WASD: Control yodarehaki
+        auto wasdView = registry.view<Core::Components::Position, Core::Components::Velocity, GameComponents::WASDControlled>();
         for (auto entity : wasdView) {
-            auto& vel = wasdView.get<Components::Velocity>(entity);
+            auto& vel = wasdView.get<Core::Components::Velocity>(entity);
             
             vel.dx = 0.0f;
             vel.dy = 0.0f;
             
-            if (IsKeyDown(KEY_D)) vel.dx = 200.0f;   // �E
-            if (IsKeyDown(KEY_A)) vel.dx = -200.0f;  // ��
-            if (IsKeyDown(KEY_S)) vel.dy = 200.0f;   // ��
-            if (IsKeyDown(KEY_W)) vel.dy = -200.0f;  // ��
+            if (IsKeyDown(KEY_D)) vel.dx = 200.0f;   // Right
+            if (IsKeyDown(KEY_A)) vel.dx = -200.0f;  // Left
+            if (IsKeyDown(KEY_S)) vel.dy = 200.0f;   // Down
+            if (IsKeyDown(KEY_W)) vel.dy = -200.0f;  // Up
         }
         
-        // �ړ��X�V
+        // Movement update
         Systems::MovementSystem::Update(registry, deltaTime);
         
-        // �A�j���[�V�����X�V
+        // Animation update
         Systems::AnimationSystem::Update(registry, deltaTime);
     }
     
     void Render(entt::registry& registry) override {
-        // スプライト描画(cupslime + yodarehaki)
+        // Sprite rendering (cupslime + yodarehaki)
         Systems::SpriteRenderSystem::Render(registry);
         
-        // 効率化：ヘルパー関数を使用
+        // Helper functions for text rendering
         UI::DrawText(u8"Arrow Keys: Move cupslime (1.75x scale, animated)", {10, 100}, 16, DARKGRAY);
         UI::DrawText(u8"WASD: Move yodarehaki (1.75x scale, animated)", {10, 120}, 16, DARKGRAY);
     }
@@ -136,10 +138,10 @@ public:
     }
 };
 
-// TestScene作成関数の前方宣言
+// Forward declaration for TestScene creation function
 std::unique_ptr<Core::IScene> CreateTestScene();
 
-::Game::Game() 
+Game::Game() 
     : sceneManager_(Core::SceneManager::GetInstance()),
       configManager_(Core::ConfigManager::GetInstance()),
       inputManager_(Core::InputManager::GetInstance()),
@@ -153,26 +155,26 @@ std::unique_ptr<Core::IScene> CreateTestScene();
     InitWindow(screenWidth_, screenHeight_, windowTitle_.c_str());
     SetTargetFPS(60);
     
-    // UIマネージャーの初期化（日本語フォント対応）
-    // フォントパスは assets/fonts/NotoSansJP-Medium.ttf を想定
+    // Initialize UI Manager (Japanese font support)
+    // Font path assumes assets/fonts/NotoSansJP-Medium.ttf
     uiManager_.Initialize("assets/fonts/NotoSansJP-Medium.ttf", 18.0f);
     
     this->InitializeScenes();
     
-    // 起動時はタイトルシーンへ遷移（InitializeScenes()内で設定済み）
+    // On startup, transition to title scene (already set in InitializeScenes())
 }
 
-::Game::~Game() {
-    // UIマネージャーの終了
+Game::~Game() {
+    // Shutdown UI Manager
     uiManager_.Shutdown();
     CloseWindow();
 }
 
-void ::Game::LoadConfig() {
+void Game::LoadConfig() {
     try {
         configManager_.LoadConfig("assets/config.json");
         
-        // �E�B���h�E�ݒ�̓ǂݍ���
+        // Load window settings
         screenWidth_ = configManager_.GetInt("window.width", 800);
         screenHeight_ = configManager_.GetInt("window.height", 600);
         windowTitle_ = configManager_.GetString("window.title", "Simple TDC Game");
@@ -180,74 +182,74 @@ void ::Game::LoadConfig() {
         std::cout << "Config loaded: " << screenWidth_ << "x" << screenHeight_ << std::endl;
     } catch (const Core::ConfigException& e) {
         std::cerr << "Config error: " << e.what() << std::endl;
-        // �f�t�H���g�l���g�p
+        // Use default values
     } catch (const std::exception& e) {
         std::cerr << "Error loading config: " << e.what() << std::endl;
-        // �f�t�H���g�l���g�p
+        // Use default values
     }
 }
 
-void ::Game::InitializeScenes() {
-    // �T���v���V�[����o�^
-    // タイトルシーン
+void Game::InitializeScenes() {
+    // Register scenes
+    // Title Scene
     sceneManager_.RegisterScene("title", std::make_unique<Scenes::TitleScene>());
     
-    // ホームシーン
+    // Home Scene
     sceneManager_.RegisterScene("home", std::make_unique<Scenes::HomeScene>());
     
-    // ゲームシーン
+    // Game Scenes
     sceneManager_.RegisterScene("td_game", std::make_unique<Scenes::TDGameScene>());
     sceneManager_.RegisterScene("td_test", std::make_unique<Scenes::TDTestGameScene>());
     sceneManager_.RegisterScene("nethack", std::make_unique<Scenes::NethackGameScene>());
     
-    // 既存のシーン（後方互換性のため）
+    // Legacy scenes (for backward compatibility)
     sceneManager_.RegisterScene("sample", std::make_unique<SampleScene>());
     sceneManager_.RegisterScene("test", CreateTestScene());
     
-    // 初期シーンをタイトルに設定
+    // Set initial scene to title
     sceneManager_.ChangeScene("title");
     
     std::cout << "Scenes initialized" << std::endl;
 }
 
-void ::Game::Run() {
+void Game::Run() {
     while (!WindowShouldClose() && isRunning_) {
         float deltaTime = GetFrameTime();
         
-        // �V�[���J�ڏ���
+        // Scene change processing
         sceneManager_.ProcessSceneChange(registry_);
         
-        // ���݂̃V�[�����X�V
+        // Update current scene
         sceneManager_.UpdateCurrentScene(registry_, deltaTime);
         
-        // �`��
+        // Render
         Render();
         
-        // ESC �L�[�ŏI��
+        // ESC key to exit
         if (inputManager_.IsKeyPressed(KEY_ESCAPE)) {
             isRunning_ = false;
         }
     }
 }
 
-void ::Game::Render() {
+void Game::Render() {
     BeginDrawing();
     ClearBackground(RAYWHITE);
     
-    // === 1. ゲーム世界・シーン描画 ===
+    // === 1. Game World / Scene Rendering ===
     sceneManager_.RenderCurrentScene(registry_);
     
-    // === 2. デバッグ情報表示（効率化版） ===
+    // === 2. Debug Info Display ===
     UI::DrawText(u8"Simple TDC Game - ESC to Exit", {10, 10}, 20, DARKGRAY);
     DrawFPS(10, 40);
     
     std::string sceneText = "Current Scene: " + sceneManager_.GetCurrentSceneName();
     UI::DrawText(sceneText.c_str(), {10, 70}, 16, DARKGRAY);
     
-    // === 3. UIManager描画（raygui + ImGui） ===
+    // === 3. UIManager Rendering (raygui + ImGui) ===
     uiManager_.DrawSampleUI();
     
-    // === 4. ImGui描画（1回のBegin/Endで全ウィンドウ） ===
+    // === 4. ImGui Rendering (single Begin/End for all windows) ===
     uiManager_.BeginImGui();
     uiManager_.DrawDebugWindow(registry_);
     uiManager_.EndImGui();
@@ -255,14 +257,14 @@ void ::Game::Render() {
     EndDrawing();
 }
 
-void ::Game::Update(float deltaTime) {
-    // シーン変更処理
+void Game::Update(float deltaTime) {
+    // Scene change processing
     sceneManager_.ProcessSceneChange(registry_);
     
-    // 現在のシーンを更新
+    // Update current scene
     sceneManager_.UpdateCurrentScene(registry_, deltaTime);
     
-    // ESC キーで終了
+    // ESC key to exit
     if (inputManager_.IsKeyPressed(KEY_ESCAPE)) {
         isRunning_ = false;
     }

@@ -15,16 +15,16 @@ NethackGameScene::NethackGameScene()
 void NethackGameScene::Initialize(entt::registry& registry) {
     std::cout << "Nethack Game Scene Initialized" << std::endl;
     
-    // 既存のウィンドウ情報を保存
-    // 注意: RaylibにはGetWindowTitle()がないため、固定値を保存
+    // 既存�Eウィンドウ惁E��を保孁E
+    // 注愁E RaylibにはGetWindowTitle()がなぁE��め、固定値を保孁E
     originalWindowTitle_ = "Simple TDC Game";
     originalScreenWidth_ = GetScreenWidth();
     originalScreenHeight_ = GetScreenHeight();
     
-    // RoguelikeGameインスタンスを作成
+    // RoguelikeGameインスタンスを作�E
     game_ = std::make_unique<Roguelike::RoguelikeGame>();
     
-    // 既にウィンドウが開いているため、ウィンドウ初期化をスキップ
+    // 既にウィンドウが開ぁE��ぁE��ため、ウィンドウ初期化をスキチE�E
     if (!game_->Initialize(true)) {
         std::cerr << "Failed to initialize Nethack game" << std::endl;
         return;
@@ -36,7 +36,7 @@ void NethackGameScene::Initialize(entt::registry& registry) {
 void NethackGameScene::Update(entt::registry& registry, float deltaTime) {
     if (!isInitialized_ || !game_) return;
     
-    // ESCキーでホームシーンへ戻る
+    // ESCキーでホ�Eムシーンへ戻めE
     Core::InputManager& inputManager = Core::InputManager::GetInstance();
     inputManager.Update();
     
@@ -45,17 +45,17 @@ void NethackGameScene::Update(entt::registry& registry, float deltaTime) {
         return;
     }
     
-    // RoguelikeGameのUpdate()を呼び出し
-    // 注意: RoguelikeGame::Update()は引数なしなので、deltaTimeは使用されません
-    // ただし、RoguelikeGameは内部でGetFrameTime()を使用している可能性があります
+    // RoguelikeGameのUpdate()を呼び出ぁE
+    // 注愁E RoguelikeGame::Update()は引数なしなので、deltaTimeは使用されません
+    // ただし、RoguelikeGameは冁E��でGetFrameTime()を使用してぁE��可能性がありまぁE
     game_->Update();
 }
 
 void NethackGameScene::Render(entt::registry& registry) {
     if (!isInitialized_ || !game_) return;
     
-    // RenderContent()はBeginDrawing()とEndDrawing()を含まない
-    // Game::Render()で既にBeginDrawing()が呼ばれているため、ここではRenderContent()を呼ぶ
+    // RenderContent()はBeginDrawing()とEndDrawing()を含まなぁE
+    // Game::Render()で既にBeginDrawing()が呼ばれてぁE��ため、ここではRenderContent()を呼ぶ
     game_->RenderContent();
 }
 
@@ -63,20 +63,20 @@ void NethackGameScene::Shutdown(entt::registry& registry) {
     std::cout << "Nethack Game Scene Shutdown" << std::endl;
     
     if (isInitialized_ && game_) {
-        // 注意: RoguelikeGame::Shutdown()はCloseWindow()を呼びますが、
-        // これは既存のウィンドウを閉じてしまうため、呼ばないようにします
-        // 代わりに、必要なクリーンアップのみを実行します
+        // 注愁E RoguelikeGame::Shutdown()はCloseWindow()を呼びますが、E
+        // これは既存�Eウィンドウを閉じてしまぁE��め、呼ばなぁE��ぁE��しまぁE
+        // 代わりに、忁E��なクリーンアチE�Eのみを実行しまぁE
         
-        // ウィンドウタイトルを元に戻す
+        // ウィンドウタイトルを�Eに戻ぁE
         if (!originalWindowTitle_.empty()) {
             SetWindowTitle(originalWindowTitle_.c_str());
         }
         
-        // ゲームのクリーンアップ（CloseWindow()を除く）
-        // 残念ながら、RoguelikeGame::Shutdown()はprivateではないので、
-        // 直接呼び出すことができますが、CloseWindow()が含まれています
-        // この問題を回避するため、game_をリセットするだけにします
-        // 実際のクリーンアップはデストラクタで行われます
+        // ゲームのクリーンアチE�E�E�EloseWindow()を除く！E
+        // 残念ながら、RoguelikeGame::Shutdown()はprivateではなぁE�Eで、E
+        // 直接呼び出すことができますが、CloseWindow()が含まれてぁE��ぁE
+        // こ�E問題を回避するため、game_をリセチE��するだけにしまぁE
+        // 実際のクリーンアチE�EはチE��トラクタで行われまぁE
         
         game_.reset();
         isInitialized_ = false;

@@ -1,16 +1,18 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include "ComponentsNew.h"
+// Note: SpriteAnimation, SpriteFrame, SpriteTexture are still in Components namespace (legacy)
 #include "Components.h"
 #include "ResourceManager.h"
 #include <raylib.h>
 
 namespace Systems {
-    // ƒXƒvƒ‰ƒCƒgƒAƒjƒ[ƒVƒ‡ƒ“ƒVƒXƒeƒ€
-    // SpriteAnimation ƒRƒ“ƒ|[ƒlƒ“ƒg‚ğ‚ÂƒGƒ“ƒeƒBƒeƒB‚ÌƒAƒjƒ[ƒVƒ‡ƒ“is‚ğŠÇ—
+    // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Vï¿½Xï¿½eï¿½ï¿½
+    // SpriteAnimation ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ÂƒGï¿½ï¿½ï¿½eï¿½Bï¿½eï¿½Bï¿½ÌƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½iï¿½sï¿½ï¿½ï¿½Ç—ï¿½
     class AnimationSystem {
     public:
-        // ƒAƒjƒ[ƒVƒ‡ƒ“‚ğXVi–ˆƒtƒŒ[ƒ€ŒÄ‚Ño‚µj
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Vï¿½iï¿½ï¿½ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½ï¿½j
         static void Update(entt::registry& registry, float deltaTime) {
             auto view = registry.view<Components::SpriteAnimation, Components::SpriteFrame>();
             Resources::ResourceManager& rm = Resources::ResourceManager::GetInstance();
@@ -20,25 +22,25 @@ namespace Systems {
                 auto& anim = view.get<Components::SpriteAnimation>(entity);
                 auto& sprite = view.get<Components::SpriteFrame>(entity);
 
-                // Ä¶’†‚Å‚È‚¢ê‡‚ÍƒXƒLƒbƒv
+                // ï¿½Äï¿½ï¿½ï¿½ï¿½Å‚È‚ï¿½ï¿½ê‡ï¿½ÍƒXï¿½Lï¿½bï¿½v
                 if (!anim.isPlaying || anim.frames.empty()) {
                     continue;
                 }
 
-                // Œo‰ßŠÔ‚ğ‰ÁZ
+                // ï¿½oï¿½ßï¿½ï¿½Ô‚ï¿½ï¿½ï¿½ï¿½Z
                 anim.elapsedTime += deltaTime;
 
-                // Œ»İƒtƒŒ[ƒ€‚Ì duration ‚ğæ“¾
+                // ï¿½ï¿½ï¿½İƒtï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ duration ï¿½ï¿½ï¿½æ“¾
                 const auto& currentFrameName = anim.frames[anim.currentFrameIndex];
                 auto frameInfo = imageMgr.GetFrameInfo(currentFrameName);
-                float frameDuration = frameInfo.duration / 1000.0f; // ƒ~ƒŠ•b‚ğ•b‚É•ÏŠ·
+                float frameDuration = frameInfo.duration / 1000.0f; // ï¿½~ï¿½ï¿½ï¿½bï¿½ï¿½bï¿½É•ÏŠï¿½
 
-                // ƒtƒŒ[ƒ€ƒAƒjƒ[ƒVƒ‡ƒ“‚ği‚ß‚é
+                // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½ß‚ï¿½
                 if (anim.elapsedTime >= frameDuration) {
                     anim.elapsedTime -= frameDuration;
                     anim.currentFrameIndex++;
 
-                    // ƒ‹[ƒvˆ—
+                    // ï¿½ï¿½ï¿½[ï¿½vï¿½ï¿½ï¿½ï¿½
                     if (anim.currentFrameIndex >= anim.frames.size()) {
                         if (anim.isLooping) {
                             anim.currentFrameIndex = 0;
@@ -48,7 +50,7 @@ namespace Systems {
                         }
                     }
 
-                    // ƒXƒvƒ‰ƒCƒgƒtƒŒ[ƒ€î•ñ‚ğXV
+                    // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
                     const auto& newFrameName = anim.frames[anim.currentFrameIndex];
                     auto newFrameInfo = imageMgr.GetFrameInfo(newFrameName);
                     sprite.frameName = newFrameName;
@@ -57,7 +59,7 @@ namespace Systems {
             }
         }
 
-        // ƒAƒjƒ[ƒVƒ‡ƒ“‚ğŠJn
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Jï¿½n
         static void Play(entt::registry& registry, entt::entity entity, bool loop = true) {
             if (auto* anim = registry.try_get<Components::SpriteAnimation>(entity)) {
                 anim->isPlaying = true;
@@ -67,7 +69,7 @@ namespace Systems {
             }
         }
 
-        // ƒAƒjƒ[ƒVƒ‡ƒ“‚ğ’â~
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½~
         static void Stop(entt::registry& registry, entt::entity entity) {
             if (auto* anim = registry.try_get<Components::SpriteAnimation>(entity)) {
                 anim->isPlaying = false;
@@ -76,14 +78,14 @@ namespace Systems {
             }
         }
 
-        // ƒAƒjƒ[ƒVƒ‡ƒ“‚ğˆê’â~
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½êï¿½ï¿½~
         static void Pause(entt::registry& registry, entt::entity entity) {
             if (auto* anim = registry.try_get<Components::SpriteAnimation>(entity)) {
                 anim->isPlaying = false;
             }
         }
 
-        // ƒAƒjƒ[ƒVƒ‡ƒ“‚ğÄŠJ
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄŠJ
         static void Resume(entt::registry& registry, entt::entity entity) {
             if (auto* anim = registry.try_get<Components::SpriteAnimation>(entity)) {
                 anim->isPlaying = true;
@@ -91,12 +93,12 @@ namespace Systems {
         }
     };
 
-    // ƒXƒvƒ‰ƒCƒg•`‰æƒVƒXƒeƒ€
-    // SpriteFrame, SpriteTexture, Position ‚ğ‚ÂƒGƒ“ƒeƒBƒeƒB‚ğ•`‰æ
+    // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½`ï¿½ï¿½Vï¿½Xï¿½eï¿½ï¿½
+    // SpriteFrame, SpriteTexture, Position ï¿½ï¿½ï¿½ï¿½ï¿½ÂƒGï¿½ï¿½ï¿½eï¿½Bï¿½eï¿½Bï¿½ï¿½`ï¿½ï¿½
     class SpriteRenderSystem {
     public:
         static void Render(entt::registry& registry) {
-            auto view = registry.view<Components::Position, Components::SpriteFrame, Components::SpriteTexture>();
+            auto view = registry.view<Core::Components::Position, Components::SpriteFrame, Components::SpriteTexture>();
             Resources::ResourceManager& rm = Resources::ResourceManager::GetInstance();
             auto& texMgr = rm.GetTextureManager();
 
@@ -105,73 +107,73 @@ namespace Systems {
                 auto& sprite = view.get<Components::SpriteFrame>(entity);
                 auto& texRef = view.get<Components::SpriteTexture>(entity);
 
-                // ƒXƒP[ƒ‹æ“¾iƒfƒtƒHƒ‹ƒg 1.0j
+                // ï¿½Xï¿½Pï¿½[ï¿½ï¿½ï¿½æ“¾ï¿½iï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½g 1.0ï¿½j
                 float scaleX = 1.0f;
                 float scaleY = 1.0f;
-                if (auto* scale = registry.try_get<Components::Scale>(entity)) {
+                if (auto* scale = registry.try_get<Core::Components::Scale>(entity)) {
                     scaleX = scale->x;
                     scaleY = scale->y;
                 }
 
-                // ƒeƒNƒXƒ`ƒƒæ“¾
+                // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½æ“¾
                 try {
                     Texture2D texture = texMgr.GetTexture(texRef.textureName);
                     Rectangle src = sprite.sourceRect;
 
-                    // ƒtƒŒ[ƒ€‹éŒ`‚ª—LŒø‚©Šm”F
+                    // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½mï¿½F
                     if (src.width <= 0 || src.height <= 0) {
                         continue;
                     }
 
-                    // ƒXƒP[ƒŠƒ“ƒOŒã‚ÌƒTƒCƒYŒvZ
+                    // ï¿½Xï¿½Pï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½ÌƒTï¿½Cï¿½Yï¿½vï¿½Z
                     float scaledWidth = src.width * scaleX;
                     float scaledHeight = src.height * scaleY;
 
-                    // •`‰æˆÊ’uFƒtƒŒ[ƒ€‚ğ’†S‚É”z’u
+                    // ï¿½`ï¿½ï¿½Ê’uï¿½Fï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ğ’†Sï¿½É”zï¿½u
                     Vector2 destPos{ pos.x - scaledWidth * 0.5f, pos.y - scaledHeight * 0.5f };
 
-                    // ƒXƒP[ƒŠƒ“ƒOŒã‚Ì–Ú“I‹éŒ`
+                    // ï¿½Xï¿½Pï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½Ì–Ú“Iï¿½ï¿½`
                     Rectangle dest{ destPos.x, destPos.y, scaledWidth, scaledHeight };
 
-                    // DrawTexturePro ‚ÅƒeƒNƒXƒ`ƒƒ‚Ìw’è‹éŒ`•”•ª‚ğƒXƒP[ƒŠƒ“ƒO•`‰æ
+                    // DrawTexturePro ï¿½Åƒeï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½Ìwï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Pï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½`ï¿½ï¿½
                     DrawTexturePro(texture, src, dest, {0, 0}, 0.0f, WHITE);
                 } catch (const std::exception& e) {
-                    // ƒeƒNƒXƒ`ƒƒ‚ªŒ©‚Â‚©‚ç‚È‚¢ê‡‚Í•`‰æƒXƒLƒbƒv
+                    // ï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½È‚ï¿½ï¿½ê‡ï¿½Í•`ï¿½ï¿½Xï¿½Lï¿½bï¿½v
                     continue;
                 }
             }
         }
     };
 
-    // ˆÚ“®ƒVƒXƒeƒ€
-    // Position ‚Æ Velocity ‚ğ‚ÂƒGƒ“ƒeƒBƒeƒB‚ğˆÚ“®
+    // ï¿½Ú“ï¿½ï¿½Vï¿½Xï¿½eï¿½ï¿½
+    // Position ï¿½ï¿½ Velocity ï¿½ï¿½ï¿½ï¿½ï¿½ÂƒGï¿½ï¿½ï¿½eï¿½Bï¿½eï¿½Bï¿½ï¿½ï¿½Ú“ï¿½
     class MovementSystem {
     public:
         static void Update(entt::registry& registry, float deltaTime) {
-            auto view = registry.view<Components::Position, Components::Velocity>();
+            auto view = registry.view<Core::Components::Position, Core::Components::Velocity>();
 
             for (auto entity : view) {
-                auto& pos = view.get<Components::Position>(entity);
-                auto& vel = view.get<Components::Velocity>(entity);
+                auto& pos = view.get<Core::Components::Position>(entity);
+                auto& vel = view.get<Core::Components::Velocity>(entity);
 
-                // ‘¬“x‚ÉŠî‚Ã‚¢‚ÄˆÊ’u‚ğXV
+                // ï¿½ï¿½ï¿½xï¿½ÉŠï¿½Ã‚ï¿½ï¿½ÄˆÊ’uï¿½ï¿½ï¿½Xï¿½V
                 pos.x += vel.dx * deltaTime;
                 pos.y += vel.dy * deltaTime;
             }
         }
     };
 
-    // ƒL[“ü—Íˆ—ƒVƒXƒeƒ€iƒeƒXƒg—pj
-    // Player ƒ^ƒO‚ğ‚ÂƒGƒ“ƒeƒBƒeƒB‚ÌƒL[“ü—Í‚ğˆ—
+    // ï¿½Lï¿½[ï¿½ï¿½ï¿½Íï¿½ï¿½ï¿½ï¿½Vï¿½Xï¿½eï¿½ï¿½ï¿½iï¿½eï¿½Xï¿½gï¿½pï¿½j
+    // Player ï¿½^ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½ÂƒGï¿½ï¿½ï¿½eï¿½Bï¿½eï¿½Bï¿½ÌƒLï¿½[ï¿½ï¿½ï¿½Í‚ï¿½ï¿½ï¿½ï¿½ï¿½
     class InputSystem {
     public:
         static void Update(entt::registry& registry) {
-            auto view = registry.view<Components::Player, Components::Velocity>();
+            auto view = registry.view<GameComponents::PlayerControlled, Core::Components::Velocity>();
 
             for (auto entity : view) {
                 auto& vel = view.get<Components::Velocity>(entity);
 
-                // ƒL[“ü—Í‚Å‘¬“x‚ğİ’è
+                // ï¿½Lï¿½[ï¿½ï¿½ï¿½Í‚Å‘ï¿½ï¿½xï¿½ï¿½İ’ï¿½
                 vel.dx = 0.0f;
                 vel.dy = 0.0f;
 

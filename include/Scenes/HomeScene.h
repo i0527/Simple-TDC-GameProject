@@ -7,7 +7,7 @@
 
 namespace Scenes {
     /**
-     * @brief ホームシーン
+     * @brief ホ�Eムシーン
      * 3つのゲームを選択できるメニューシーン
      */
     class HomeScene : public Core::IScene {

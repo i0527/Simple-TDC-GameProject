@@ -8,7 +8,7 @@
 namespace Scenes {
     /**
      * @brief Nethack風ゲームシーン
-     * RoguelikeGameをISceneとしてラップ
+     * RoguelikeGameをISceneとしてラチE�E
      */
     class NethackGameScene : public Core::IScene {
     public:
