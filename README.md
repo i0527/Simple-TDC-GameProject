@@ -218,6 +218,28 @@ EndDrawing();
 - 1コミット = 1機能単位
 - ブランチ戦略: GitFlow
 
+### Cursor IDE 開発者向け
+Cursor IDE でマルチエージェント開発を行う場合は、以下のドキュメントを参照してください：
+
+- **[.cursor/CURSOR_DEVELOPMENT_GUIDE.md](.cursor/CURSOR_DEVELOPMENT_GUIDE.md)** - 包括的な開発ガイド（必読）
+- **[.cursor/AI_AGENT_QUICK_REFERENCE.md](.cursor/AI_AGENT_QUICK_REFERENCE.md)** - クイックリファレンス
+- **[.cursor/ARCHITECTURE_DIAGRAMS.md](.cursor/ARCHITECTURE_DIAGRAMS.md)** - アーキテクチャ図解
+- **[.cursorrules](.cursorrules)** - Cursor プロジェクトルール
+
+これらのドキュメントには以下が含まれます：
+- マルチエージェント開発戦略
+- 設計改善の要点
+- 推奨される設計パターン
+- AIエージェント向けタスク分割ガイド
+
+## ドキュメント
+プロジェクトの詳細なドキュメントは `docs/` ディレクトリにあります：
+
+- **[docs/EXECUTIVE_SUMMARY.md](docs/EXECUTIVE_SUMMARY.md)** - プロジェクト概要と重要な推奨事項
+- **[docs/CODE_ANALYSIS.md](docs/CODE_ANALYSIS.md)** - 詳細な分析レポート
+- **[docs/REFACTORING_PLAN.md](docs/REFACTORING_PLAN.md)** - リファクタリング計画
+- **[docs/README.md](docs/README.md)** - ドキュメント索引
+
 ## 貢献方法
 プロジェクトへの貢献を歓迎します！詳細は[CONTRIBUTING.md](CONTRIBUTING.md)をご覧ください。
 
@@ -225,9 +247,15 @@ EndDrawing();
 このプロジェクトはMITライセンスの下で公開されています。
 
 ## 参考リンク
+
+### ライブラリ公式ドキュメント
 - [EnTT Documentation](https://github.com/skypjack/entt/wiki)
 - [Raylib Cheatsheet](https://www.raylib.com/cheatsheet/cheatsheet.html)
 - [nlohmann/json Documentation](https://json.nlohmann.me/)
 - [raygui Repository](https://github.com/raysan5/raygui)
 - [Dear ImGui Documentation](https://github.com/ocornut/imgui)
 - [rlImGui Repository](https://github.com/raylib-extras/rlImGui)
+
+### プロジェクトドキュメント
+- [ドキュメント索引](docs/README.md) - 全ドキュメント一覧
+- [Cursor IDE 開発ガイド](.cursor/CURSOR_DEVELOPMENT_GUIDE.md) - マルチエージェント開発
