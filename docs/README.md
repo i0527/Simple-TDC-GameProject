@@ -11,6 +11,10 @@
 2. 📖 [CODE_ANALYSIS.md](./CODE_ANALYSIS.md) - 詳細な分析レポート
 3. 📋 [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) - 3プロジェクトの統合状況
 
+**Cursor IDE 利用者はこちらも:**
+- 🎯 **[../.cursor/CURSOR_DEVELOPMENT_GUIDE.md](../.cursor/CURSOR_DEVELOPMENT_GUIDE.md)** - Cursor IDE マルチエージェント開発ガイド（必読）
+- ⚡ [../.cursor/AI_AGENT_QUICK_REFERENCE.md](../.cursor/AI_AGENT_QUICK_REFERENCE.md) - AIエージェント向けクイックリファレンス
+
 ---
 
 ## 📚 ドキュメント構成
@@ -60,6 +64,17 @@
 | ドキュメント | 内容 | 対象読者 |
 |-------------|------|---------|
 | **[OPTIMIZATION_SUMMARY.md](./OPTIMIZATION_SUMMARY.md)** | UIManager最適化まとめ<br>・フォント管理の効率化<br>・API削減<br>・パフォーマンス改善結果 | 技術者 |
+
+### 🤖 Cursor IDE / AI開発支援
+
+Cursor IDE でのマルチエージェント開発向けドキュメント
+
+| ドキュメント | 内容 | 対象読者 |
+|-------------|------|---------|
+| **[../.cursor/CURSOR_DEVELOPMENT_GUIDE.md](../.cursor/CURSOR_DEVELOPMENT_GUIDE.md)** | Cursor IDE 開発ガイド<br>・プロジェクト概要<br>・マルチエージェント開発戦略<br>・設計改善の要点<br>・推奨設計パターン<br>・AIエージェント向けタスク分割<br>・コーディング規約と実装例 | **Cursor IDE 利用者（必読）** |
+| **[../.cursor/AI_AGENT_QUICK_REFERENCE.md](../.cursor/AI_AGENT_QUICK_REFERENCE.md)** | AIエージェント向けクイックリファレンス<br>・最重要ルール<br>・エージェント役割別チートシート<br>・頻出コードスニペット<br>・よくあるエラーと解決策 | AIエージェント、経験者 |
+| **[../.cursor/ARCHITECTURE_DIAGRAMS.md](../.cursor/ARCHITECTURE_DIAGRAMS.md)** | アーキテクチャ図解集<br>・システム全体図<br>・レイヤーアーキテクチャ<br>・ECSデータフロー<br>・マルチエージェント開発フロー | 全員（アーキテクチャ理解） |
+| **[../.cursorrules](../.cursorrules)** | Cursor プロジェクトルール<br>・必須ルール<br>・コーディング規約<br>・重要な制約 | Cursor IDE 利用者 |
 
 ---
 

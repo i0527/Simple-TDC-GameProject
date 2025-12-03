@@ -1,0 +1,192 @@
+# Simple-TDC-GameProject - Cursor Rules
+
+## プロジェクト概要
+C++17 ECS ゲームプロジェクト（EnTT使用）
+
+## 🔴 必須ルール
+
+### 1. ビルドターゲット
+- **新規開発**: SimpleTDCGame_NewArch を使用 ✅
+- **保守のみ**: SimpleTDCGame（非推奨）
+- **Roguelike**: NetHackGame（開発中）
+
+### 2. コンポーネント定義
+- **使用**: `ComponentsNew.h` ✅
+- **非推奨**: `Components.h` ❌
+
+### 3. Singleton 禁止
+- **使用**: 依存性注入（DI）パターン ✅
+- **非推奨**: Singleton パターン ❌
+
+```cpp
+// ❌ 非推奨
+auto& config = ConfigManager::GetInstance();
+
+// ✅ 推奨
+class MySystem {
+    ConfigManager& config_;
+public:
+    MySystem(ConfigManager& config) : config_(config) {}
+};
+```
+
+### 4. JSON解析
+必ず try-catch で囲む：
+
+```cpp
+try {
+    json config = json::parse(file);
+} catch (const json::parse_error& e) {
+    std::cerr << "JSON parse error: " << e.what() << std::endl;
+} catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+}
+```
+
+### 5. ECSコンポーネント
+POD型として定義（ロジックはシステムに実装）：
+
+```cpp
+// ✅ 正しい
+struct Transform {
+    float x = 0.0f;
+    float y = 0.0f;
+};
+
+// ❌ 間違い
+struct Transform {
+    float x, y;
+    void Move(float dx, float dy) {}  // NG!
+};
+```
+
+## 📝 コーディング規約
+
+### 命名規則
+- **クラス名**: PascalCase（例: `GameManager`）
+- **関数名**: PascalCase（例: `UpdatePosition`）
+- **変数名**: camelCase（例: `playerSpeed`）
+- **プライベートメンバー**: 末尾に `_`（例: `registry_`）
+- **定数**: UPPER_CASE（例: `MAX_ENTITIES`）
+- **名前空間**: PascalCase（例: `Components`, `Systems`）
+
+### ファイル構成
+```
+include/          # ヘッダーファイル
+  Core/           # コア機能
+  Game/           # ゲーム層
+  TD/             # タワーディフェンス
+  Roguelike/      # ローグライク
+src/              # ソースファイル
+assets/           # アセット
+```
+
+## 🏗️ アーキテクチャ
+
+### レイヤー構造
+```
+Application Layer (Game, GameNew, RoguelikeGame)
+    ↓
+Domain Layer (TD, Roguelike)
+    ↓
+Game Layer (Sprite, Animation, Scene)
+    ↓
+Core Layer (ECS, DI, Rendering)
+    ↓
+External Libraries (EnTT, Raylib, nlohmann/json)
+```
+
+### 依存性注入パターン（必須）
+```cpp
+class RenderSystem : public Core::ISystem {
+private:
+    ResourceManager& resourceManager_;
+    
+public:
+    RenderSystem(ResourceManager& resources)
+        : resourceManager_(resources) {}
+};
+```
+
+## 🔧 ビルド
+
+### セットアップ
+```bash
+cmake --preset ninja
+```
+
+### ビルド（推奨ターゲット）
+```bash
+cmake --build --preset ninja-release --target SimpleTDCGame_NewArch
+```
+
+### 実行
+```bash
+./build/ninja/bin/SimpleTDCGame_NewArch.exe
+```
+
+## 📚 重要なドキュメント
+
+### 必読
+1. **プロジェクト概要**: `docs/EXECUTIVE_SUMMARY.md`
+2. **詳細分析**: `docs/CODE_ANALYSIS.md`
+3. **改善計画**: `docs/REFACTORING_PLAN.md`
+4. **Cursor開発ガイド**: `.cursor/CURSOR_DEVELOPMENT_GUIDE.md`
+
+### 参照
+- **コーディング規約**: `.github/copilot-instructions.md`
+- **ドキュメント索引**: `docs/README.md`
+- **Roguelike設計**: `docs/ROGUELIKE_SYSTEM_DESIGN.md`
+
+## 🎯 マルチエージェント開発
+
+### エージェント役割
+1. **アーキテクト**: システム設計
+2. **コーダー**: コード実装
+3. **リファクター**: 品質改善
+4. **ドキュメンター**: ドキュメント作成
+5. **テスター**: テストコード作成
+
+詳細: `.cursor/CURSOR_DEVELOPMENT_GUIDE.md` のセクション3参照
+
+## ⚠️ 禁止事項
+
+1. ❌ Singleton パターンの使用
+2. ❌ Components.h のインクルード
+3. ❌ SimpleTDCGame ターゲットでの新規開発
+4. ❌ try-catch なしの JSON 解析
+5. ❌ コンポーネントにロジックを実装
+
+## ✅ 推奨事項
+
+1. ✅ SimpleTDCGame_NewArch ターゲットを使用
+2. ✅ ComponentsNew.h をインクルード
+3. ✅ 依存性注入パターンを使用
+4. ✅ POD型コンポーネント
+5. ✅ エラーハンドリング徹底
+6. ✅ スマートポインタでメモリ管理
+
+## 🐛 トラブルシューティング
+
+### ビルドエラー
+```bash
+# キャッシュクリア
+rm -rf build
+cmake --preset ninja
+```
+
+### 実行時エラー
+```bash
+# assets/ が正しくコピーされているか確認
+ls build/ninja/bin/assets/
+```
+
+詳細: `.cursor/CURSOR_DEVELOPMENT_GUIDE.md` のセクション8参照
+
+## 📞 サポート
+
+質問やフィードバック: GitHub Issues
+
+---
+
+**詳細なガイド**: `.cursor/CURSOR_DEVELOPMENT_GUIDE.md` を必ず参照してください
