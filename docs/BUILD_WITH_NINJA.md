@@ -8,18 +8,60 @@
 
 このプロジェクトでは、Ninja を**推奨**しますが、**必須ではありません**。Ninja がインストールされていない環境でも、従来の Visual Studio ジェネレータを使用してビルドできます。
 
+## 🎉 自動ダウンロード機能
+
+**CMake 3.19以降を使用している場合、Ninjaは自動的にダウンロードされます！**
+
+CMake実行時にNinjaが見つからない場合：
+1. `scripts/bootstrap-ninja.ps1`が自動的に実行されます
+2. Ninjaが`.tools/bin/`にダウンロードされます
+3. CMakeセッション内でPATHに追加されます
+
+この機能を無効にする場合は、環境変数`NINJA_SKIP_AUTO_SETUP`を設定してください：
+```powershell
+$env:NINJA_SKIP_AUTO_SETUP = "1"
+cmake --preset ninja-debug
+```
+
 ## クイックスタート (Windows PowerShell)
 
+### 方法1: 自動セットアップスクリプト（最も簡単・推奨）
+
 ```powershell
-# 1. Ninja をダウンロード（システムにない場合のみ）
+# Ninja のダウンロード、MSVC環境セットアップ、ビルドを自動実行
+.\scripts\build-with-ninja.ps1
+
+# Releaseビルドの場合
+.\scripts\build-with-ninja.ps1 -Config Release
+```
+
+このスクリプトは以下を自動的に実行します:
+- Ninja が未インストールの場合、自動ダウンロード
+- Visual Studio 環境の自動検出とセットアップ
+- CMake の設定とビルド実行
+
+### 方法2: CMake Presetsを使用（Ninja自動ダウンロード対応）
+
+```powershell
+# CMakeがNinjaを自動的にダウンロードします（初回のみ）
+cmake --preset ninja-debug
+cmake --build build --config Debug
+
+# Releaseビルド
+cmake --preset ninja-release
+cmake --build build --config Release
+```
+
+**注意**: この方法ではVisual Studio環境のセットアップは自動で行われないため、事前に「Developer Command Prompt for VS 2022」などから実行するか、方法1を使用してください。
+
+### 方法3: 手動セットアップ
+
+```powershell
+# 1. Ninja をダウンロード（初回のみ）
 .\scripts\bootstrap-ninja.ps1
 
-# 2. PATH に追加（一時的）
-$env:PATH = ".\.tools\bin;$env:PATH"
-
-# 3. CMake presets を使用してビルド
-cmake --preset ninja
-cmake --build --preset ninja-release
+# 2. MSVC環境セットアップとビルドを実行
+.\scripts\setup-ninja-env.ps1 -Config Debug
 ```
 
 ## 詳細な使用方法
@@ -59,9 +101,50 @@ cmake --build --preset ninja-debug
 3. `.tools\bin\` ディレクトリに配置
 
 **特徴:**
+
 - システムに既に Ninja がある場合は何もしない（尊重する）
 - 一度ダウンロードした Ninja は `.tools\bin\` に保持される
 - システムの PATH は恒久的に変更しない
+
+### setup-ninja-env.ps1 の動作
+
+`scripts\setup-ninja-env.ps1` は以下の動作を行います:
+
+1. `bootstrap-ninja.ps1` を呼び出してNinjaを確保
+2. Visual Studio のインストール場所を自動検出（vswhere使用）
+3. `vcvarsall.bat` を実行してMSVC環境を設定
+4. CMake でプロジェクトを設定
+5. ビルドを実行
+
+**パラメータ:**
+
+- `-Config <Debug|Release>`: ビルド構成（デフォルト: Debug）
+- `-Clean`: ビルド前にbuildディレクトリをクリーンアップ
+
+**使用例:**
+
+```powershell
+# Debugビルド（デフォルト）
+.\scripts\setup-ninja-env.ps1
+
+# Releaseビルド
+.\scripts\setup-ninja-env.ps1 -Config Release
+
+# クリーンビルド
+.\scripts\setup-ninja-env.ps1 -Config Release -Clean
+```
+
+### build-with-ninja.ps1 の動作
+
+`scripts\build-with-ninja.ps1` は `setup-ninja-env.ps1` のラッパーで、よりシンプルなインターフェースを提供します。
+
+```powershell
+# Debugビルド
+.\scripts\build-with-ninja.ps1
+
+# Releaseビルド
+.\scripts\build-with-ninja.ps1 -Config Release
+```
 
 ## Ninja バージョンの変更
 

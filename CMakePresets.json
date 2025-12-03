@@ -9,7 +9,7 @@
     {
       "name": "ninja-release",
       "displayName": "Ninja Release",
-      "description": "Build Release configuration with Ninja (Recommended)",
+      "description": "Build Release configuration with Ninja (Auto-downloads Ninja if not found)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
@@ -19,7 +19,7 @@
     {
       "name": "ninja-debug",
       "displayName": "Ninja Debug",
-      "description": "Build Debug configuration with Ninja",
+      "description": "Build Debug configuration with Ninja (Auto-downloads Ninja if not found)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {

@@ -2,6 +2,48 @@ cmake_minimum_required(VERSION 3.19)
 project(SimpleTDCGame VERSION 0.1.0 LANGUAGES CXX C)
 
 # ============================================================================
+# Ninja自動セットアップ (Windows)
+# ============================================================================
+if(WIN32 AND NOT DEFINED ENV{NINJA_SKIP_AUTO_SETUP})
+    # Ninjaがシステムにインストールされているかチェック
+    find_program(NINJA_EXECUTABLE ninja PATHS ENV PATH NO_DEFAULT_PATH)
+    
+    if(NOT NINJA_EXECUTABLE)
+        # プロジェクトローカルのNinjaパスをチェック
+        set(LOCAL_NINJA_PATH "${CMAKE_SOURCE_DIR}/.tools/bin/ninja.exe")
+        
+        if(NOT EXISTS ${LOCAL_NINJA_PATH})
+            # bootstrap-ninja.ps1を実行してNinjaをダウンロード
+            message(STATUS "Ninja not found. Downloading Ninja to .tools/bin/...")
+            
+            execute_process(
+                COMMAND powershell -ExecutionPolicy Bypass -File "${CMAKE_SOURCE_DIR}/scripts/bootstrap-ninja.ps1"
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                RESULT_VARIABLE NINJA_DOWNLOAD_RESULT
+                OUTPUT_VARIABLE NINJA_DOWNLOAD_OUTPUT
+                ERROR_VARIABLE NINJA_DOWNLOAD_ERROR
+            )
+            
+            if(NOT NINJA_DOWNLOAD_RESULT EQUAL 0)
+                message(WARNING "Failed to download Ninja automatically: ${NINJA_DOWNLOAD_ERROR}")
+                message(WARNING "You can manually run: .\\scripts\\bootstrap-ninja.ps1")
+            else()
+                message(STATUS "Ninja downloaded successfully to ${LOCAL_NINJA_PATH}")
+            endif()
+        endif()
+        
+        # PATHに追加（CMake内部でのみ有効）
+        if(EXISTS ${LOCAL_NINJA_PATH})
+            get_filename_component(NINJA_DIR ${LOCAL_NINJA_PATH} DIRECTORY)
+            set(ENV{PATH} "${NINJA_DIR};$ENV{PATH}")
+            message(STATUS "Added ${NINJA_DIR} to PATH for this CMake session")
+        endif()
+    else()
+        message(STATUS "Using system Ninja: ${NINJA_EXECUTABLE}")
+    endif()
+endif()
+
+# ============================================================================
 # Windows限定設定
 # ============================================================================
 if(NOT WIN32)
