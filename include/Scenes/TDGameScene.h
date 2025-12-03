@@ -6,9 +6,9 @@
 namespace Scenes {
     /**
      * @brief TDゲーム本体シーン
-     * Gameクラスの既存シーン（sample、test）を使用
-     * このシーンは既存のGameクラスのシーン管理システムを使用するため、
-     * 特別な実装は不要
+     * Gameクラスの既存シーン�E�Eample、test�E�を使用
+     * こ�Eシーンは既存�EGameクラスのシーン管琁E��スチE��を使用するため、E
+     * 特別な実裁E�E不要E
      */
     class TDGameScene : public Core::IScene {
     public:
@@ -22,7 +22,7 @@ namespace Scenes {
         
     private:
         bool isInitialized_;
-        std::string targetSceneName_;  // "sample" または "test"
+        std::string targetSceneName_;  // "sample" また�E "test"
     };
 }
 

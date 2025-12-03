@@ -7,19 +7,19 @@ namespace Scenes {
 
 TDGameScene::TDGameScene()
     : isInitialized_(false)
-    , targetSceneName_("sample") {  // デフォルトはsampleシーン
+    , targetSceneName_("sample") {  // チE��ォルト�Esampleシーン
 }
 
 void TDGameScene::Initialize(entt::registry& registry) {
     std::cout << "TD Game Scene Initialized" << std::endl;
     
-    // 既存のGameクラスのシーン管理システムを使用
-    // Gameクラスは既にシーン（sample、test）を登録しているため、
-    // ここでは既存のシーンに遷移するだけ
+    // 既存�EGameクラスのシーン管琁E��スチE��を使用
+    // Gameクラスは既にシーン�E�Eample、test�E�を登録してぁE��ため、E
+    // ここでは既存�Eシーンに遷移するだぁE
     
     Core::SceneManager& sceneManager = Core::SceneManager::GetInstance();
     
-    // sampleシーンが存在するか確認
+    // sampleシーンが存在するか確誁E
     if (sceneManager.HasScene("sample")) {
         targetSceneName_ = "sample";
         sceneManager.ChangeScene("sample");
@@ -36,31 +36,31 @@ void TDGameScene::Initialize(entt::registry& registry) {
 void TDGameScene::Update(entt::registry& registry, float deltaTime) {
     if (!isInitialized_) return;
     
-    // 入力処理
+    // 入力�E琁E
     Core::InputManager& inputManager = Core::InputManager::GetInstance();
     inputManager.Update();
     
-    // ESCキーでホームシーンへ戻る
+    // ESCキーでホ�Eムシーンへ戻めE
     if (inputManager.IsKeyPressed(KEY_ESCAPE)) {
         Core::SceneManager::GetInstance().ChangeScene("home");
         return;
     }
     
-    // 注意: TDGameSceneは既存のGameクラスのシーン管理システムを使用しています
-    // Game::Run()が既にシーンの更新と描画を処理しているため、
-    // ここでは入力処理（ESCキー）のみを行います
-    // 実際のシーンの更新と描画は、Game::Run()内の
-    // sceneManager_.UpdateCurrentScene()とsceneManager_.RenderCurrentScene()で処理されます
+    // 注愁E TDGameSceneは既存�EGameクラスのシーン管琁E��スチE��を使用してぁE��ぁE
+    // Game::Run()が既にシーンの更新と描画を�E琁E��てぁE��ため、E
+    // ここでは入力�E琁E��ESCキー�E��Eみを行いまぁE
+    // 実際のシーンの更新と描画は、Game::Run()冁E�E
+    // sceneManager_.UpdateCurrentScene()とsceneManager_.RenderCurrentScene()で処琁E��れまぁE
 }
 
 void TDGameScene::Render(entt::registry& registry) {
     if (!isInitialized_) return;
     
-    // 注意: TDGameSceneは既存のGameクラスのシーン管理システムを使用しています
-    // Game::Run()が既にシーンの更新と描画を処理しているため、
-    // ここでは何もする必要はありません
-    // 実際のシーンの描画は、Game::Run()内の
-    // sceneManager_.RenderCurrentScene()で処理されます
+    // 注愁E TDGameSceneは既存�EGameクラスのシーン管琁E��スチE��を使用してぁE��ぁE
+    // Game::Run()が既にシーンの更新と描画を�E琁E��てぁE��ため、E
+    // ここでは何もする忁E���Eありません
+    // 実際のシーンの描画は、Game::Run()冁E�E
+    // sceneManager_.RenderCurrentScene()で処琁E��れまぁE
 }
 
 void TDGameScene::Shutdown(entt::registry& registry) {
