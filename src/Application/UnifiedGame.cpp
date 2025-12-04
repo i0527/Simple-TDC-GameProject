@@ -156,6 +156,11 @@ bool UnifiedGame::Initialize(
                 this->OnFileChanged(filePath);
             });
             
+            // ゲーム状態取得のコールバックを設定（デバッグ/プレビュー用）
+            httpServer_->SetGameStateCallback([this]() {
+                return this->GetGameState();
+            });
+            
             httpServer_->Start();
             std::cout << "HTTP Server started on port " << httpServerPort_ << "\n";
             std::cout << "API available at http://localhost:" << httpServerPort_ << "/api\n";
@@ -483,6 +488,74 @@ void UnifiedGame::OnFileChanged(const std::string& filePath) {
             std::cerr << "Failed to reload stages: " << e.what() << "\n";
         }
     }
+}
+
+nlohmann::json UnifiedGame::GetGameState() const {
+    nlohmann::json state;
+    
+    // 基本情報
+    state["mode"] = GameModeToString(currentMode_);
+    state["scene"] = currentSceneName_;
+    state["entityCount"] = world_->EntityCount();
+    
+    // エンティティ情報（簡易版）
+    nlohmann::json entities;
+    entities["total"] = world_->EntityCount();
+    
+    // TDモードの場合の追加情報
+    if (currentMode_ == GameMode::TD) {
+        nlohmann::json tdState;
+        
+        // WaveManagerの情報を取得
+        if (context_->Has<Domain::TD::Managers::WaveManager>()) {
+            const auto& waveManager = context_->Get<Domain::TD::Managers::WaveManager>();
+            // WaveManagerの状態を取得（実装に応じて調整）
+            tdState["waveManager"] = nlohmann::json::object();
+            // TODO: WaveManagerにGetState()メソッドを追加して詳細情報を取得
+        }
+        
+        // GameStateManagerの情報を取得
+        if (context_->Has<Domain::TD::Managers::GameStateManager>()) {
+            const auto& gameStateManager = context_->Get<Domain::TD::Managers::GameStateManager>();
+            // GameStateManagerの状態を取得（実装に応じて調整）
+            tdState["gameStateManager"] = nlohmann::json::object();
+            // TODO: GameStateManagerにGetState()メソッドを追加して詳細情報を取得
+        }
+        
+        // TDエンティティの統計
+        nlohmann::json tdEntities;
+        // TODO: TDコンポーネントを持つエンティティの統計を取得
+        tdState["entities"] = tdEntities;
+        
+        state["td"] = tdState;
+    }
+    
+    // Roguelikeモードの場合の追加情報
+    if (currentMode_ == GameMode::Roguelike) {
+        nlohmann::json roguelikeState;
+        
+        // TurnManagerの情報を取得
+        if (context_->Has<Domain::Roguelike::Managers::TurnManager>()) {
+            const auto& turnManager = context_->Get<Domain::Roguelike::Managers::TurnManager>();
+            // TurnManagerの状態を取得（実装に応じて調整）
+            roguelikeState["turnManager"] = nlohmann::json::object();
+            // TODO: TurnManagerにGetState()メソッドを追加して詳細情報を取得
+        }
+        
+        // Roguelikeエンティティの統計
+        nlohmann::json roguelikeEntities;
+        // TODO: Roguelikeコンポーネントを持つエンティティの統計を取得
+        roguelikeState["entities"] = roguelikeEntities;
+        
+        state["roguelike"] = roguelikeState;
+    }
+    
+    state["entities"] = entities;
+    state["timestamp"] = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
+    
+    return state;
 }
 
 } // namespace Application

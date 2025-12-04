@@ -15,6 +15,7 @@
 #include "Core/HTTPServer.h"
 #include "Data/Registry.h"
 #include "Data/Loaders/DefinitionLoader.h"
+#include <nlohmann/json.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -121,6 +122,11 @@ private:
      * @brief 現在のシーン名を取得
      */
     std::string GetCurrentSceneName() const { return currentSceneName_; }
+
+    /**
+     * @brief ゲーム状態をJSON形式で取得（デバッグ/プレビュー用）
+     */
+    nlohmann::json GetGameState() const;
 
 private:
     GameMode currentMode_ = GameMode::Menu;

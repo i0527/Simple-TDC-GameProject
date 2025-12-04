@@ -9,17 +9,20 @@
 #pragma once
 
 #include "World.h"
-#include "DefinitionRegistry.h"
-#include "Definitions.h"
+#include "Data/Registry.h"
 #include "../Game/Components/GameComponents.h"
-#include "../TD/Components/TDComponents.h"
+#include "../Domain/TD/Components/TDComponents.h"
 #include "Components/CoreComponents.h"
 #include <entt/entt.hpp>
 #include <string>
 #include <functional>
 #include <unordered_map>
+#include <cmath>
 
 namespace Core {
+namespace TD = Domain::TD;
+namespace GameComponents = Game::Components;
+namespace TDComponents = TD::Components;
 
 /**
  * @brief エンティティファクトリ
@@ -82,27 +85,28 @@ public:
         
         // === Core コンポーネント ===
         world_.Emplace<Core::Components::Position>(entity, x, y);
-        world_.Emplace<Core::Components::Scale>(entity, def->scale, def->scale);
+        world_.Emplace<Core::Components::Scale>(entity, def->visual.scale, def->visual.scale);
         world_.Emplace<Core::Components::Identity>(entity, characterId, "unit", def->name);
         
         // === Game コンポーネント ===
-        // スプライト
+        const std::string& spriteSource = !def->visual.sprite.atlasPath.empty()
+            ? def->visual.sprite.atlasPath
+            : def->visual.sprite.jsonPath;
+        
         Game::Components::Sprite sprite;
-        sprite.textureName = def->spritePath;
-        sprite.flipX = isEnemy;  // 敵は左向き
+        sprite.textureName = spriteSource;
+        sprite.flipX = isEnemy;
         world_.Emplace<Game::Components::Sprite>(entity, sprite);
         
-        // スプライトシート
         Game::Components::SpriteSheet sheet;
-        sheet.textureName = def->spritePath;
-        sheet.frameWidth = def->frameWidth;
-        sheet.frameHeight = def->frameHeight;
-        sheet.framesPerRow = def->framesPerRow;
+        sheet.textureName = spriteSource;
+        sheet.frameWidth = def->visual.frameWidth;
+        sheet.frameHeight = def->visual.frameHeight;
+        sheet.framesPerRow = def->visual.framesPerRow;
         world_.Emplace<Game::Components::SpriteSheet>(entity, sheet);
         
-        // アニメーションデータをコピー
         Game::Components::AnimationData animData;
-        for (const auto& [name, animDef] : def->animations) {
+        for (const auto& [name, animDef] : def->visual.animations) {
             Game::Components::AnimationData::AnimInfo info;
             for (const auto& frame : animDef.frames) {
                 info.frames.push_back({frame.index, frame.duration, frame.tag});
@@ -111,84 +115,62 @@ public:
             info.nextAnimation = animDef.nextAnimation;
             animData.animations[name] = std::move(info);
         }
-        animData.defaultAnimation = def->defaultAnimation;
+        animData.defaultAnimation = def->visual.defaultAnimation;
         world_.Emplace<Game::Components::AnimationData>(entity, std::move(animData));
         
-        // アニメーション状態
         Game::Components::Animation anim;
-        anim.currentAnimation = def->defaultAnimation;
+        anim.currentAnimation = def->visual.defaultAnimation;
         world_.Emplace<Game::Components::Animation>(entity, anim);
         
-        // 描画順
         Game::Components::RenderOrder order;
-        order.layer = 10;  // キャラクターレイヤー
-        order.orderInLayer = isEnemy ? 0 : 1;  // 味方が手前
+        order.layer = 10;
+        order.orderInLayer = isEnemy ? 0 : 1;
         world_.Emplace<Game::Components::RenderOrder>(entity, order);
         
-        // フォールバック描画設定（テクスチャ無し時の代替表示）
         Game::Components::FallbackVisual fallback;
         fallback.shape = isEnemy 
             ? Game::Components::FallbackVisual::Shape::Diamond 
             : Game::Components::FallbackVisual::Shape::Circle;
         fallback.primaryColor = isEnemy ? RED : BLUE;
         fallback.secondaryColor = isEnemy ? MAROON : DARKBLUE;
-        fallback.size = static_cast<float>(def->frameWidth) * def->scale * 0.6f;
+        fallback.size = static_cast<float>(def->visual.frameWidth) * def->visual.scale * 0.6f;
         fallback.showAnimationIndicator = true;
         world_.Emplace<Game::Components::FallbackVisual>(entity, fallback);
         
         // === TD コンポーネント ===
-        // ユニット情報
-        TD::Components::Unit unit;
+        TDComponents::Unit unit;
         unit.definitionId = characterId;
         unit.isEnemy = isEnemy;
         unit.level = level;
-        world_.Emplace<TD::Components::Unit>(entity, unit);
+        world_.Emplace<TDComponents::Unit>(entity, unit);
         
-        // ステータス（レベル補正適用）
-        TD::Components::Stats stats;
+        TDComponents::Stats stats;
         float levelMultiplier = std::pow(def->healthGrowth, level - 1);
         float attackMultiplier = std::pow(def->attackGrowth, level - 1);
-        stats.maxHealth = def->maxHealth * levelMultiplier;
+        stats.maxHealth = def->stats.hp * levelMultiplier;
         stats.currentHealth = stats.maxHealth;
-        stats.attack = def->attack * attackMultiplier;
-        stats.defense = def->defense;
-        stats.moveSpeed = def->moveSpeed;
-        stats.attackInterval = def->attackInterval;
-        stats.knockbackResist = def->knockbackResist;
-        world_.Emplace<TD::Components::Stats>(entity, stats);
+        stats.attack = def->stats.attack * attackMultiplier;
+        stats.defense = def->stats.defense;
+        stats.moveSpeed = def->stats.moveSpeed;
+        stats.attackInterval = def->stats.attackInterval;
+        stats.knockbackResist = def->stats.knockbackResist;
+        world_.Emplace<TDComponents::Stats>(entity, stats);
         
-        // 戦闘情報
-        TD::Components::Combat combat;
-        combat.attackType = def->attackType;
-        combat.attackRange = def->attackRange;
-        combat.hitbox = def->hitbox;
-        combat.attackCount = def->attackCount;
-        combat.criticalChance = def->criticalChance;
-        combat.criticalMultiplier = def->criticalMultiplier;
-        world_.Emplace<TD::Components::Combat>(entity, combat);
+        TDComponents::Combat combat;
+        combat.attackType = def->combat.attackType;
+        combat.attackRange = def->combat.attackRangeArea;
+        combat.hitbox = def->combat.hitbox;
+        combat.attackCount = def->combat.attackCount;
+        combat.criticalChance = def->combat.criticalChance;
+        combat.criticalMultiplier = def->combat.criticalMultiplier;
+        world_.Emplace<TDComponents::Combat>(entity, combat);
         
-        // 移動状態
-        TD::Components::Movement movement;
+        TDComponents::Movement movement;
         movement.direction = isEnemy ? -1.0f : 1.0f;
-        world_.Emplace<TD::Components::Movement>(entity, movement);
+        world_.Emplace<TDComponents::Movement>(entity, movement);
         
-        // ステータス修正
-        world_.Emplace<TD::Components::StatModifiers>(entity);
-        
-        // ステータス効果コンテナ
-        world_.Emplace<TD::Components::StatusEffects>(entity);
-        
-        // スキル
-        if (!def->skillIds.empty()) {
-            TD::Components::Skills skills;
-            for (const auto& skillId : def->skillIds) {
-                if (definitions_.HasSkill(skillId)) {
-                    const auto& skillDef = definitions_.GetSkill(skillId);
-                    skills.slots.push_back({skillId, 0.0f, true});
-                }
-            }
-            world_.Emplace<TD::Components::Skills>(entity, std::move(skills));
-        }
+        world_.Emplace<TDComponents::StatModifiers>(entity);
+        world_.Emplace<TDComponents::StatusEffects>(entity);
         
         // 陣営タグ
         if (isEnemy) {

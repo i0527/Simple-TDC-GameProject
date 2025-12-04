@@ -150,6 +150,16 @@ public:
     }
 
     /**
+     * @brief ゲーム状態取得のコールバックを設定
+     * 
+     * デバッグ/プレビュー用のゲーム状態を取得するコールバック
+     * @param callback ゲーム状態をJSON形式で返すコールバック関数
+     */
+    void SetGameStateCallback(std::function<nlohmann::json()> callback) {
+        gameStateCallback_ = std::move(callback);
+    }
+
+    /**
      * @brief WebSocket接続されたクライアントに通知を送信
      * 
      * UIエディター用のリアルタイム更新通知
@@ -278,6 +288,11 @@ private:
     void SetupConfigRoutes();
 
     /**
+     * @brief ゲーム状態取得APIを設定
+     */
+    void SetupGameStateRoutes();
+
+    /**
      * @brief ファイル監視スレッドのエントリーポイント
      */
     void FileWatcherThread();
@@ -375,6 +390,7 @@ private:
 
     std::function<void(const std::string&)> errorHandler_;
     std::function<void(const std::string&)> fileChangedCallback_;
+    std::function<nlohmann::json()> gameStateCallback_;
 
     // ファイル監視用
     std::mutex fileModificationTimeMutex_;

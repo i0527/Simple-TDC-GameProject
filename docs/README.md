@@ -7,11 +7,13 @@
 ## ⚡ クイックスタート
 
 **新規参加者はこちらから:**
+
 1. 📊 **[EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md)** - プロジェクト概要と重要な推奨事項（5分で読める）
 2. 📖 [CODE_ANALYSIS.md](./CODE_ANALYSIS.md) - 詳細な分析レポート
 3. 📋 [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) - 3プロジェクトの統合状況
 
 **Cursor IDE 利用者はこちらも:**
+
 - 🎯 **[../.cursor/CURSOR_DEVELOPMENT_GUIDE.md](../.cursor/CURSOR_DEVELOPMENT_GUIDE.md)** - Cursor IDE マルチエージェント開発ガイド（必読）
 - ⚡ [../.cursor/AI_AGENT_QUICK_REFERENCE.md](../.cursor/AI_AGENT_QUICK_REFERENCE.md) - AIエージェント向けクイックリファレンス
 
@@ -76,6 +78,8 @@ Cursor IDE でのマルチエージェント開発向けドキュメント
 | **[../.cursor/ARCHITECTURE_DIAGRAMS.md](../.cursor/ARCHITECTURE_DIAGRAMS.md)** | アーキテクチャ図解集<br>・システム全体図<br>・レイヤーアーキテクチャ<br>・ECSデータフロー<br>・マルチエージェント開発フロー | 全員（アーキテクチャ理解） |
 | **[../.cursorrules](../.cursorrules)** | Cursor プロジェクトルール<br>・必須ルール<br>・コーディング規約<br>・重要な制約 | Cursor IDE 利用者 |
 
+Cursor は VS Code の拡張と互換性があるため、`.vscode/tasks.json` に登録した `Build SimpleTDCGame_NewArch (Debug)` / `(Release)` タスクを `Ctrl+Shift+B` や「Tasks: Run Build Task」から選んで使うことで、内蔵の `scripts/build-with-ninja.ps1` による Ninja ビルドを直接トリガできます。これにより Cursor 上からでも推奨ビルドターゲット `SimpleTDCGame_NewArch` の Debug／Release ビルドを手軽に行えます。
+
 ---
 
 ## 🗺️ ドキュメントマップ
@@ -85,31 +89,37 @@ Cursor IDE でのマルチエージェント開発向けドキュメント
 ### 新規参加者向け
 
 **最初に読むべきドキュメント:**
+
 1. [CODE_ANALYSIS.md](./CODE_ANALYSIS.md) - プロジェクト全体を理解
 2. [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) - 3つのプロジェクトの関係を理解
 3. [BUILD_WITH_NINJA.md](./BUILD_WITH_NINJA.md) - ビルド方法を学ぶ
 
 **次に読むべきドキュメント（開発対象による）:**
+
 - タワーディフェンス開発: [HANDOVER.md](./HANDOVER.md) → [CHARACTER_SYSTEM_DESIGN.md](./CHARACTER_SYSTEM_DESIGN.md)
 - Roguelike開発: [ROGUELIKE_SYSTEM_DESIGN.md](./ROGUELIKE_SYSTEM_DESIGN.md)
 
 ### 既存開発者向け
 
 **リファクタリング・改善:**
+
 - [REFACTORING_PLAN.md](./REFACTORING_PLAN.md) - 改善計画
 - [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - UIManager移行
 
 **新機能開発:**
+
 - [HANDOVER.md](./HANDOVER.md) - 新アーキテクチャ詳細
 - [ROGUELIKE_SYSTEM_DESIGN.md](./ROGUELIKE_SYSTEM_DESIGN.md) - Roguelike設計
 
 ### メンテナー・レビュワー向け
 
 **コードレビュー時:**
+
 - [CODE_ANALYSIS.md](./CODE_ANALYSIS.md) - 品質基準
 - [REFACTORING_PLAN.md](./REFACTORING_PLAN.md) - レビューガイドライン
 
 **プロジェクト管理:**
+
 - [INTEGRATION_STATUS.md](./INTEGRATION_STATUS.md) - 統合状況
 - [REFACTORING_PLAN.md](./REFACTORING_PLAN.md) - ロードマップ
 
