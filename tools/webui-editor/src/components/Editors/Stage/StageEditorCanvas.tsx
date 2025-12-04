@@ -90,21 +90,19 @@ export default function StageEditorCanvas({
         <div className="mb-4 flex gap-2">
           <button
             onClick={() => setShowNodeEditor(false)}
-            className={`rounded-lg px-4 py-2 ${
-              !showNodeEditor
+            className={`rounded-lg px-4 py-2 ${!showNodeEditor
                 ? 'bg-blue-600 text-white'
                 : 'border border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'
-            }`}
+              }`}
           >
             リスト表示
           </button>
           <button
             onClick={() => setShowNodeEditor(true)}
-            className={`rounded-lg px-4 py-2 ${
-              showNodeEditor
+            className={`rounded-lg px-4 py-2 ${showNodeEditor
                 ? 'bg-blue-600 text-white'
                 : 'border border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300'
-            }`}
+              }`}
           >
             ノードエディター
           </button>
