@@ -85,6 +85,10 @@ assets/*
 !assets/fonts/
 assets/fonts/*
 !assets/fonts/.gitkeep
+!assets/definitions/
+assets/definitions/*/*
+!assets/definitions/*/.gitkeep
+!assets/definitions/README.md
 
 # Temporary files
 *.tmp
