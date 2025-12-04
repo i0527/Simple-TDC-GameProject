@@ -95,6 +95,18 @@ public:
     }
     
     /**
+     * @brief サービスを新規作成して登録（Emplaceエイリアス）
+     * @tparam T サービスの型
+     * @tparam Args コンストラクタ引数の型
+     * @param args コンストラクタ引数
+     * @return 登録されたサービスへの参照
+     */
+    template<typename T, typename... Args>
+    T& Emplace(Args&&... args) {
+        return Register<T>(std::forward<Args>(args)...);
+    }
+    
+    /**
      * @brief 既存のインスタンスを登録
      * @tparam T サービスの型
      * @param instance 登録するインスタンス（shared_ptr）

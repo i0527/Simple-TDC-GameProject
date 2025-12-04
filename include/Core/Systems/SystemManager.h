@@ -1,29 +1,31 @@
 #pragma once
 
-#include "System.h"
+#include "Core/Systems/ISystem.h"
+
 #include <vector>
 #include <memory>
 
 namespace Core {
-    // �Q�[���V�X�e���̃��C�t�T�C�N���Ǝ��s���Ǘ�
+    // ゲームシステムのライフサイクルを一元管理
     class SystemManager {
     public:
         SystemManager() = default;
         ~SystemManager() = default;
         
-        // �}�l�[�W���[�ɃV�X�e����ǉ�
+        // システムを登録
         void AddSystem(std::unique_ptr<ISystem> system);
         
-        // ���ׂẴV�X�e���̓��͂�����
+        // 登録済みシステムの入力処理
         void ProcessInput(entt::registry& registry);
         
-        // ���ׂẴV�X�e�����X�V
+        // 登録済みシステムの更新処理
         void Update(entt::registry& registry, float deltaTime);
         
-        // ���ׂẴV�X�e����`��
+        // 登録済みシステムの描画処理
         void Render(entt::registry& registry);
         
     private:
         std::vector<std::unique_ptr<ISystem>> systems_;
     };
 }
+

@@ -2,7 +2,8 @@
 #include "ComponentsNew.h"
 // Note: SpriteAnimation, SpriteFrame, SpriteTexture are still in Components namespace (legacy)
 #include "Components.h"
-#include "AnimationSystem.h"
+#include "Game/Systems/MovementSystem.h"
+#include "Game/Systems/AnimationSystem.h"
 #include "ResourceManager.h"
 #include "Scenes/TitleScene.h"
 #include "Scenes/HomeScene.h"

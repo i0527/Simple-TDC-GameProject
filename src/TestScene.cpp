@@ -2,45 +2,47 @@
 #include "ConfigManager.h"
 #include "ResourceManager.h"
 #include "Components.h"
-#include "AnimationSystem.h"
+#include "Game/Systems/InputSystem.h"
+#include "Game/Systems/MovementSystem.h"
+#include "Game/Systems/AnimationSystem.h"
 #include <raylib.h>
 #include <entt/entt.hpp>
 #include <iostream>
 #include <vector>
 
-// TestScene: JSONƒtƒ@ƒCƒ‹‚ÆƒeƒNƒXƒ`ƒƒƒAƒgƒ‰ƒX(ƒXƒvƒ‰ƒCƒgƒV[ƒg)‚Ì“Ç‚İ‚İƒeƒXƒg
-// EConfigManager ‚©‚ç’l‚ğæ“¾‚µ‚ÄƒƒOo—Í
-// EImageManager ‚Å Aseprite Œ`® JSON + PNG ‚ğ“Ç‚İ‚İ
-// EFrame î•ñ‚ğ EnTT ƒRƒ“ƒ|[ƒlƒ“ƒgiSpriteAnimation, SpriteFrame, SpriteTexturej‚É“‡
-// EAnimationSystem ‚ÅƒAƒjƒ[ƒVƒ‡ƒ“ƒ‹[ƒv‚ğŠÇ—
-// EInputSystem ‚Æ MovementSystem ‚ÅƒL[“ü—Í‚É‰‚¶‚ÄˆÚ“®
+// TestScene: JSONï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Æƒeï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½Aï¿½gï¿½ï¿½ï¿½X(ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Vï¿½[ï¿½g)ï¿½Ì“Ç‚İï¿½ï¿½İƒeï¿½Xï¿½g
+// ï¿½EConfigManager ï¿½ï¿½ï¿½ï¿½lï¿½ï¿½ï¿½æ“¾ï¿½ï¿½ï¿½Äƒï¿½ï¿½Oï¿½oï¿½ï¿½
+// ï¿½EImageManager ï¿½ï¿½ Aseprite ï¿½`ï¿½ï¿½ JSON + PNG ï¿½ï¿½Ç‚İï¿½ï¿½ï¿½
+// ï¿½EFrame ï¿½ï¿½ï¿½ï¿½ EnTT ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½iSpriteAnimation, SpriteFrame, SpriteTextureï¿½jï¿½É“ï¿½ï¿½ï¿½
+// ï¿½EAnimationSystem ï¿½ÅƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½vï¿½ï¿½ï¿½Ç—ï¿½
+// ï¿½EInputSystem ï¿½ï¿½ MovementSystem ï¿½ÅƒLï¿½[ï¿½ï¿½ï¿½Í‚É‰ï¿½ï¿½ï¿½ï¿½ÄˆÚ“ï¿½
 
 class TestScene : public Core::IScene {
 public:
     void Initialize(entt::registry& registry) override {
         std::cout << "TestScene Initialize" << std::endl;
 
-        // Config ’l‚Ìæ“¾ƒeƒXƒg
+        // Config ï¿½lï¿½Ìæ“¾ï¿½eï¿½Xï¿½g
         Core::ConfigManager& cfg = Core::ConfigManager::GetInstance();
         int w = cfg.GetInt("window.width", 0);
         int h = cfg.GetInt("window.height", 0);
         std::string title = cfg.GetString("window.title", "none");
         std::cout << "Config window.width=" << w << " window.height=" << h << " window.title=" << title << std::endl;
 
-        // ƒXƒvƒ‰ƒCƒgƒV[ƒg“Ç‚İ‚İƒeƒXƒg
+        // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Vï¿½[ï¿½gï¿½Ç‚İï¿½ï¿½İƒeï¿½Xï¿½g
         Resources::ResourceManager& rm = Resources::ResourceManager::GetInstance();
         auto& imageMgr = rm.GetImageManager();
 
-        // cupslime ƒXƒvƒ‰ƒCƒgƒV[ƒg“Ç‚İ‚İ
+        // cupslime ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½Vï¿½[ï¿½gï¿½Ç‚İï¿½ï¿½ï¿½
         const std::string spriteJson = "assets/json/cupslime.json";
         const std::string spriteImage = "assets/atlas/cupslime.png";
         imageMgr.LoadSpriteSheet("cupslime", spriteJson, spriteImage);
 
-        // “Ç‚İ‚İÏ‚İƒtƒŒ[ƒ€–¼‚ğæ“¾
+        // ï¿½Ç‚İï¿½ï¿½İÏ‚İƒtï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ“¾
         std::vector<std::string> frameNames = imageMgr.GetAllFrameNames("cupslime");
         if (frameNames.empty()) {
             std::cout << "No frames loaded for cupslime, using fallback circle entity." << std::endl;
-            // ƒtƒH[ƒ‹ƒoƒbƒN: ‰~‚ğ•`‰æ‚·‚éƒGƒ“ƒeƒBƒeƒB
+            // ï¿½tï¿½Hï¿½[ï¿½ï¿½ï¿½oï¿½bï¿½N: ï¿½~ï¿½ï¿½`ï¿½æ‚·ï¿½ï¿½Gï¿½ï¿½ï¿½eï¿½Bï¿½eï¿½B
             auto entity = registry.create();
             registry.emplace<Components::Position>(entity, 400.f, 300.f);
             registry.emplace<Components::Renderable>(entity, RED, 30.f);
@@ -50,7 +52,7 @@ public:
 
         fallback_ = false;
         
-        // ƒtƒŒ[ƒ€î•ñ‚ğƒƒOo—Í
+        // ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½oï¿½ï¿½
         std::cout << "Loaded " << frameNames.size() << " frames:" << std::endl;
         for (size_t i = 0; i < frameNames.size(); ++i) {
             auto info = imageMgr.GetFrameInfo(frameNames[i]);
@@ -60,17 +62,17 @@ public:
                      << " duration: " << info.duration << "ms" << std::endl;
         }
 
-        // ƒAƒjƒ[ƒVƒ‡ƒ“•t‚«ƒGƒ“ƒeƒBƒeƒB‚ğ¶¬
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½tï¿½ï¿½ï¿½Gï¿½ï¿½ï¿½eï¿½Bï¿½eï¿½Bï¿½ğ¶ï¿½
         auto entity = registry.create();
         registry.emplace<Components::Position>(entity, 400.f, 300.f);
         
-        // Velocity ƒRƒ“ƒ|[ƒlƒ“ƒgFƒL[“ü—Í‚ÅXV‚³‚ê‚é‘¬“x
+        // Velocity ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½Fï¿½Lï¿½[ï¿½ï¿½ï¿½Í‚ÅXï¿½Vï¿½ï¿½ï¿½ï¿½é‘¬ï¿½x
         registry.emplace<Components::Velocity>(entity, 0.0f, 0.0f);
         
-        // Player ƒ^ƒOFInputSystem ‚ª‚±‚ê‚ğŒ©‚ÄƒL[“ü—Íˆ—
+        // Player ï¿½^ï¿½Oï¿½FInputSystem ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄƒLï¿½[ï¿½ï¿½ï¿½Íï¿½ï¿½ï¿½
         registry.emplace<Components::Player>(entity);
         
-        // SpriteAnimation ƒRƒ“ƒ|[ƒlƒ“ƒgFƒAƒjƒ[ƒVƒ‡ƒ“§Œä
+        // SpriteAnimation ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½Fï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         auto& anim = registry.emplace<Components::SpriteAnimation>(entity);
         anim.spriteName = "cupslime";
         anim.frames = frameNames;
@@ -79,12 +81,12 @@ public:
         anim.isPlaying = true;
         anim.isLooping = true;
         
-        // SpriteFrame ƒRƒ“ƒ|[ƒlƒ“ƒgFƒtƒŒ[ƒ€î•ñ
+        // SpriteFrame ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½Fï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½
         auto firstFrameInfo = imageMgr.GetFrameInfo(frameNames[0]);
         registry.emplace<Components::SpriteFrame>(entity, 
             Components::SpriteFrame{frameNames[0], firstFrameInfo.rect});
         
-        // SpriteTexture ƒRƒ“ƒ|[ƒlƒ“ƒgFƒeƒNƒXƒ`ƒƒQÆ
+        // SpriteTexture ï¿½Rï¿½ï¿½ï¿½|ï¿½[ï¿½lï¿½ï¿½ï¿½gï¿½Fï¿½eï¿½Nï¿½Xï¿½`ï¿½ï¿½ï¿½Qï¿½ï¿½
         registry.emplace<Components::SpriteTexture>(entity, 
             Components::SpriteTexture{"cupslime"});
         
@@ -96,13 +98,13 @@ public:
     void Update(entt::registry& registry, float deltaTime) override {
         if (fallback_) return;
         
-        // ƒL[“ü—Íˆ—iƒeƒXƒg—pAInputManager ‚ğ‰î‚³‚È‚¢j
+        // ï¿½Lï¿½[ï¿½ï¿½ï¿½Íï¿½ï¿½ï¿½ï¿½iï¿½eï¿½Xï¿½gï¿½pï¿½AInputManager ï¿½ï¿½ï¿½î‚³ï¿½È‚ï¿½ï¿½j
         Systems::InputSystem::Update(registry);
         
-        // ˆÚ“®XV
+        // ï¿½Ú“ï¿½ï¿½Xï¿½V
         Systems::MovementSystem::Update(registry, deltaTime);
         
-        // ƒAƒjƒ[ƒVƒ‡ƒ“XV
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½V
         Systems::AnimationSystem::Update(registry, deltaTime);
     }
 
@@ -118,10 +120,10 @@ public:
             return;
         }
 
-        // ƒXƒvƒ‰ƒCƒg•`‰æ
+        // ï¿½Xï¿½vï¿½ï¿½ï¿½Cï¿½gï¿½`ï¿½ï¿½
         Systems::SpriteRenderSystem::Render(registry);
 
-        // ƒfƒoƒbƒOî•ñ•\¦
+        // ï¿½fï¿½oï¿½bï¿½Oï¿½ï¿½ï¿½\ï¿½ï¿½
         if (auto* anim = registry.try_get<Components::SpriteAnimation>(animatedEntity_)) {
             if (!anim->frames.empty()) {
                 DrawText(("Frame: " + anim->frames[anim->currentFrameIndex] + 
@@ -153,7 +155,7 @@ private:
     entt::entity animatedEntity_{entt::null};
 };
 
-// ƒV[ƒ““o˜^—pƒwƒ‹ƒp[ŠÖ”iGame::InitializeScenes ‚©‚çŒÄ‚Ño‚µj
+// ï¿½Vï¿½[ï¿½ï¿½ï¿½oï¿½^ï¿½pï¿½wï¿½ï¿½ï¿½pï¿½[ï¿½Öï¿½ï¿½iGame::InitializeScenes ï¿½ï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½ï¿½j
 std::unique_ptr<Core::IScene> CreateTestScene() {
     return std::make_unique<TestScene>();
 }

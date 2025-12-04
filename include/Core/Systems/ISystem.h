@@ -3,18 +3,19 @@
 #include <entt/entt.hpp>
 
 namespace Core {
-    // ‚·‚×‚Ä‚ÌƒQ[ƒ€ƒVƒXƒeƒ€‚Ì’ŠÛƒCƒ“ƒ^[ƒtƒF[ƒX
+    // ã‚²ãƒ¼ãƒ ã‚·ã‚¹ãƒ†ãƒ ã®å…±é€šã‚¤ãƒ³ã‚¿ãƒ¼ãƒ•ã‚§ãƒ¼ã‚¹
     class ISystem {
     public:
         virtual ~ISystem() = default;
         
-        // ‚±‚ÌƒVƒXƒeƒ€‚Ì“ü—Í‚ðˆ—
+        // å…¥åŠ›å‡¦ç†
         virtual void ProcessInput(entt::registry& registry) {}
         
-        // ƒVƒXƒeƒ€ƒƒWƒbƒN‚ðXV
+        // æ›´æ–°å‡¦ç†
         virtual void Update(entt::registry& registry, float deltaTime) {}
         
-        // ƒVƒXƒeƒ€ƒGƒ“ƒeƒBƒeƒB‚ðƒŒƒ“ƒ_ƒŠƒ“ƒO
+        // æç”»å‡¦ç†
         virtual void Render(entt::registry& registry) {}
     };
 }
+

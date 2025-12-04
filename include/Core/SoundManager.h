@@ -11,7 +11,7 @@
 
 #include "Core/Platform.h"
 #include "Data/SoundDef.h"
-#include "Core/DefinitionRegistry.h"
+#include "Data/Registry.h"
 #include <unordered_map>
 #include <vector>
 #include <memory>
