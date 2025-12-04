@@ -16,12 +16,17 @@
 - [CHARACTER_SYSTEM_DESIGN.md](CHARACTER_SYSTEM_DESIGN.md) - キャラクター・ステータスシステム設計
 - [ROGUELIKE_SYSTEM_DESIGN.md](ROGUELIKE_SYSTEM_DESIGN.md) - Roguelike システム設計
 - [INTEGRATION_STATUS.md](INTEGRATION_STATUS.md) - 統合状況・進捗
+- **[DEVELOPER_MODE_DESIGN.md](DEVELOPER_MODE_DESIGN.md)** - 開発者モード設計書
+- **[TD_ENTITY_BEHAVIOR_SYSTEM.md](TD_ENTITY_BEHAVIOR_SYSTEM.md)** - TD専用エンティティ動作システム設計
 
 ### 📖 技術ガイド
 
 - [BUILD_WITH_NINJA.md](BUILD_WITH_NINJA.md) - Ninja ビルドシステム
 - [FONT_SETUP.md](FONT_SETUP.md) - フォント設定
 - [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) - 旧アーキテクチャからの移行
+- **[WEBUI_TO_INGAME_EDITOR_MIGRATION.md](WEBUI_TO_INGAME_EDITOR_MIGRATION.md)** - WebUI廃止とゲーム内エディタ移行ガイド
+- **[DEVELOPER_MODE_QUICK_REFERENCE.md](DEVELOPER_MODE_QUICK_REFERENCE.md)** - 開発者モード クイックリファレンス
+- **[DEVELOPER_MODE_IMPLEMENTATION_ROADMAP.md](DEVELOPER_MODE_IMPLEMENTATION_ROADMAP.md)** - 開発者モード実装ロードマップ
 
 ### 🔧 保守・改善
 
@@ -77,6 +82,10 @@
 |-------------|----------|---------|
 | DEVELOPER_MANUAL.md | ✅ 新規作成 | 2025-12-04 |
 | README_REORGANIZED.md | ✅ 新規作成 | 2025-12-04 |
+| DEVELOPER_MODE_DESIGN.md | ✅ 新規作成 | 2025-12-04 |
+| TD_ENTITY_BEHAVIOR_SYSTEM.md | ✅ 新規作成 | 2025-12-04 |
+| WEBUI_TO_INGAME_EDITOR_MIGRATION.md | ✅ 新規作成 | 2025-12-04 |
+| DEVELOPER_MODE_QUICK_REFERENCE.md | ✅ 新規作成 | 2025-12-04 |
 | CHARACTER_SYSTEM_DESIGN.md | ✅ 既存 | - |
 | ROGUELIKE_SYSTEM_DESIGN.md | ✅ 既存 | - |
 | CODE_ANALYSIS.md | ✅ 既存 | - |
