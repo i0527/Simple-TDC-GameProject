@@ -1,0 +1,45 @@
+name: Windows Ninja Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v1.14
+      with:
+        cmake-version: '3.19.x'
+
+    - name: Bootstrap Ninja
+      shell: pwsh
+      run: .\scripts\bootstrap-ninja.ps1
+
+    - name: Add Ninja to PATH
+      shell: pwsh
+      run: |
+        $ninjaPath = Join-Path $env:GITHUB_WORKSPACE ".tools\bin"
+        echo "$ninjaPath" >> $env:GITHUB_PATH
+
+    - name: Configure CMake with Ninja preset
+      run: cmake --preset ninja
+
+    - name: Build with Ninja preset
+      run: cmake --build --preset ninja-release
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: SimpleTDCGame-Windows-Ninja
+        path: ${{github.workspace}}/build/bin/

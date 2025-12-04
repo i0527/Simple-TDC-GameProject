@@ -15,10 +15,21 @@ public:
     ~Game();
 
     void Run();
+    
+    // ===== シーン統合用のメソッド =====
+    
+    /**
+     * @brief ゲームを更新（シーン統合用）
+     * @param deltaTime フレーム時間
+     */
+    void Update(float deltaTime);
+    
+    /**
+     * @brief ゲームを描画（シーン統合用）
+     */
+    void Render();
 
 private:
-    void Update(float deltaTime);
-    void Render();
     void InitializeScenes();
     void LoadConfig();
 

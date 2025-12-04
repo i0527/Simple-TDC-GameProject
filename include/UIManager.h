@@ -2,61 +2,93 @@
 
 #include <raylib.h>
 #include <string>
+#include <unordered_map>
+#include <entt/entt.hpp>
 
 namespace UI {
-    // UIマネージャークラス（Singleton）
-    // raygui と Dear ImGui (rlImGui) を共存させて管理するクラス
+    /// @brief ゲーム全体のUI・フォント管理クラス（Singleton）
+    /// raygui と Dear ImGui (rlImGui) を統合管理し、
+    /// 複数サイズのフォントをキャッシュして効率的に提供
     class UIManager {
     public:
         static UIManager& GetInstance();
         
-        // インスタンスのコピーを禁止
+        // コピー・ムーブ禁止
         UIManager(const UIManager&) = delete;
         UIManager& operator=(const UIManager&) = delete;
+        UIManager(UIManager&&) = delete;
+        UIManager& operator=(UIManager&&) = delete;
         
-        // 初期化（日本語フォント対応含む）
-        // fontPath: 日本語フォントのパス（例: "assets/fonts/NotoSansCJKjp-Regular.otf"）
-        // fontSize: フォントサイズ
-        void Initialize(const std::string& fontPath = "", float fontSize = 18.0f);
+        /// @brief UIマネージャーを初期化
+        /// @param fontPath デフォルトフォントのパス（例: "assets/fonts/NotoSansJP-Medium.ttf"）
+        /// @param baseFontSize 基本フォントサイズ（デフォルト: 18.0f）
+        void Initialize(const std::string& fontPath, float baseFontSize = 18.0f);
         
-        // 終了処理
+        /// @brief UIマネージャーを終了
         void Shutdown();
         
-        // フレーム開始処理（メインループの BeginDrawing() 後に呼び出す）
-        void BeginFrame();
-        
-        // ImGui描画開始（raygui描画後に呼び出す）
+        /// @brief ImGui描画開始
         void BeginImGui();
         
-        // ImGui描画終了
+        /// @brief ImGui描画終了
         void EndImGui();
         
-        // フレーム終了処理（メインループの EndDrawing() 前に呼び出す）
-        void EndFrame();
+        /// @brief デフォルトフォントへの参照を取得（効率化：コピーなし）
+        /// @return デフォルトフォントへのconst参照
+        [[nodiscard]] const Font& GetFont() const noexcept { return baseFont_; }
         
-        // 日本語フォントがロードされているか
-        bool HasJapaneseFont() const { return japaneseFont_.texture.id != 0; }
+        /// @brief 指定サイズのフォントを取得（キャッシュ付き）
+        /// @param fontSize フォントサイズ
+        /// @return 指定サイズのフォントへのconst参照
+        [[nodiscard]] const Font& GetFont(int fontSize);
         
-        // rayguiフォントを取得
-        Font GetRayguiFont() const { return japaneseFont_; }
+        /// @brief デフォルトフォントのベースサイズを取得
+        /// @return ベースフォントサイズ
+        [[nodiscard]] int GetBaseFontSize() const noexcept { return baseFontSize_; }
         
-        // サンプルUIを描画（デモ用）
+        /// @brief フォントが初期化済みか確認
+        /// @return 初期化済みならtrue
+        [[nodiscard]] bool IsInitialized() const noexcept { return initialized_; }
+        
+        /// @brief サンプルUIを描画（デモ用）
         void DrawSampleUI();
+        
+        /// @brief デバッグウィンドウを描画（エンティティ情報表示・編集）
+        /// @param registry ECS registry
+        void DrawDebugWindow(entt::registry& registry);
         
     private:
         UIManager() = default;
         ~UIManager() = default;
         
-        // 日本語フォントをロード
-        bool LoadJapaneseFont(const std::string& fontPath, float fontSize);
+        /// @brief フォントをロード
+        /// @param fontPath フォントファイルパス
+        /// @param fontSize フォントサイズ
+        /// @return ロードされたフォント
+        Font LoadFontWithGlyphs(const std::string& fontPath, int fontSize);
         
-        // rayguiにフォントを設定
+        /// @brief rayguiにフォントを設定
         void SetupRayguiFont();
         
-        // ImGuiにフォントを設定
-        void SetupImGuiFont(const std::string& fontPath, float fontSize);
+        /// @brief ImGuiにフォントを設定
+        /// @param fontPath フォントファイルパス
+        void SetupImGuiFont(const std::string& fontPath);
         
-        Font japaneseFont_{};       // 日本語フォント（raygui用）
-        bool initialized_ = false;  // 初期化済みフラグ
+        std::string fontPath_;                           ///< ロードしたフォントファイルパス
+        Font baseFont_{};                                ///< ベースフォント
+        int baseFontSize_{18};                           ///< ベースフォントサイズ
+        std::unordered_map<int, Font> fontCache_;        ///< サイズ別フォントキャッシュ
+        bool initialized_{false};                        ///< 初期化フラグ
     };
+    
+    /// @brief テキスト描画ヘルパー関数（フォント取得を簡略化）
+    /// @param text 描画するテキスト
+    /// @param position 描画位置
+    /// @param fontSize フォントサイズ
+    /// @param color テキスト色
+    inline void DrawText(const char* text, Vector2 position, int fontSize, Color color) {
+        auto& uiMgr = UIManager::GetInstance();
+        DrawTextEx(uiMgr.GetFont(fontSize), text, position, static_cast<float>(fontSize), 1.0f, color);
+    }
 }
+
