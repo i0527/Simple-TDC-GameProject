@@ -299,8 +299,16 @@ WebUIは http://localhost:3000 で起動します。
 HTTPサーバーを有効化してゲームを実行：
 
 ```cpp
-// main_unified.cpp
-game.Initialize("assets/definitions", true, 8080);  // HTTPサーバー有効化
+// main_unified.cpp を編集
+// デフォルトではHTTPサーバーは無効（enableHTTPServer = false）
+// WebUIエディターを使用する場合は、以下のように有効化してください
+
+game.Initialize("assets/definitions", true, 8080);  // 第2引数をtrueに変更
+```
+
+または、コマンドライン引数で有効化（将来実装予定）：
+```bash
+./SimpleTDCGame --http-server --port 8080
 ```
 
 - **エディター**: http://localhost:3000
