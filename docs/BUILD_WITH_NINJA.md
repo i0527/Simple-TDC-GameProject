@@ -13,11 +13,13 @@
 **CMake 3.19以降を使用している場合、Ninjaは自動的にダウンロードされます！**
 
 CMake実行時にNinjaが見つからない場合：
+
 1. `scripts/bootstrap-ninja.ps1`が自動的に実行されます
 2. Ninjaが`.tools/bin/`にダウンロードされます
 3. CMakeセッション内でPATHに追加されます
 
 この機能を無効にする場合は、環境変数`NINJA_SKIP_AUTO_SETUP`を設定してください：
+
 ```powershell
 $env:NINJA_SKIP_AUTO_SETUP = "1"
 cmake --preset ninja-debug
@@ -36,6 +38,7 @@ cmake --preset ninja-debug
 ```
 
 このスクリプトは以下を自動的に実行します:
+
 - Ninja が未インストールの場合、自動ダウンロード
 - Visual Studio 環境の自動検出とセットアップ
 - CMake の設定とビルド実行
