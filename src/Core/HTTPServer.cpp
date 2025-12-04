@@ -323,6 +323,7 @@ void HTTPServer::SetupRoutes() {
     SetupExportImportRoutes();
     SetupStatsRoutes();
     SetupConfigRoutes();
+    SetupGameStateRoutes();
 
     // ヘルスチェック
     impl_->server->Get("/health", [](const httplib::Request&, httplib::Response& res) {
@@ -2548,6 +2549,133 @@ void HTTPServer::SetupConfigRoutes() {
             res.status = 500;
             res.set_content(
                 CreateErrorResponse(500, "Config error", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+}
+
+void HTTPServer::SetupGameStateRoutes() {
+    // GET /api/game/state - ゲーム状態取得（デバッグ/プレビュー用）
+    impl_->server->Get("/api/game/state", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!gameStateCallback_) {
+                res.status = 503;  // Service Unavailable
+                res.set_content(
+                    CreateErrorResponse(503, "Game state not available", 
+                        "Game state callback not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameState = gameStateCallback_();
+            res.set_content(gameState.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get game state", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // GET /api/game/td/state - TDモード専用ゲーム状態取得
+    impl_->server->Get("/api/game/td/state", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!gameStateCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Game state not available", 
+                        "Game state callback not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameState = gameStateCallback_();
+            
+            // TDモードでない場合はエラー
+            if (!gameState.contains("mode") || gameState["mode"] != "TD") {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid game mode", 
+                        "Current game mode is not TD", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            // TD専用の状態情報を返す
+            nlohmann::json tdState;
+            tdState["mode"] = "TD";
+            if (gameState.contains("scene")) {
+                tdState["scene"] = gameState["scene"];
+            }
+            if (gameState.contains("td")) {
+                tdState["td"] = gameState["td"];
+            }
+            if (gameState.contains("entities")) {
+                tdState["entities"] = gameState["entities"];
+            }
+            
+            res.set_content(tdState.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get TD game state", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // GET /api/game/roguelike/state - Roguelikeモード専用ゲーム状態取得
+    impl_->server->Get("/api/game/roguelike/state", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!gameStateCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Game state not available", 
+                        "Game state callback not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameState = gameStateCallback_();
+            
+            // Roguelikeモードでない場合はエラー
+            if (!gameState.contains("mode") || gameState["mode"] != "Roguelike") {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid game mode", 
+                        "Current game mode is not Roguelike", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            // Roguelike専用の状態情報を返す
+            nlohmann::json roguelikeState;
+            roguelikeState["mode"] = "Roguelike";
+            if (gameState.contains("scene")) {
+                roguelikeState["scene"] = gameState["scene"];
+            }
+            if (gameState.contains("roguelike")) {
+                roguelikeState["roguelike"] = gameState["roguelike"];
+            }
+            if (gameState.contains("entities")) {
+                roguelikeState["entities"] = gameState["entities"];
+            }
+            
+            res.set_content(roguelikeState.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get Roguelike game state", e.what(), requestId).dump(),
                 "application/json"
             );
         }
