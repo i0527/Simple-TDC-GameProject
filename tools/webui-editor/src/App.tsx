@@ -5,6 +5,8 @@ import EntityEditor from './components/Editors/EntityEditor'
 import StageEditor from './components/Editors/StageEditor'
 import UIEditor from './components/Editors/UIEditor'
 import SkillList from './components/Editors/Skill/SkillList'
+import EffectEditor from './components/Editors/EffectEditor'
+import SoundEditor from './components/Editors/SoundEditor'
 import ServerEventListener from './components/ServerEventListener'
 import { EditorMode } from './types/editor'
 
@@ -22,25 +24,9 @@ function App() {
       case 'skill':
         return <SkillList />
       case 'effect':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-gray-600 dark:text-gray-400 mb-2">
-                エフェクトエディターは近日実装予定です
-              </p>
-            </div>
-          </div>
-        )
+        return <EffectEditor />
       case 'sound':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-gray-600 dark:text-gray-400 mb-2">
-                サウンドエディターは近日実装予定です
-              </p>
-            </div>
-          </div>
-        )
+        return <SoundEditor />
       default:
         return <div className="p-8">エディターを選択してください</div>
     }
