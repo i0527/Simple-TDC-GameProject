@@ -32,6 +32,12 @@ namespace httplib {
     struct Response;
 }
 
+namespace Core::NodeGraph {
+    class NodeGraph;
+    class NodeExecutor;
+    class NodeRegistry;
+}
+
 namespace Core {
 
 /**
@@ -157,6 +163,52 @@ public:
      */
     void SetGameStateCallback(std::function<nlohmann::json()> callback) {
         gameStateCallback_ = std::move(callback);
+    }
+
+    /**
+     * @brief スクリーンショット取得のコールバックを設定（開発者モード用）
+     * 
+     * ゲーム画面のスクリーンショットを取得するコールバック
+     * @param callback スクリーンショットをBase64エンコードされたPNG画像データとして返すコールバック
+     */
+    void SetScreenshotCallback(std::function<std::string()> callback) {
+        screenshotCallback_ = std::move(callback);
+    }
+
+    /**
+     * @brief エンティティ操作のコールバックを設定（開発者モード用）
+     * 
+     * エンティティ操作APIで使用するコールバック
+     * @param getEntitiesCallback 全エンティティ情報をJSON形式で返すコールバック
+     * @param getEntityCallback 特定エンティティ情報をJSON形式で返すコールバック
+     * @param createEntityCallback エンティティ作成を実行するコールバック
+     * @param updateEntityCallback エンティティ更新を実行するコールバック
+     * @param deleteEntityCallback エンティティ削除を実行するコールバック
+     * @param spawnEntityCallback エンティティスポーンを実行するコールバック
+     * @param setEntityStatsCallback エンティティステータス設定を実行するコールバック
+     * @param setEntityAICallback エンティティAI設定を実行するコールバック
+     * @param setEntitySkillsCallback エンティティスキル設定を実行するコールバック
+     */
+    void SetEntityOperationCallbacks(
+        std::function<nlohmann::json()> getEntitiesCallback,
+        std::function<nlohmann::json(const std::string&)> getEntityCallback,
+        std::function<nlohmann::json(const nlohmann::json&)> createEntityCallback,
+        std::function<nlohmann::json(const std::string&, const nlohmann::json&)> updateEntityCallback,
+        std::function<bool(const std::string&)> deleteEntityCallback,
+        std::function<nlohmann::json(const std::string&, const nlohmann::json&)> spawnEntityCallback,
+        std::function<nlohmann::json(const std::string&, const nlohmann::json&)> setEntityStatsCallback,
+        std::function<nlohmann::json(const std::string&, const nlohmann::json&)> setEntityAICallback,
+        std::function<nlohmann::json(const std::string&, const nlohmann::json&)> setEntitySkillsCallback
+    ) {
+        getEntitiesCallback_ = std::move(getEntitiesCallback);
+        getEntityCallback_ = std::move(getEntityCallback);
+        createEntityCallback_ = std::move(createEntityCallback);
+        updateEntityCallback_ = std::move(updateEntityCallback);
+        deleteEntityCallback_ = std::move(deleteEntityCallback);
+        spawnEntityCallback_ = std::move(spawnEntityCallback);
+        setEntityStatsCallback_ = std::move(setEntityStatsCallback);
+        setEntityAICallback_ = std::move(setEntityAICallback);
+        setEntitySkillsCallback_ = std::move(setEntitySkillsCallback);
     }
 
     /**
@@ -293,6 +345,11 @@ private:
     void SetupGameStateRoutes();
 
     /**
+     * @brief 開発者モードAPIを設定
+     */
+    void SetupDevModeRoutes();
+
+    /**
      * @brief ファイル監視スレッドのエントリーポイント
      */
     void FileWatcherThread();
@@ -310,7 +367,7 @@ private:
     /**
      * @brief ログを記録
      */
-    void Log(LogLevel level, const std::string& message, const std::string& requestId = "");
+    void Log(LogLevel level, const std::string& message, const std::string& requestId = "") const;
 
     /**
      * @brief リクエストログを記録
@@ -325,7 +382,7 @@ private:
     /**
      * @brief エラーログを記録
      */
-    void LogError(const std::string& message, const std::string& requestId = "", const std::string& details = "");
+    void LogError(const std::string& message, const std::string& requestId = "", const std::string& details = "") const;
 
     /**
      * @brief ログレベル名を取得
@@ -357,6 +414,44 @@ private:
     bool CheckBodySize(size_t bodySize) const;
 
     /**
+     * @brief ファイルのバックアップを作成
+     * @param filePath バックアップ元ファイルパス
+     * @return バックアップファイルパス（失敗時は空文字列）
+     */
+    std::string CreateBackup(const std::string& filePath);
+
+    /**
+     * @brief キャッシュを無効化
+     * @param cacheKey キャッシュキー
+     */
+    void InvalidateCache(const std::string& cacheKey);
+
+    /**
+     * @brief エラーレスポンスを作成
+     */
+    nlohmann::json CreateErrorResponse(
+        int status,
+        const std::string& error,
+        const std::string& details,
+        const std::string& requestId
+    ) const;
+
+    /**
+     * @brief バリデーション: CharacterDef
+     */
+    bool ValidateCharacterDef(const Data::CharacterDef& def, std::string& errorMessage);
+
+    /**
+     * @brief バリデーション: StageDef
+     */
+    bool ValidateStageDef(const Data::StageDef& def, std::string& errorMessage);
+
+    /**
+     * @brief バリデーション: UILayoutDef
+     */
+    bool ValidateUILayoutDef(const Data::UILayoutDef& def, std::string& errorMessage);
+
+    /**
      * @brief 詳細なエラーレスポンスを作成（開発モード用）
      */
     nlohmann::json CreateDetailedErrorResponse(
@@ -373,6 +468,11 @@ private:
      * @brief 例外から詳細なエラー情報を抽出（開発モード用）
      */
     nlohmann::json ExtractExceptionDetails(const std::exception& e, const std::string& requestId) const;
+
+    /**
+     * @brief NodeGraphルート設定
+     */
+    void SetupNodeGraphRoutes();
 
 private:
     int port_ = 8080;
@@ -391,6 +491,18 @@ private:
     std::function<void(const std::string&)> errorHandler_;
     std::function<void(const std::string&)> fileChangedCallback_;
     std::function<nlohmann::json()> gameStateCallback_;
+    std::function<std::string()> screenshotCallback_;  // スクリーンショット取得コールバック
+    
+    // エンティティ操作コールバック（開発者モード用）
+    std::function<nlohmann::json()> getEntitiesCallback_;
+    std::function<nlohmann::json(const std::string&)> getEntityCallback_;
+    std::function<nlohmann::json(const nlohmann::json&)> createEntityCallback_;
+    std::function<nlohmann::json(const std::string&, const nlohmann::json&)> updateEntityCallback_;
+    std::function<bool(const std::string&)> deleteEntityCallback_;
+    std::function<nlohmann::json(const std::string&, const nlohmann::json&)> spawnEntityCallback_;
+    std::function<nlohmann::json(const std::string&, const nlohmann::json&)> setEntityStatsCallback_;
+    std::function<nlohmann::json(const std::string&, const nlohmann::json&)> setEntityAICallback_;
+    std::function<nlohmann::json(const std::string&, const nlohmann::json&)> setEntitySkillsCallback_;
 
     // ファイル監視用
     std::mutex fileModificationTimeMutex_;
@@ -403,7 +515,7 @@ private:
     // ロギング用
     bool loggingEnabled_ = true;
     LogLevel logLevel_ = LogLevel::INFO;
-    std::mutex logMutex_;
+    mutable std::mutex logMutex_;
     std::atomic<uint64_t> requestIdCounter_{0};
     std::unordered_map<std::string, RequestInfo> activeRequests_;
     std::mutex activeRequestsMutex_;
@@ -425,6 +537,16 @@ private:
     // パフォーマンスモニタリング用
     mutable std::mutex performanceStatsMutex_;
     PerformanceStats performanceStats_;
+
+    // NodeGraph管理用
+    std::map<std::string, std::unique_ptr<Core::NodeGraph::NodeGraph>> graphs_;
+    std::mutex graphsMutex_;
+    
+    // パフォーマンス最適化: ノードタイプキャッシュ
+    mutable std::string nodeTypesCacheJson_;
+    mutable std::mutex nodeTypesCacheMutex_;
+    mutable bool nodeTypesInitialized_ = false;
+};
 
 } // namespace Core
 

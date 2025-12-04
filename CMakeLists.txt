@@ -157,17 +157,9 @@ FetchContent_Declare(
     GIT_TAG 57efef06f69b50ed9ac0834a963a8aefcc59d588
 )
 
-# cpp-httplib (HTTP server library for Phase 4)
-FetchContent_Declare(
-    httplib
-    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
-    GIT_TAG v0.14.3
-    GIT_SHALLOW TRUE
-)
-
 # 依存ライブラリを取得
 message(STATUS "Fetching dependencies (this may take a while on first run)...")
-FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui httplib)
+FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui)
 
 # ============================================================================
 # ImGuiライブラリの構築
@@ -204,20 +196,19 @@ set(UNIFIED_SOURCES
     # Application層
     src/Application/UnifiedGame.cpp
     src/Application/HomeScene.cpp
+    src/Application/TDGameScene.cpp
+    src/Application/RoguelikeGameScene.cpp
     
     # Core層ユーティリティ
     src/FileUtils.cpp
-    src/Core/HTTPServer.cpp
+    
+    # Game層（エディター）
+    src/Game/Editor/EditorManager.cpp
     
     # Data層シリアライザー
     src/Data/Serializers/UISerializer.cpp
     src/Data/Serializers/CharacterSerializer.cpp
     src/Data/Serializers/StageSerializer.cpp
-    
-    # Game層システム（必要な場合）
-    src/Game/Systems/InputSystem.cpp
-    src/Game/Systems/MovementSystem.cpp
-    src/Game/Systems/RenderSystem.cpp
 )
 
 # 実行ファイル作成
@@ -230,7 +221,6 @@ target_include_directories(${PROJECT_NAME}
         ${raygui_SOURCE_DIR}/src
         ${dearimgui_SOURCE_DIR}
         ${rlimgui_SOURCE_DIR}
-        ${httplib_SOURCE_DIR}
 )
 
 # リンクライブラリ

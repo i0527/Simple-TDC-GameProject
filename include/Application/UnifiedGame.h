@@ -128,6 +128,64 @@ private:
      */
     nlohmann::json GetGameState() const;
 
+    /**
+     * @brief ファイル変更通知ハンドラ（ホットリロード用）
+     */
+    void OnFileChanged(const std::string& filePath);
+
+    // ===== 開発者モード用エンティティ操作 =====
+
+    /**
+     * @brief 全エンティティ情報をJSON形式で取得
+     */
+    nlohmann::json GetEntities() const;
+
+    /**
+     * @brief 特定エンティティ情報をJSON形式で取得
+     */
+    nlohmann::json GetEntity(const std::string& entityId) const;
+
+    /**
+     * @brief エンティティ作成（テスト用）
+     */
+    nlohmann::json CreateEntity(const nlohmann::json& config) const;
+
+    /**
+     * @brief エンティティ更新
+     */
+    nlohmann::json UpdateEntity(const std::string& entityId, const nlohmann::json& config) const;
+
+    /**
+     * @brief エンティティ削除
+     */
+    bool DeleteEntity(const std::string& entityId) const;
+
+    /**
+     * @brief エンティティスポーン
+     */
+    nlohmann::json SpawnEntity(const std::string& entityId, const nlohmann::json& spawnParams) const;
+
+    /**
+     * @brief エンティティステータス設定
+     */
+    nlohmann::json SetEntityStats(const std::string& entityId, const nlohmann::json& stats) const;
+
+    /**
+     * @brief エンティティAI設定
+     */
+    nlohmann::json SetEntityAI(const std::string& entityId, const nlohmann::json& aiConfig) const;
+
+    /**
+     * @brief エンティティスキル設定
+     */
+    nlohmann::json SetEntitySkills(const std::string& entityId, const nlohmann::json& skills) const;
+
+    /**
+     * @brief スクリーンショット取得（開発者モード用）
+     * @return Base64エンコードされたPNG画像データ（現在はプレースホルダー）
+     */
+    std::string GetScreenshot() const;
+
 private:
     GameMode currentMode_ = GameMode::Menu;
     std::string currentSceneName_;

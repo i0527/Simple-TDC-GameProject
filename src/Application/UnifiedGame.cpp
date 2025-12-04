@@ -9,6 +9,8 @@
 #include "Core/Platform.h"
 #include "Application/UnifiedGame.h"
 #include "Application/HomeScene.h"
+#include "Application/TDGameScene.h"
+#include "Application/RoguelikeGameScene.h"
 #include "Core/GameRenderer.h"
 #include "Core/EntityFactory.h"
 #include "Core/SoundManager.h"
@@ -33,6 +35,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <filesystem>
 
 namespace Application {
 
@@ -77,8 +80,9 @@ UnifiedGame::UnifiedGame()
     , context_(std::make_unique<Core::GameContext>())
     , systemRunner_(std::make_unique<Core::SystemRunner>())
     , definitions_(std::make_unique<Data::DefinitionRegistry>())
-    , definitionLoader_(std::make_unique<Data::DefinitionLoader>())
+    , definitionLoader_(std::make_unique<Data::DefinitionLoader>(*definitions_))
 {
+    // SystemRunnerはRunPhase/RunAll呼び出し時にworld_とcontext_を引数で受け取る
 }
 
 bool UnifiedGame::Initialize(
@@ -108,34 +112,48 @@ bool UnifiedGame::Initialize(
     
     // データ定義読み込み
     try {
+        std::cout << "UnifiedGame: Loading definitions from: " << definitionsPath << "\n";
+        
+        std::cout << "UnifiedGame: Loading characters...\n";
         definitionLoader_->LoadAllCharacters(definitionsPath + "/characters");
+        
+        std::cout << "UnifiedGame: Loading stages...\n";
         definitionLoader_->LoadAllStages(definitionsPath + "/stages");
+        
+        std::cout << "UnifiedGame: Loading UI layouts...\n";
         definitionLoader_->LoadAllUILayouts(definitionsPath + "/ui");
-        definitionLoader_->LoadAllMaps(definitionsPath + "/maps");
+        
+        // マップ定義の読み込みはオプショナル（Roguelike用）
+        std::string mapsPath = definitionsPath + "/maps";
+        if (std::filesystem::exists(mapsPath)) {
+            std::cout << "UnifiedGame: Loading maps from: " << mapsPath << "\n";
+            definitionLoader_->LoadAllMaps(mapsPath);
+        } else {
+            std::cout << "UnifiedGame: ℹ️ Maps directory not found at: " << mapsPath 
+                      << " - Roguelike will generate dungeons procedurally\n";
+        }
         
         // 定義をレジストリに登録
         auto& loader = *definitionLoader_;
         // TODO: ローダーからレジストリへの統合
         
-        std::cout << "Definitions loaded from: " << definitionsPath << "\n";
+        std::cout << "UnifiedGame: ✅ All available definitions loaded successfully\n";
     } catch (const std::exception& e) {
-        std::cerr << "Failed to load definitions: " << e.what() << "\n";
-        // エラーでも続行（デフォルト定義を使用）
+        std::cerr << "UnifiedGame: ❌ Failed to load definitions: " << e.what() << "\n";
+        // エラーでも続行(デフォルト定義を使用)
+        std::cerr << "UnifiedGame: ⚠️ Continuing with default definitions\n";
     }
     
-    // レジストリをコンテキストに登録（コピーで登録）
-    context_->Register<Data::DefinitionRegistry>(*definitions_);
-    
-    // EntityFactory登録（コンテキストからレジストリを取得）
-    context_->Register<Core::EntityFactory>(*world_, context_->Get<Data::DefinitionRegistry>());
+    // EntityFactory登録（レジストリへの参照を渡す）
+    context_->Register<Core::EntityFactory>(*world_, *definitions_);
     
     // SoundManager登録
     auto& soundManager = context_->Emplace<Core::SoundManager>();
-    soundManager.SetRegistry(&context_->Get<Data::DefinitionRegistry>());
+    soundManager.SetRegistry(definitions_.get());
     
     // EffectManager登録
     auto& effectManager = context_->Emplace<Core::EffectManager>();
-    effectManager.SetRegistry(&context_->Get<Data::DefinitionRegistry>());
+    effectManager.SetRegistry(definitions_.get());
     
     // HTTPサーバー初期化（オプション）
     enableHTTPServer_ = enableHTTPServer;
@@ -160,6 +178,24 @@ bool UnifiedGame::Initialize(
             httpServer_->SetGameStateCallback([this]() {
                 return this->GetGameState();
             });
+
+            // エンティティ操作のコールバックを設定（開発者モード用）
+            httpServer_->SetEntityOperationCallbacks(
+                [this]() { return this->GetEntities(); },
+                [this](const std::string& id) { return this->GetEntity(id); },
+                [this](const nlohmann::json& config) { return this->CreateEntity(config); },
+                [this](const std::string& id, const nlohmann::json& config) { return this->UpdateEntity(id, config); },
+                [this](const std::string& id) { return this->DeleteEntity(id); },
+                [this](const std::string& id, const nlohmann::json& params) { return this->SpawnEntity(id, params); },
+                [this](const std::string& id, const nlohmann::json& stats) { return this->SetEntityStats(id, stats); },
+                [this](const std::string& id, const nlohmann::json& aiConfig) { return this->SetEntityAI(id, aiConfig); },
+                [this](const std::string& id, const nlohmann::json& skills) { return this->SetEntitySkills(id, skills); }
+            );
+
+            // スクリーンショット取得のコールバックを設定（開発者モード用）
+            httpServer_->SetScreenshotCallback([this]() {
+                return this->GetScreenshot();
+            });
             
             httpServer_->Start();
             std::cout << "HTTP Server started on port " << httpServerPort_ << "\n";
@@ -181,6 +217,8 @@ bool UnifiedGame::Initialize(
     
     // シーンを登録
     RegisterScene("Home", std::make_unique<HomeScene>());
+    RegisterScene("TDGame", std::make_unique<TDGameScene>());
+    RegisterScene("Roguelike", std::make_unique<RoguelikeGameScene>());
     
     // ホームシーンにコールバックを設定
     auto* homeScene = dynamic_cast<HomeScene*>(scenes_["Home"].get());
@@ -214,6 +252,19 @@ void UnifiedGame::SetGameMode(GameMode mode) {
     
     // 新しいモードを初期化
     InitializeGameMode(mode);
+    
+    // モードに対応するシーンに切り替え
+    switch (mode) {
+        case GameMode::Menu:
+            ChangeScene("Home");
+            break;
+        case GameMode::TD:
+            ChangeScene("TDGame");
+            break;
+        case GameMode::Roguelike:
+            ChangeScene("Roguelike");
+            break;
+    }
 }
 
 void UnifiedGame::InitializeGameMode(GameMode mode) {
@@ -498,9 +549,51 @@ nlohmann::json UnifiedGame::GetGameState() const {
     state["scene"] = currentSceneName_;
     state["entityCount"] = world_->EntityCount();
     
-    // エンティティ情報（簡易版）
+    // エンティティ情報（詳細版）
     nlohmann::json entities;
     entities["total"] = world_->EntityCount();
+    
+    // TDエンティティの統計
+    int tdEntityCount = 0;
+    int tdAllyCount = 0;
+    int tdEnemyCount = 0;
+    auto tdView = world_->View<Domain::TD::Components::Unit>();
+    for (auto entity : tdView) {
+        tdEntityCount++;
+        const auto& unit = tdView.get<Domain::TD::Components::Unit>(entity);
+        if (unit.isEnemy) {
+            tdEnemyCount++;
+        } else {
+            tdAllyCount++;
+        }
+    }
+    
+    // Roguelikeエンティティの統計
+    int rogueEntityCount = 0;
+    int roguePlayerCount = 0;
+    int rogueMonsterCount = 0;
+    auto rogueView = world_->View<Domain::Roguelike::Components::GridPosition>();
+    for (auto entity : rogueView) {
+        rogueEntityCount++;
+        if (world_->HasAll<Domain::Roguelike::Components::TurnActor>(entity)) {
+            const auto* actor = world_->TryGet<Domain::Roguelike::Components::TurnActor>(entity);
+            if (actor && actor->isPlayer) {
+                roguePlayerCount++;
+            } else {
+                rogueMonsterCount++;
+            }
+        }
+    }
+    
+    entities["td"] = nlohmann::json::object();
+    entities["td"]["total"] = tdEntityCount;
+    entities["td"]["allies"] = tdAllyCount;
+    entities["td"]["enemies"] = tdEnemyCount;
+    
+    entities["roguelike"] = nlohmann::json::object();
+    entities["roguelike"]["total"] = rogueEntityCount;
+    entities["roguelike"]["players"] = roguePlayerCount;
+    entities["roguelike"]["monsters"] = rogueMonsterCount;
     
     // TDモードの場合の追加情報
     if (currentMode_ == GameMode::TD) {
@@ -509,23 +602,28 @@ nlohmann::json UnifiedGame::GetGameState() const {
         // WaveManagerの情報を取得
         if (context_->Has<Domain::TD::Managers::WaveManager>()) {
             const auto& waveManager = context_->Get<Domain::TD::Managers::WaveManager>();
-            // WaveManagerの状態を取得（実装に応じて調整）
             tdState["waveManager"] = nlohmann::json::object();
-            // TODO: WaveManagerにGetState()メソッドを追加して詳細情報を取得
+            tdState["waveManager"]["currentWave"] = waveManager.GetCurrentWaveNumber();
+            tdState["waveManager"]["totalWaves"] = waveManager.GetTotalWaves();
+            tdState["waveManager"]["laneCount"] = waveManager.GetLaneCount();
         }
         
         // GameStateManagerの情報を取得
         if (context_->Has<Domain::TD::Managers::GameStateManager>()) {
             const auto& gameStateManager = context_->Get<Domain::TD::Managers::GameStateManager>();
-            // GameStateManagerの状態を取得（実装に応じて調整）
             tdState["gameStateManager"] = nlohmann::json::object();
-            // TODO: GameStateManagerにGetState()メソッドを追加して詳細情報を取得
+            tdState["gameStateManager"]["baseHealth"] = gameStateManager.GetBaseHealth();
+            tdState["gameStateManager"]["enemyBaseHealth"] = gameStateManager.GetEnemyBaseHealth();
+            tdState["gameStateManager"]["phase"] = static_cast<int>(gameStateManager.GetPhase());
         }
         
-        // TDエンティティの統計
-        nlohmann::json tdEntities;
-        // TODO: TDコンポーネントを持つエンティティの統計を取得
-        tdState["entities"] = tdEntities;
+        // SpawnManagerの情報を取得
+        if (context_->Has<Domain::TD::Managers::SpawnManager>()) {
+            const auto& spawnManager = context_->Get<Domain::TD::Managers::SpawnManager>();
+            tdState["spawnManager"] = nlohmann::json::object();
+            tdState["spawnManager"]["currentCost"] = spawnManager.GetCurrentCost();
+            tdState["spawnManager"]["maxCost"] = spawnManager.GetMaxCost();
+        }
         
         state["td"] = tdState;
     }
@@ -537,15 +635,11 @@ nlohmann::json UnifiedGame::GetGameState() const {
         // TurnManagerの情報を取得
         if (context_->Has<Domain::Roguelike::Managers::TurnManager>()) {
             const auto& turnManager = context_->Get<Domain::Roguelike::Managers::TurnManager>();
-            // TurnManagerの状態を取得（実装に応じて調整）
             roguelikeState["turnManager"] = nlohmann::json::object();
-            // TODO: TurnManagerにGetState()メソッドを追加して詳細情報を取得
+            roguelikeState["turnManager"]["turnCount"] = turnManager.GetTurnCount();
+            roguelikeState["turnManager"]["state"] = static_cast<int>(turnManager.GetState());
+            roguelikeState["turnManager"]["awaitingInput"] = turnManager.IsAwaitingInput();
         }
-        
-        // Roguelikeエンティティの統計
-        nlohmann::json roguelikeEntities;
-        // TODO: Roguelikeコンポーネントを持つエンティティの統計を取得
-        roguelikeState["entities"] = roguelikeEntities;
         
         state["roguelike"] = roguelikeState;
     }
@@ -556,6 +650,406 @@ nlohmann::json UnifiedGame::GetGameState() const {
     ).count();
     
     return state;
+}
+
+nlohmann::json UnifiedGame::GetEntities() const {
+    nlohmann::json result = nlohmann::json::array();
+    
+    // 全エンティティを走査
+    auto view = world_->View<Core::Components::Identity>();
+    for (auto entity : view) {
+        const auto& identity = view.get<Core::Components::Identity>(entity);
+        
+        nlohmann::json entityJson;
+        entityJson["id"] = std::to_string(static_cast<uint32_t>(entity));
+        entityJson["entityId"] = identity.id;
+        entityJson["type"] = identity.type;
+        entityJson["name"] = identity.name;
+        
+        // 位置情報
+        if (auto* pos = world_->TryGet<Core::Components::Position>(entity)) {
+            entityJson["position"] = nlohmann::json::object();
+            entityJson["position"]["x"] = pos->x;
+            entityJson["position"]["y"] = pos->y;
+        }
+        
+        // TDコンポーネント
+        if (auto* stats = world_->TryGet<Domain::TD::Components::Stats>(entity)) {
+            entityJson["td"] = nlohmann::json::object();
+            entityJson["td"]["stats"] = nlohmann::json::object();
+            entityJson["td"]["stats"]["maxHealth"] = stats->maxHealth;
+            entityJson["td"]["stats"]["currentHealth"] = stats->currentHealth;
+            entityJson["td"]["stats"]["attack"] = stats->attack;
+            entityJson["td"]["stats"]["defense"] = stats->defense;
+            entityJson["td"]["stats"]["moveSpeed"] = stats->moveSpeed;
+        }
+        
+        // Roguelikeコンポーネント
+        if (auto* rogueStats = world_->TryGet<Domain::Roguelike::Components::Stats>(entity)) {
+            entityJson["roguelike"] = nlohmann::json::object();
+            entityJson["roguelike"]["stats"] = nlohmann::json::object();
+            entityJson["roguelike"]["stats"]["maxHp"] = rogueStats->maxHp;
+            entityJson["roguelike"]["stats"]["hp"] = rogueStats->hp;
+            entityJson["roguelike"]["stats"]["attack"] = rogueStats->attack;
+            entityJson["roguelike"]["stats"]["defense"] = rogueStats->defense;
+            entityJson["roguelike"]["stats"]["level"] = rogueStats->level;
+        }
+        
+        result.push_back(entityJson);
+    }
+    
+    return result;
+}
+
+nlohmann::json UnifiedGame::GetEntity(const std::string& entityId) const {
+    // entityIdは文字列形式のentt::entity ID
+    try {
+        uint32_t entityValue = std::stoul(entityId);
+        entt::entity entity = static_cast<entt::entity>(entityValue);
+        
+        if (!world_->Valid(entity)) {
+            return nlohmann::json();
+        }
+        
+        nlohmann::json entityJson;
+        entityJson["id"] = entityId;
+        
+        // Identity
+        if (auto* identity = world_->TryGet<Core::Components::Identity>(entity)) {
+            entityJson["entityId"] = identity->id;
+            entityJson["type"] = identity->type;
+            entityJson["name"] = identity->name;
+        }
+        
+        // Position
+        if (auto* pos = world_->TryGet<Core::Components::Position>(entity)) {
+            entityJson["position"] = nlohmann::json::object();
+            entityJson["position"]["x"] = pos->x;
+            entityJson["position"]["y"] = pos->y;
+        }
+        
+        // TDコンポーネント
+        if (auto* stats = world_->TryGet<Domain::TD::Components::Stats>(entity)) {
+            entityJson["td"] = nlohmann::json::object();
+            entityJson["td"]["stats"] = nlohmann::json::object();
+            entityJson["td"]["stats"]["maxHealth"] = stats->maxHealth;
+            entityJson["td"]["stats"]["currentHealth"] = stats->currentHealth;
+            entityJson["td"]["stats"]["attack"] = stats->attack;
+            entityJson["td"]["stats"]["defense"] = stats->defense;
+            entityJson["td"]["stats"]["moveSpeed"] = stats->moveSpeed;
+            entityJson["td"]["stats"]["attackInterval"] = stats->attackInterval;
+        }
+        
+        if (auto* unit = world_->TryGet<Domain::TD::Components::Unit>(entity)) {
+            if (!entityJson.contains("td")) {
+                entityJson["td"] = nlohmann::json::object();
+            }
+            entityJson["td"]["unit"] = nlohmann::json::object();
+            entityJson["td"]["unit"]["definitionId"] = unit->definitionId;
+            entityJson["td"]["unit"]["isEnemy"] = unit->isEnemy;
+            entityJson["td"]["unit"]["level"] = unit->level;
+        }
+        
+        // Roguelikeコンポーネント
+        if (auto* rogueStats = world_->TryGet<Domain::Roguelike::Components::Stats>(entity)) {
+            entityJson["roguelike"] = nlohmann::json::object();
+            entityJson["roguelike"]["stats"] = nlohmann::json::object();
+            entityJson["roguelike"]["stats"]["maxHp"] = rogueStats->maxHp;
+            entityJson["roguelike"]["stats"]["hp"] = rogueStats->hp;
+            entityJson["roguelike"]["stats"]["attack"] = rogueStats->attack;
+            entityJson["roguelike"]["stats"]["defense"] = rogueStats->defense;
+            entityJson["roguelike"]["stats"]["level"] = rogueStats->level;
+            entityJson["roguelike"]["stats"]["experience"] = rogueStats->experience;
+        }
+        
+        if (auto* gridPos = world_->TryGet<Domain::Roguelike::Components::GridPosition>(entity)) {
+            if (!entityJson.contains("roguelike")) {
+                entityJson["roguelike"] = nlohmann::json::object();
+            }
+            entityJson["roguelike"]["gridPosition"] = nlohmann::json::object();
+            entityJson["roguelike"]["gridPosition"]["x"] = gridPos->x;
+            entityJson["roguelike"]["gridPosition"]["y"] = gridPos->y;
+        }
+        
+        return entityJson;
+    } catch (const std::exception&) {
+        return nlohmann::json();
+    }
+}
+
+nlohmann::json UnifiedGame::CreateEntity(const nlohmann::json& config) const {
+    // テスト用エンティティ作成
+    auto entity = world_->Create();
+    
+    // 基本コンポーネント
+    std::string entityId = config.value("entityId", "test_entity_" + std::to_string(static_cast<uint32_t>(entity)));
+    std::string type = config.value("type", "unit");
+    std::string name = config.value("name", "Test Entity");
+    
+    world_->Emplace<Core::Components::Identity>(entity, entityId, type, name);
+    
+    // 位置
+    float x = config.value("position", nlohmann::json::object()).value("x", 0.0f);
+    float y = config.value("position", nlohmann::json::object()).value("y", 0.0f);
+    world_->Emplace<Core::Components::Position>(entity, x, y);
+    
+    // TDコンポーネント（指定がある場合）
+    if (config.contains("td")) {
+        auto& tdConfig = config["td"];
+        if (tdConfig.contains("stats")) {
+            auto& statsConfig = tdConfig["stats"];
+            Domain::TD::Components::Stats stats;
+            stats.maxHealth = statsConfig.value("maxHealth", 100.0f);
+            stats.currentHealth = statsConfig.value("currentHealth", stats.maxHealth);
+            stats.attack = statsConfig.value("attack", 10.0f);
+            stats.defense = statsConfig.value("defense", 0.0f);
+            stats.moveSpeed = statsConfig.value("moveSpeed", 50.0f);
+            stats.attackInterval = statsConfig.value("attackInterval", 1.0f);
+            world_->Emplace<Domain::TD::Components::Stats>(entity, stats);
+        }
+        
+        if (tdConfig.contains("unit")) {
+            auto& unitConfig = tdConfig["unit"];
+            Domain::TD::Components::Unit unit;
+            unit.definitionId = unitConfig.value("definitionId", "");
+            unit.isEnemy = unitConfig.value("isEnemy", false);
+            unit.level = unitConfig.value("level", 1);
+            world_->Emplace<Domain::TD::Components::Unit>(entity, unit);
+            
+            // 陣営タグ
+            if (unit.isEnemy) {
+                world_->Emplace<Domain::TD::Components::EnemyUnit>(entity);
+            } else {
+                world_->Emplace<Domain::TD::Components::AllyUnit>(entity);
+            }
+        }
+    }
+    
+    // Roguelikeコンポーネント（指定がある場合）
+    if (config.contains("roguelike")) {
+        auto& rogueConfig = config["roguelike"];
+        if (rogueConfig.contains("stats")) {
+            auto& statsConfig = rogueConfig["stats"];
+            Domain::Roguelike::Components::Stats stats;
+            stats.maxHp = statsConfig.value("maxHp", 10);
+            stats.hp = statsConfig.value("hp", stats.maxHp);
+            stats.attack = statsConfig.value("attack", 1);
+            stats.defense = statsConfig.value("defense", 0);
+            stats.level = statsConfig.value("level", 1);
+            stats.experience = statsConfig.value("experience", 0);
+            world_->Emplace<Domain::Roguelike::Components::Stats>(entity, stats);
+        }
+        
+        if (rogueConfig.contains("gridPosition")) {
+            auto& posConfig = rogueConfig["gridPosition"];
+            int gridX = posConfig.value("x", 0);
+            int gridY = posConfig.value("y", 0);
+            world_->Emplace<Domain::Roguelike::Components::GridPosition>(entity, gridX, gridY);
+        }
+    }
+    
+    nlohmann::json result;
+    result["success"] = true;
+    result["entityId"] = std::to_string(static_cast<uint32_t>(entity));
+    result["message"] = "Entity created";
+    
+    return result;
+}
+
+nlohmann::json UnifiedGame::UpdateEntity(const std::string& entityId, const nlohmann::json& config) const {
+    try {
+        uint32_t entityValue = std::stoul(entityId);
+        entt::entity entity = static_cast<entt::entity>(entityValue);
+        
+        if (!world_->Valid(entity)) {
+            nlohmann::json error;
+            error["success"] = false;
+            error["error"] = "Entity not found";
+            return error;
+        }
+        
+        // 位置更新
+        if (config.contains("position")) {
+            auto* pos = world_->TryGet<Core::Components::Position>(entity);
+            if (pos) {
+                pos->x = config["position"].value("x", pos->x);
+                pos->y = config["position"].value("y", pos->y);
+            }
+        }
+        
+        // TDステータス更新
+        if (config.contains("td") && config["td"].contains("stats")) {
+            auto* stats = world_->TryGet<Domain::TD::Components::Stats>(entity);
+            if (stats) {
+                auto& statsConfig = config["td"]["stats"];
+                if (statsConfig.contains("maxHealth")) stats->maxHealth = statsConfig["maxHealth"];
+                if (statsConfig.contains("currentHealth")) stats->currentHealth = statsConfig["currentHealth"];
+                if (statsConfig.contains("attack")) stats->attack = statsConfig["attack"];
+                if (statsConfig.contains("defense")) stats->defense = statsConfig["defense"];
+                if (statsConfig.contains("moveSpeed")) stats->moveSpeed = statsConfig["moveSpeed"];
+                if (statsConfig.contains("attackInterval")) stats->attackInterval = statsConfig["attackInterval"];
+            }
+        }
+        
+        // Roguelikeステータス更新
+        if (config.contains("roguelike") && config["roguelike"].contains("stats")) {
+            auto* stats = world_->TryGet<Domain::Roguelike::Components::Stats>(entity);
+            if (stats) {
+                auto& statsConfig = config["roguelike"]["stats"];
+                if (statsConfig.contains("maxHp")) stats->maxHp = statsConfig["maxHp"];
+                if (statsConfig.contains("hp")) stats->hp = statsConfig["hp"];
+                if (statsConfig.contains("attack")) stats->attack = statsConfig["attack"];
+                if (statsConfig.contains("defense")) stats->defense = statsConfig["defense"];
+                if (statsConfig.contains("level")) stats->level = statsConfig["level"];
+                if (statsConfig.contains("experience")) stats->experience = statsConfig["experience"];
+            }
+        }
+        
+        nlohmann::json result;
+        result["success"] = true;
+        result["entityId"] = entityId;
+        result["message"] = "Entity updated";
+        
+        return result;
+    } catch (const std::exception& e) {
+        nlohmann::json error;
+        error["success"] = false;
+        error["error"] = e.what();
+        return error;
+    }
+}
+
+bool UnifiedGame::DeleteEntity(const std::string& entityId) const {
+    try {
+        uint32_t entityValue = std::stoul(entityId);
+        entt::entity entity = static_cast<entt::entity>(entityValue);
+        
+        if (!world_->Valid(entity)) {
+            return false;
+        }
+        
+        world_->Destroy(entity);
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
+}
+
+nlohmann::json UnifiedGame::SpawnEntity(const std::string& entityId, const nlohmann::json& spawnParams) const {
+    // エンティティ定義IDからエンティティを作成
+    std::string definitionId = spawnParams.value("definitionId", entityId);
+    float x = spawnParams.value("x", 0.0f);
+    float y = spawnParams.value("y", 0.0f);
+    bool isEnemy = spawnParams.value("isEnemy", false);
+    int level = spawnParams.value("level", 1);
+    
+    // EntityFactoryを使用してエンティティを作成
+    if (context_->Has<Core::EntityFactory>()) {
+        auto& factory = context_->Get<Core::EntityFactory>();
+        entt::entity entity = factory.CreateCharacter(definitionId, x, y, isEnemy, level);
+        
+        nlohmann::json result;
+        result["success"] = true;
+        result["entityId"] = std::to_string(static_cast<uint32_t>(entity));
+        result["message"] = "Entity spawned";
+        
+        return result;
+    }
+    
+    nlohmann::json error;
+    error["success"] = false;
+    error["error"] = "EntityFactory not available";
+    return error;
+}
+
+nlohmann::json UnifiedGame::SetEntityStats(const std::string& entityId, const nlohmann::json& stats) const {
+    try {
+        uint32_t entityValue = std::stoul(entityId);
+        entt::entity entity = static_cast<entt::entity>(entityValue);
+        
+        if (!world_->Valid(entity)) {
+            nlohmann::json error;
+            error["success"] = false;
+            error["error"] = "Entity not found";
+            return error;
+        }
+        
+        // TDステータス設定
+        if (auto* tdStats = world_->TryGet<Domain::TD::Components::Stats>(entity)) {
+            if (stats.contains("maxHealth")) tdStats->maxHealth = stats["maxHealth"];
+            if (stats.contains("currentHealth")) tdStats->currentHealth = stats["currentHealth"];
+            if (stats.contains("attack")) tdStats->attack = stats["attack"];
+            if (stats.contains("defense")) tdStats->defense = stats["defense"];
+            if (stats.contains("moveSpeed")) tdStats->moveSpeed = stats["moveSpeed"];
+            if (stats.contains("attackInterval")) tdStats->attackInterval = stats["attackInterval"];
+        }
+        
+        // Roguelikeステータス設定
+        if (auto* rogueStats = world_->TryGet<Domain::Roguelike::Components::Stats>(entity)) {
+            if (stats.contains("maxHp")) rogueStats->maxHp = stats["maxHp"];
+            if (stats.contains("hp")) rogueStats->hp = stats["hp"];
+            if (stats.contains("attack")) rogueStats->attack = stats["attack"];
+            if (stats.contains("defense")) rogueStats->defense = stats["defense"];
+            if (stats.contains("level")) rogueStats->level = stats["level"];
+            if (stats.contains("experience")) rogueStats->experience = stats["experience"];
+        }
+        
+        nlohmann::json result;
+        result["success"] = true;
+        result["entityId"] = entityId;
+        result["message"] = "Entity stats updated";
+        
+        return result;
+    } catch (const std::exception& e) {
+        nlohmann::json error;
+        error["success"] = false;
+        error["error"] = e.what();
+        return error;
+    }
+}
+
+nlohmann::json UnifiedGame::SetEntityAI(const std::string& entityId, const nlohmann::json& aiConfig) const {
+    // AI設定は将来実装（現在はプレースホルダー）
+    nlohmann::json result;
+    result["success"] = true;
+    result["entityId"] = entityId;
+    result["message"] = "AI configuration updated (placeholder)";
+    result["note"] = "AI configuration will be implemented in future phases";
+    
+    return result;
+}
+
+nlohmann::json UnifiedGame::SetEntitySkills(const std::string& entityId, const nlohmann::json& skills) const {
+    // スキル設定は将来実装（現在はプレースホルダー）
+    nlohmann::json result;
+    result["success"] = true;
+    result["entityId"] = entityId;
+    result["message"] = "Skills updated (placeholder)";
+    result["note"] = "Skill system will be implemented in future phases";
+    
+    return result;
+}
+
+std::string UnifiedGame::GetScreenshot() const {
+    // TODO: 実装予定
+    // GameRendererからRenderTextureを取得し、画像をエクスポートしてBase64エンコード
+    // 現在はプレースホルダーとして空文字列を返す
+    
+    // 将来的な実装例:
+    // auto* renderer = context_->TryGet<Core::GameRenderer>();
+    // if (!renderer) return "";
+    // 
+    // const auto& renderTarget = renderer->GetRenderTarget();
+    // Image image = LoadImageFromTexture(renderTarget.texture);
+    // ImageFlipVertical(&image);  // RenderTextureはY反転されているため
+    // 
+    // // PNGエンコード（外部ライブラリが必要: stb_image_write等）
+    // // Base64エンコード
+    // 
+    // UnloadImage(image);
+    // return base64EncodedData;
+    
+    return "";  // プレースホルダー
 }
 
 } // namespace Application

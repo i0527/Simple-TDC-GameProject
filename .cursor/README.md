@@ -11,6 +11,7 @@
 **用途**: Cursor IDE でのマルチエージェント開発のための包括的なガイド
 
 **内容**:
+
 - プロジェクト概要
 - Cursor IDE 設定方法
 - マルチエージェント開発戦略
@@ -29,6 +30,7 @@
 **用途**: AIエージェントが即座に参照できるクイックリファレンス
 
 **内容**:
+
 - 最重要ルール（5秒チェック）
 - エージェント役割別チートシート
 - 頻出コードスニペット
@@ -45,6 +47,7 @@
 **用途**: プロジェクトの構造を視覚的に理解する
 
 **内容**:
+
 - システム全体図
 - レイヤーアーキテクチャ
 - ECS データフロー
@@ -58,18 +61,37 @@
 
 ---
 
+### 4. UNIFIED_PLATFORM_TODO.md（統合プラットフォーム実装計画）⭐ NEW
+
+**用途**: 統合ゲームプラットフォーム完成に向けた詳細タスク管理
+
+**内容**:
+
+- Phase 1-8の詳細タスクリスト
+- マイルストーン管理（4段階）
+- Cursor開発ワークフロー
+- 優先順位付きタスク管理
+- 各Phaseの完了条件
+- Cursor Composer/Chat活用例
+
+**対象**: 全開発者（実装タスク管理）
+
+---
+
 ## 🚀 クイックスタート
 
 ### 初めての人
 
 1. **CURSOR_DEVELOPMENT_GUIDE.md** を読む（30分）
 2. **ARCHITECTURE_DIAGRAMS.md** でアーキテクチャを理解（10分）
-3. **AI_AGENT_QUICK_REFERENCE.md** をブックマーク
+3. **UNIFIED_PLATFORM_TODO.md** で現在のタスクを確認（5分）
+4. **AI_AGENT_QUICK_REFERENCE.md** をブックマーク
 
 ### 経験者
 
-1. **AI_AGENT_QUICK_REFERENCE.md** で最新ルールを確認（5分）
-2. 必要に応じて **CURSOR_DEVELOPMENT_GUIDE.md** を参照
+1. **UNIFIED_PLATFORM_TODO.md** で作業するPhaseを選択（3分）
+2. **AI_AGENT_QUICK_REFERENCE.md** で最新ルールを確認（5分）
+3. 必要に応じて **CURSOR_DEVELOPMENT_GUIDE.md** を参照
 
 ---
 
@@ -98,10 +120,12 @@
 ## 🔗 関連ドキュメント
 
 ### プロジェクトルート
+
 - **.cursorrules** - Cursor プロジェクトルール（簡潔版）
 - **.github/copilot-instructions.md** - コーディング規約
 
 ### docs/ ディレクトリ
+
 - **docs/EXECUTIVE_SUMMARY.md** - プロジェクト概要
 - **docs/CODE_ANALYSIS.md** - 詳細分析
 - **docs/REFACTORING_PLAN.md** - 改善計画
@@ -134,6 +158,7 @@
 | 日付 | 変更内容 |
 |------|---------|
 | 2025-12-03 | 初版作成（3ドキュメント） |
+| 2025-12-04 | UNIFIED_PLATFORM_TODO.md追加（統合プラットフォーム実装計画） |
 
 ---
 

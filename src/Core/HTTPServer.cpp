@@ -3,6 +3,10 @@
  * @brief HTTPサーバー管理クラスの実装
  */
 
+// Windows APIとの競合を避けるため、Windows.hより前にRaylibをインクルード
+#define NOGDI
+#define NOUSER
+
 #include "Core/HTTPServer.h"
 #include "Data/Loaders/CharacterLoader.h"
 #include "Data/Loaders/StageLoader.h"
@@ -10,6 +14,9 @@
 #include "Data/Serializers/UISerializer.h"
 #include "Data/Serializers/CharacterSerializer.h"
 #include "Data/Serializers/StageSerializer.h"
+#include "Core/NodeGraph/NodeRegistry.h"
+#include "Core/NodeGraph/NodeGraph.h"
+#include "Core/NodeGraph/NodeExecutor.h"
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <filesystem>
@@ -324,6 +331,8 @@ void HTTPServer::SetupRoutes() {
     SetupStatsRoutes();
     SetupConfigRoutes();
     SetupGameStateRoutes();
+    SetupDevModeRoutes();
+    SetupNodeGraphRoutes();
 
     // ヘルスチェック
     impl_->server->Get("/health", [](const httplib::Request&, httplib::Response& res) {
@@ -1825,8 +1834,8 @@ void HTTPServer::SetupSearchRoutes() {
     impl_->server->Get("/api/search/ui", [this](const httplib::Request& req, httplib::Response& res) {
         std::string requestId = res.get_header_value("X-Request-ID");
         try {
-            std::string query = req.get_param_value("q", "");
-            std::string nameFilter = req.get_param_value("name", "");
+            std::string query = req.has_param("q") ? req.get_param_value("q") : "";
+            std::string nameFilter = req.has_param("name") ? req.get_param_value("name") : "";
             
             auto ids = registry_->GetAllUILayoutIds();
             nlohmann::json results = nlohmann::json::array();
@@ -1887,9 +1896,9 @@ void HTTPServer::SetupSearchRoutes() {
     impl_->server->Get("/api/search/characters", [this](const httplib::Request& req, httplib::Response& res) {
         std::string requestId = res.get_header_value("X-Request-ID");
         try {
-            std::string query = req.get_param_value("q", "");
-            std::string rarityFilter = req.get_param_value("rarity", "");
-            std::string gameModeFilter = req.get_param_value("gameMode", "");
+            std::string query = req.has_param("q") ? req.get_param_value("q") : "";
+            std::string rarityFilter = req.has_param("rarity") ? req.get_param_value("rarity") : "";
+            std::string gameModeFilter = req.has_param("gameMode") ? req.get_param_value("gameMode") : "";
             
             auto ids = registry_->GetAllCharacterIds();
             nlohmann::json results = nlohmann::json::array();
@@ -1966,7 +1975,7 @@ void HTTPServer::SetupSearchRoutes() {
     impl_->server->Get("/api/search/stages", [this](const httplib::Request& req, httplib::Response& res) {
         std::string requestId = res.get_header_value("X-Request-ID");
         try {
-            std::string query = req.get_param_value("q", "");
+            std::string query = req.has_param("q") ? req.get_param_value("q") : "";
             
             auto ids = registry_->GetAllStageIds();
             nlohmann::json results = nlohmann::json::array();
@@ -2025,7 +2034,8 @@ void HTTPServer::SetupSearchRoutes() {
 
 void HTTPServer::SetupExportImportRoutes() {
     // GET /api/export/ui - UIレイアウト全件エクスポート
-    impl_->server->Get("/api/export/ui", [this](const httplib::Request&, httplib::Response& res) {
+    impl_->server->Get("/api/export/ui", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
         try {
             auto ids = registry_->GetAllUILayoutIds();
             nlohmann::json exportData;
@@ -2391,11 +2401,15 @@ void HTTPServer::SetupStatsRoutes() {
                 for (const auto& entry : fs::recursive_directory_iterator(definitionsPath_)) {
                     if (!entry.is_regular_file()) continue;
                     std::string path = entry.path().string();
-                    if (path.find("/ui/") != std::string::npos && path.ends_with(".ui.json")) {
+                    auto endsWithUi = path.size() >= 8 && path.rfind(".ui.json") == path.size() - 8;
+                    auto endsWithChar = path.size() >= 15 && path.rfind(".character.json") == path.size() - 15;
+                    auto endsWithStage = path.size() >= 11 && path.rfind(".stage.json") == path.size() - 11;
+                    
+                    if (path.find("/ui/") != std::string::npos && endsWithUi) {
                         uiFileCount++;
-                    } else if (path.find("/characters/") != std::string::npos && path.ends_with(".character.json")) {
+                    } else if (path.find("/characters/") != std::string::npos && endsWithChar) {
                         charFileCount++;
-                    } else if (path.find("/stages/") != std::string::npos && path.ends_with(".stage.json")) {
+                    } else if (path.find("/stages/") != std::string::npos && endsWithStage) {
                         stageFileCount++;
                     }
                 }
@@ -2680,6 +2694,217 @@ void HTTPServer::SetupGameStateRoutes() {
             );
         }
     });
+
+    // GET /api/dev/game/state/detailed - 詳細ゲーム状態取得
+    impl_->server->Get("/api/dev/game/state/detailed", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!gameStateCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Game state not available",
+                        "Game state callback not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameState = gameStateCallback_();
+            
+            // エンティティ詳細情報を追加
+            if (getEntitiesCallback_) {
+                nlohmann::json entities = getEntitiesCallback_();
+                gameState["entities"]["detailed"] = entities;
+            }
+            
+            res.set_content(gameState.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get detailed game state", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // GET /api/dev/game/td/entities - TDモード全エンティティ取得
+    impl_->server->Get("/api/dev/game/td/entities", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!gameStateCallback_ || !getEntitiesCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameState = gameStateCallback_();
+            
+            // TDモードでない場合はエラー
+            if (!gameState.contains("mode") || gameState["mode"] != "TD") {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid game mode",
+                        "Current game mode is not TD", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json allEntities = getEntitiesCallback_();
+            nlohmann::json tdEntities = nlohmann::json::array();
+            
+            // TDコンポーネントを持つエンティティのみをフィルタ
+            for (const auto& entity : allEntities) {
+                if (entity.contains("td")) {
+                    tdEntities.push_back(entity);
+                }
+            }
+            
+            res.set_content(tdEntities.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get TD entities", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // GET /api/dev/game/td/wave - Wave情報詳細取得
+    impl_->server->Get("/api/dev/game/td/wave", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!gameStateCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Game state not available",
+                        "Game state callback not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameState = gameStateCallback_();
+            
+            // TDモードでない場合はエラー
+            if (!gameState.contains("mode") || gameState["mode"] != "TD") {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid game mode",
+                        "Current game mode is not TD", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json waveInfo;
+            if (gameState.contains("td") && gameState["td"].contains("waveManager")) {
+                waveInfo = gameState["td"]["waveManager"];
+            } else {
+                waveInfo = nlohmann::json::object();
+            }
+            
+            res.set_content(waveInfo.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get wave info", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // GET /api/dev/game/td/spawn - SpawnManager状態取得
+    impl_->server->Get("/api/dev/game/td/spawn", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!gameStateCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Game state not available",
+                        "Game state callback not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameState = gameStateCallback_();
+            
+            // TDモードでない場合はエラー
+            if (!gameState.contains("mode") || gameState["mode"] != "TD") {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid game mode",
+                        "Current game mode is not TD", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json spawnInfo;
+            if (gameState.contains("td") && gameState["td"].contains("spawnManager")) {
+                spawnInfo = gameState["td"]["spawnManager"];
+            } else {
+                spawnInfo = nlohmann::json::object();
+            }
+            
+            res.set_content(spawnInfo.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get spawn manager info", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // GET /api/dev/game/td/gamestate - GameStateManager状態取得
+    impl_->server->Get("/api/dev/game/td/gamestate", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!gameStateCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Game state not available",
+                        "Game state callback not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameState = gameStateCallback_();
+            
+            // TDモードでない場合はエラー
+            if (!gameState.contains("mode") || gameState["mode"] != "TD") {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid game mode",
+                        "Current game mode is not TD", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json gameStateInfo;
+            if (gameState.contains("td") && gameState["td"].contains("gameStateManager")) {
+                gameStateInfo = gameState["td"]["gameStateManager"];
+            } else {
+                gameStateInfo = nlohmann::json::object();
+            }
+            
+            res.set_content(gameStateInfo.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get game state manager info", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
 }
 
 void HTTPServer::BroadcastToClients(const std::string& eventType, const std::string& data) {
@@ -2743,6 +2968,12 @@ void HTTPServer::FileWatcherThread() {
     }
 }
 
+void HTTPServer::InvalidateCache(const std::string& cacheKey) {
+    // キャッシュ機能は現在未実装
+    // 将来的にレジストリのキャッシュ機能を実装する際に使用
+    (void)cacheKey; // 未使用パラメータ警告を抑制
+}
+
 std::string HTTPServer::CreateBackup(const std::string& filePath) {
     if (!std::filesystem::exists(filePath)) {
         return ""; // ファイルが存在しない場合はバックアップ不要
@@ -2773,7 +3004,7 @@ std::string HTTPServer::CreateBackup(const std::string& filePath) {
     }
 }
 
-nlohmann::json HTTPServer::CreateErrorResponse(int status, const std::string& error, const std::string& details, const std::string& requestId) {
+nlohmann::json HTTPServer::CreateErrorResponse(int status, const std::string& error, const std::string& details, const std::string& requestId) const {
     // エラーログを記録
     if (status >= 400) {
         LogError(error, requestId, details);
@@ -2972,7 +3203,7 @@ std::string HTTPServer::GetLogLevelName(LogLevel level) const {
     }
 }
 
-void HTTPServer::Log(LogLevel level, const std::string& message, const std::string& requestId) {
+void HTTPServer::Log(LogLevel level, const std::string& message, const std::string& requestId) const {
     if (!loggingEnabled_ || level < logLevel_) {
         return;
     }
@@ -3042,7 +3273,7 @@ void HTTPServer::LogResponse(const RequestInfo& info) {
     }
 }
 
-void HTTPServer::LogError(const std::string& message, const std::string& requestId, const std::string& details) {
+void HTTPServer::LogError(const std::string& message, const std::string& requestId, const std::string& details) const {
     std::ostringstream oss;
     oss << message;
     if (!details.empty()) {
@@ -3252,6 +3483,683 @@ void HTTPServer::ResetPerformanceStats() {
     performanceStats_ = PerformanceStats();
     performanceStats_.startTime = std::chrono::steady_clock::now();
     performanceStats_.minResponseTime = std::chrono::milliseconds(INT_MAX);
+}
+
+void HTTPServer::SetupDevModeRoutes() {
+    // GET /api/dev/entities - 全エンティティ一覧取得
+    impl_->server->Get("/api/dev/entities", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!getEntitiesCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json entities = getEntitiesCallback_();
+            res.set_content(entities.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get entities", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // GET /api/dev/entities/:id - 特定エンティティ取得
+    impl_->server->Get("/api/dev/entities/:id", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!getEntityCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            std::string entityId = req.path_params.at("id");
+            nlohmann::json entity = getEntityCallback_(entityId);
+            
+            if (entity.is_null() || entity.empty()) {
+                res.status = 404;
+                res.set_content(
+                    CreateErrorResponse(404, "Entity not found",
+                        "Entity with ID '" + entityId + "' not found", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            res.set_content(entity.dump(2), "application/json");
+        } catch (const std::out_of_range&) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid request", "Entity ID not provided", requestId).dump(),
+                "application/json"
+            );
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get entity", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // POST /api/dev/entities - エンティティ作成（テスト用）
+    impl_->server->Post("/api/dev/entities", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!createEntityCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json requestBody = nlohmann::json::parse(req.body);
+            nlohmann::json result = createEntityCallback_(requestBody);
+            
+            res.status = 201;
+            res.set_content(result.dump(2), "application/json");
+        } catch (const nlohmann::json::parse_error& e) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid JSON", e.what(), requestId).dump(),
+                "application/json"
+            );
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to create entity", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // PUT /api/dev/entities/:id - エンティティ更新
+    impl_->server->Put("/api/dev/entities/:id", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!updateEntityCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            std::string entityId = req.path_params.at("id");
+            nlohmann::json requestBody = nlohmann::json::parse(req.body);
+            nlohmann::json result = updateEntityCallback_(entityId, requestBody);
+            
+            res.set_content(result.dump(2), "application/json");
+        } catch (const std::out_of_range&) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid request", "Entity ID not provided", requestId).dump(),
+                "application/json"
+            );
+        } catch (const nlohmann::json::parse_error& e) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid JSON", e.what(), requestId).dump(),
+                "application/json"
+            );
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to update entity", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // DELETE /api/dev/entities/:id - エンティティ削除
+    impl_->server->Delete("/api/dev/entities/:id", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!deleteEntityCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            std::string entityId = req.path_params.at("id");
+            bool success = deleteEntityCallback_(entityId);
+            
+            if (success) {
+                nlohmann::json response;
+                response["success"] = true;
+                response["message"] = "Entity deleted";
+                response["entityId"] = entityId;
+                res.set_content(response.dump(2), "application/json");
+            } else {
+                res.status = 404;
+                res.set_content(
+                    CreateErrorResponse(404, "Entity not found",
+                        "Entity with ID '" + entityId + "' not found", requestId).dump(),
+                    "application/json"
+                );
+            }
+        } catch (const std::out_of_range&) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid request", "Entity ID not provided", requestId).dump(),
+                "application/json"
+            );
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to delete entity", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // POST /api/dev/entities/:id/spawn - エンティティスポーン
+    impl_->server->Post("/api/dev/entities/:id/spawn", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!spawnEntityCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            std::string entityId = req.path_params.at("id");
+            nlohmann::json spawnParams = req.body.empty() ? nlohmann::json::object() : nlohmann::json::parse(req.body);
+            nlohmann::json result = spawnEntityCallback_(entityId, spawnParams);
+            
+            res.status = 201;
+            res.set_content(result.dump(2), "application/json");
+        } catch (const std::out_of_range&) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid request", "Entity ID not provided", requestId).dump(),
+                "application/json"
+            );
+        } catch (const nlohmann::json::parse_error& e) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid JSON", e.what(), requestId).dump(),
+                "application/json"
+            );
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to spawn entity", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // POST /api/dev/entities/:id/stats - エンティティステータス設定
+    impl_->server->Post("/api/dev/entities/:id/stats", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!setEntityStatsCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            std::string entityId = req.path_params.at("id");
+            nlohmann::json stats = nlohmann::json::parse(req.body);
+            nlohmann::json result = setEntityStatsCallback_(entityId, stats);
+            
+            res.set_content(result.dump(2), "application/json");
+        } catch (const std::out_of_range&) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid request", "Entity ID not provided", requestId).dump(),
+                "application/json"
+            );
+        } catch (const nlohmann::json::parse_error& e) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid JSON", e.what(), requestId).dump(),
+                "application/json"
+            );
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to set entity stats", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // POST /api/dev/entities/:id/ai - エンティティAI設定
+    impl_->server->Post("/api/dev/entities/:id/ai", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!setEntityAICallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            std::string entityId = req.path_params.at("id");
+            nlohmann::json aiConfig = nlohmann::json::parse(req.body);
+            nlohmann::json result = setEntityAICallback_(entityId, aiConfig);
+            
+            res.set_content(result.dump(2), "application/json");
+        } catch (const std::out_of_range&) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid request", "Entity ID not provided", requestId).dump(),
+                "application/json"
+            );
+        } catch (const nlohmann::json::parse_error& e) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid JSON", e.what(), requestId).dump(),
+                "application/json"
+            );
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to set entity AI", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // POST /api/dev/entities/:id/skills - エンティティスキル設定
+    impl_->server->Post("/api/dev/entities/:id/skills", [this](const httplib::Request& req, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!setEntitySkillsCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Entity operations not available",
+                        "Entity operation callbacks not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            std::string entityId = req.path_params.at("id");
+            nlohmann::json skills = nlohmann::json::parse(req.body);
+            nlohmann::json result = setEntitySkillsCallback_(entityId, skills);
+            
+            res.set_content(result.dump(2), "application/json");
+        } catch (const std::out_of_range&) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid request", "Entity ID not provided", requestId).dump(),
+                "application/json"
+            );
+        } catch (const nlohmann::json::parse_error& e) {
+            res.status = 400;
+            res.set_content(
+                CreateErrorResponse(400, "Invalid JSON", e.what(), requestId).dump(),
+                "application/json"
+            );
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to set entity skills", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+
+    // GET /api/dev/preview/screenshot - ゲーム画面スクリーンショット取得
+    impl_->server->Get("/api/dev/preview/screenshot", [this](const httplib::Request&, httplib::Response& res) {
+        std::string requestId = res.get_header_value("X-Request-ID");
+        try {
+            if (!screenshotCallback_) {
+                res.status = 503;
+                res.set_content(
+                    CreateErrorResponse(503, "Screenshot not available",
+                        "Screenshot callback not set", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            std::string screenshotData = screenshotCallback_();
+            
+            if (screenshotData.empty()) {
+                res.status = 500;
+                res.set_content(
+                    CreateErrorResponse(500, "Failed to capture screenshot",
+                        "Screenshot data is empty", requestId).dump(),
+                    "application/json"
+                );
+                return;
+            }
+
+            nlohmann::json response;
+            response["success"] = true;
+            response["format"] = "png";
+            response["data"] = screenshotData;  // Base64エンコードされたPNGデータ
+            response["timestamp"] = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count();
+            
+            res.set_content(response.dump(2), "application/json");
+        } catch (const std::exception& e) {
+            res.status = 500;
+            res.set_content(
+                CreateErrorResponse(500, "Failed to get screenshot", e.what(), requestId).dump(),
+                "application/json"
+            );
+        }
+    });
+}
+
+void HTTPServer::SetupNodeGraphRoutes() {
+    // NodeGraph関連APIの初期化
+    
+    // GET /api/nodes/types - 登録済みノードタイプ一覧
+    // 最適化: 初回呼び出しでキャッシュ、以降はキャッシュから返す
+    impl_->server->Get("/api/nodes/types", 
+        [this](const httplib::Request&, httplib::Response& res) {
+            std::string requestId = res.get_header_value("X-Request-ID");
+            try {
+                // キャッシュ確認
+                {
+                    std::lock_guard<std::mutex> lock(nodeTypesCacheMutex_);
+                    if (nodeTypesInitialized_) {
+                        // ✅ キャッシュから返す（高速）
+                        res.set_content(nodeTypesCacheJson_, "application/json");
+                        return;
+                    }
+                }
+                
+                // 初回呼び出し: ノードタイプ情報を生成・キャッシュ
+                auto& registry = Core::NodeGraph::NodeRegistry::GetInstance();
+                auto types = registry.GetRegisteredTypes();
+                
+                nlohmann::json response;
+                response["success"] = true;
+                response["types"] = nlohmann::json::array();
+                
+                for (const auto& type : types) {
+                    auto node = registry.CreateNode(type, "temp_" + type);
+                    if (node) {
+                        nlohmann::json nodeInfo;
+                        nodeInfo["type"] = type;
+                        nodeInfo["description"] = node->GetDescription();
+                        nodeInfo["category"] = node->GetCategory();
+                        nodeInfo["color"] = node->GetColor();
+                        
+                        // ポート情報
+                        const auto& inputs = node->GetInputs();
+                        const auto& outputs = node->GetOutputs();
+                        
+                        nodeInfo["inputs"] = nlohmann::json::array();
+                        for (const auto& input : inputs) {
+                            nodeInfo["inputs"].push_back({
+                                {"name", input.name},
+                                {"type", static_cast<int>(input.type)}
+                            });
+                        }
+                        
+                        nodeInfo["outputs"] = nlohmann::json::array();
+                        for (const auto& output : outputs) {
+                            nodeInfo["outputs"].push_back({
+                                {"name", output.name},
+                                {"type", static_cast<int>(output.type)}
+                            });
+                        }
+                        
+                        response["types"].push_back(nodeInfo);
+                    }
+                }
+                
+                // キャッシュに保存（ミニファイして容量削減）
+                std::string cachedJson = response.dump();  // ✅ フォーマッティングなし（ミニファイ）
+                {
+                    std::lock_guard<std::mutex> lock(nodeTypesCacheMutex_);
+                    nodeTypesCacheJson_ = cachedJson;
+                    nodeTypesInitialized_ = true;
+                }
+                
+                // クライアントに返す
+                res.set_content(cachedJson, "application/json");
+                
+            } catch (const std::exception& e) {
+                res.status = 500;
+                res.set_content(
+                    CreateErrorResponse(500, "Failed to get node types", e.what(), requestId).dump(),
+                    "application/json"
+                );
+            }
+        });
+    
+    // POST /api/graphs - グラフ作成
+    impl_->server->Post("/api/graphs",
+        [this](const httplib::Request& req, httplib::Response& res) {
+            std::string requestId = res.get_header_value("X-Request-ID");
+            try {
+                nlohmann::json body = nlohmann::json::parse(req.body);
+                std::string graphId = body.value("id", "graph_" + requestId);
+                
+                // グラフ作成
+                auto graph = std::make_unique<Core::NodeGraph::NodeGraph>();
+                
+                {
+                    std::lock_guard<std::mutex> lock(graphsMutex_);
+                    graphs_[graphId] = std::move(graph);
+                }
+                
+                nlohmann::json response;
+                response["success"] = true;
+                response["message"] = "Graph created";
+                response["graph_id"] = graphId;
+                
+                res.status = 201;
+                res.set_content(response.dump(), "application/json");  // ✅ ミニファイ
+            } catch (const nlohmann::json::parse_error& e) {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid JSON", e.what(), requestId).dump(),
+                    "application/json"
+                );
+            } catch (const std::exception& e) {
+                res.status = 500;
+                res.set_content(
+                    CreateErrorResponse(500, "Failed to create graph", e.what(), requestId).dump(),
+                    "application/json"
+                );
+            }
+        });
+    
+    // GET /api/graphs/:id - グラフ取得
+    impl_->server->Get("/api/graphs/:id",
+        [this](const httplib::Request& req, httplib::Response& res) {
+            std::string requestId = res.get_header_value("X-Request-ID");
+            try {
+                std::string graphId = req.path_params.at("id");
+                
+                {
+                    std::lock_guard<std::mutex> lock(graphsMutex_);
+                    auto it = graphs_.find(graphId);
+                    if (it == graphs_.end()) {
+                        res.status = 404;
+                        res.set_content(
+                            CreateErrorResponse(404, "Graph not found", "Graph ID: " + graphId, requestId).dump(),
+                            "application/json"
+                        );
+                        return;
+                    }
+                    
+                    // グラフをJSON化（ミニファイして効率化）
+                    nlohmann::json response;
+                    response["success"] = true;
+                    response["graph"] = it->second->Serialize();
+                    
+                    // ✅ パフォーマンス最適化: dump()にパラメータなし（ミニファイ）
+                    res.set_content(response.dump(), "application/json");
+                }
+            } catch (const std::out_of_range&) {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid request", "Graph ID not provided", requestId).dump(),
+                    "application/json"
+                );
+            } catch (const std::exception& e) {
+                res.status = 500;
+                res.set_content(
+                    CreateErrorResponse(500, "Failed to get graph", e.what(), requestId).dump(),
+                    "application/json"
+                );
+            }
+        });
+    
+    // POST /api/graphs/:id/execute - グラフ実行
+    impl_->server->Post("/api/graphs/:id/execute",
+        [this](const httplib::Request& req, httplib::Response& res) {
+            std::string requestId = res.get_header_value("X-Request-ID");
+            try {
+                std::string graphId = req.path_params.at("id");
+                nlohmann::json body = req.body.empty() ? 
+                    nlohmann::json::object() : nlohmann::json::parse(req.body);
+                std::string startNodeId = body.value("start_node_id", "");
+                
+                if (startNodeId.empty()) {
+                    res.status = 400;
+                    res.set_content(
+                        CreateErrorResponse(400, "Invalid request", "start_node_id required", requestId).dump(),
+                        "application/json"
+                    );
+                    return;
+                }
+                
+                Core::NodeGraph::NodeGraph* graph = nullptr;
+                {
+                    std::lock_guard<std::mutex> lock(graphsMutex_);
+                    auto it = graphs_.find(graphId);
+                    if (it == graphs_.end()) {
+                        res.status = 404;
+                        res.set_content(
+                            CreateErrorResponse(404, "Graph not found", "Graph ID: " + graphId, requestId).dump(),
+                            "application/json"
+                        );
+                        return;
+                    }
+                    graph = it->second.get();
+                }
+                
+                // グラフ実行
+                Core::NodeGraph::NodeExecutor executor(*graph);
+                executor.Execute(startNodeId);
+                
+                nlohmann::json response;
+                response["success"] = true;
+                response["graph_id"] = graphId;
+                response["start_node_id"] = startNodeId;
+                
+                // 実行ログ取得
+                auto log = executor.GetExecutionLog();
+                response["execution_log"] = nlohmann::json::array();
+                for (const auto& entry : log) {
+                    response["execution_log"].push_back({
+                        {"node_id", entry.nodeId},
+                        {"status", static_cast<int>(entry.status)},
+                        {"execution_time_ms", entry.executionTimeMs}
+                    });
+                }
+                
+                res.set_content(response.dump(), "application/json");  // ✅ ミニファイ
+            } catch (const std::out_of_range&) {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid request", "Graph ID not provided", requestId).dump(),
+                    "application/json"
+                );
+            } catch (const nlohmann::json::parse_error& e) {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid JSON", e.what(), requestId).dump(),
+                    "application/json"
+                );
+            } catch (const std::exception& e) {
+                res.status = 500;
+                res.set_content(
+                    CreateErrorResponse(500, "Failed to execute graph", e.what(), requestId).dump(),
+                    "application/json"
+                );
+            }
+        });
+    
+    // DELETE /api/graphs/:id - グラフ削除
+    impl_->server->Delete("/api/graphs/:id",
+        [this](const httplib::Request& req, httplib::Response& res) {
+            std::string requestId = res.get_header_value("X-Request-ID");
+            try {
+                std::string graphId = req.path_params.at("id");
+                
+                {
+                    std::lock_guard<std::mutex> lock(graphsMutex_);
+                    auto it = graphs_.find(graphId);
+                    if (it == graphs_.end()) {
+                        res.status = 404;
+                        res.set_content(
+                            CreateErrorResponse(404, "Graph not found", "Graph ID: " + graphId, requestId).dump(),
+                            "application/json"
+                        );
+                        return;
+                    }
+                    
+                    graphs_.erase(it);
+                }
+                
+                nlohmann::json response;
+                response["success"] = true;
+                response["message"] = "Graph deleted";
+                response["graph_id"] = graphId;
+                
+                res.set_content(response.dump(), "application/json");  // ✅ ミニファイ
+            } catch (const std::out_of_range&) {
+                res.status = 400;
+                res.set_content(
+                    CreateErrorResponse(400, "Invalid request", "Graph ID not provided", requestId).dump(),
+                    "application/json"
+                );
+            } catch (const std::exception& e) {
+                res.status = 500;
+                res.set_content(
+                    CreateErrorResponse(500, "Failed to delete graph", e.what(), requestId).dump(),
+                    "application/json"
+                );
+            }
+        });
+    
+    std::cout << "HTTPServer: NodeGraph routes setup complete\n";
 }
 
 } // namespace Core

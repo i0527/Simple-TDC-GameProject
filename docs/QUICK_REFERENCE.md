@@ -31,7 +31,10 @@ cmake --build --preset ninja-release
 ```bash
 cd tools/webui-editor
 
-# インストール
+# 自動セットアップと起動（推奨）
+.\setup-and-run.ps1
+
+# 手動インストール
 npm install
 
 # 開発サーバー
@@ -46,6 +49,8 @@ npm run preview
 # リント
 npm run lint
 ```
+
+> **トラブルシューティング**: WebUIが起動しない場合は [WEBUI_SETUP_GUIDE.md](WEBUI_SETUP_GUIDE.md) を参照
 
 ---
 
@@ -374,4 +379,3 @@ curl -N http://localhost:8080/events
 
 **最終更新**: 2025-12-04  
 **対応バージョン**: Phase 6 完了
-

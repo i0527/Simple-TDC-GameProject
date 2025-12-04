@@ -38,6 +38,7 @@
 ## 🎯 役割別・推奨ドキュメント
 
 ### 新規開発者
+
 ```
 1. 開発者向けマニュアル (DEVELOPER_MANUAL.md)
 2. クイックリファレンス (QUICK_REFERENCE.md)
@@ -45,20 +46,23 @@
 ```
 
 ### C++ 開発者
+
 ```
 1. 開発者向けマニュアル
 2. CHARACTER_SYSTEM_DESIGN.md
 3. CODE_ANALYSIS.md
 ```
 
-### WebUI フロントエンド開発者
+### ImGui エディター開発者
+
 ```
 1. 開発者向けマニュアル
-2. WEBUI_GUIDE.md (後续作成)
-3. API_REFERENCE.md (後续作成)
+2. CHARACTER_SYSTEM_DESIGN.md
+3. CODE_ANALYSIS.md
 ```
 
 ### ゲームデザイナー
+
 ```
 1. CHARACTER_SYSTEM_DESIGN.md
 2. ROGUELIKE_SYSTEM_DESIGN.md
@@ -85,8 +89,7 @@
 | OPTIMIZATION_SUMMARY.md | ✅ 既存 | - |
 | HANDOVER.md | ✅ 既存 | - |
 | ARCHITECTURE.md | ⏳ 計画中 | - |
-| API_REFERENCE.md | ⏳ 計画中 | - |
-| WEBUI_GUIDE.md | ⏳ 計画中 | - |
+| IMGUI_EDITOR_GUIDE.md | ⏳ 計画中 | - |
 | DATA_DEFINITION.md | ⏳ 計画中 | - |
 | TROUBLESHOOTING.md | ⏳ 計画中 | - |
 
@@ -97,6 +100,7 @@
 ### 必読ドキュメント（全開発者向け）
 
 **開発者向けマニュアル (DEVELOPER_MANUAL.md)**
+
 - ✅ クイックスタート（5分）
 - ✅ プロジェクト構造
 - ✅ 環境セットアップ
@@ -109,6 +113,7 @@
 ### ゲームシステム設計
 
 **CHARACTER_SYSTEM_DESIGN.md**
+
 - キャラクター定義（JSON スキーマ）
 - ステータスシステム
 - アニメーション管理
@@ -116,6 +121,7 @@
 - ゲーム設計概要
 
 **ROGUELIKE_SYSTEM_DESIGN.md**
+
 - ダンジョン生成
 - 戦闘・AI システム
 - アイテムシステム
@@ -124,11 +130,13 @@
 ### 技術・アーキテクチャ
 
 **CODE_ANALYSIS.md**
+
 - コード品質評価
 - 改善案
 - ベストプラクティス
 
 **EXECUTIVE_SUMMARY.md**
+
 - プロジェクト概要
 - 進捗状況
 - 優先度付きアクション

@@ -467,27 +467,32 @@ class GameRenderer {
 }
 ```
 
-### Phase 5: WebUIエディター（計画中）
+### Phase 5: ImGui内蔵エディター（実装済）
 
-**目的**: NodeRED/ComfyUI風のWebベースエディターでデータ定義を視覚的に編集
+**目的**: F1キーで起動するゲーム内エディターでデータ定義を視覚的に編集
 
-#### Phase 5A: HTTPサーバー & REST API基盤
+#### Phase 5A: 基本機能（完了）
 
-- [ ] C++軽量HTTPサーバー統合（cpp-httplib等）
-- [ ] 定義データCRUD API（`/api/characters`, `/api/stages`, `/api/ui`）
-- [ ] リアルタイム通信（WebSocket or SSE）
-- [ ] ゲーム状態取得API（デバッグ/プレビュー用）
+- [✓] ImGui + rlImGui統合
+- [✓] EditorManagerクラス実装
+- [✓] キャラクターエディター（閲覧）
+- [✓] コンソールログ表示
+- [✓] メニューバーシステム
 
+```cpp
+// F1キーでエディター起動
+if (IsKeyPressed(KEY_F1)) {
+    editor_->ToggleVisibility();
+}
 ```
-GET  /api/characters          # キャラクター一覧
-POST /api/characters          # 新規作成
-PUT  /api/characters/{id}     # 更新
-DELETE /api/characters/{id}   # 削除
 
-GET  /api/stages              # ステージ一覧
-POST /api/stages/{id}/waves   # Wave追加
+#### Phase 5B: 拡張機能（計画中）
 
-GET  /api/ui/layouts          # UIレイアウト一覧
+- [ ] キャラクター編集機能
+- [ ] ステージエディター
+- [ ] UIレイアウトエディター
+- [ ] スキル・エフェクト・サウンドエディター
+- [ ] JSONファイル保存機能
 PUT  /api/ui/layouts/{id}     # UI定義更新
 ```
 
@@ -562,25 +567,21 @@ PUT  /api/ui/layouts/{id}     # UI定義更新
 
 ---
 
-## 14. 技術選定メモ（Phase 5用）
+## 14. 技術選定メモ
 
-### WebUIフレームワーク候補
+### 内蔵エディター技術スタック
 
-- **フロントエンド**: React + TypeScript / Vue.js + TypeScript
-- **状態管理**: Zustand / Pinia
-- **グラフエディタ**: React Flow（NodeRED風ノードエディタ）
-- **スタイル**: Tailwind CSS
+- **UIフレームワーク**: Dear ImGui 1.90.1
+- **Raylib統合**: rlImGui
+- **アーキテクチャ**: EditorManagerパターン
+- **データアクセス**: DefinitionRegistry/DefinitionLoader経由
 
-### C++ HTTPサーバー候補
+### エディター機能
 
-- **cpp-httplib**: ヘッダーオンリー、シンプル
-- **Crow**: Express.js風API
-- **Drogon**: 高性能、WebSocket対応
-
-### 通信プロトコル
-
-- REST API（CRUD操作）
-- WebSocket（リアルタイム更新、プレビュー同期）
+- キャラクターエディター（閲覧/編集）
+- コンソールログ表示
+- インスペクター（エンティティ詳細）
+- F1キーで表示/非表示
 
 ### ファイル監視
 

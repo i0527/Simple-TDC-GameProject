@@ -1,5 +1,56 @@
 # Phase 6実装計画: 追加機能（スキル・エフェクト・サウンド統合）
 
+## 📝 更新履歴
+
+### 2025年12月4日 - CMake + Node.js 統合実装
+
+初回セットアップの完全自動化を実現しました。
+
+#### 実装内容
+
+- **Node.js 自動ダウンロード** (`CMakeLists.txt` 行 41-155)
+  - Windows (x64) / Mac (Intel/Apple Silicon) / Linux (x64) 対応
+  - プロジェクトローカルに `build/.nodejs/` にセットアップ
+  - システム Node.js インストール不要
+
+- **WebUI npm install 自動化** (`CMakeLists.txt` 行 219-236)
+  - `setup-webui` カスタムターゲット実装
+  - SimpleTDCGame ビルド前に自動実行
+  - ビルド環境に完全統合
+
+- **ドキュメント作成** (`docs/CMAKE_NODEJS_INTEGRATION.md`)
+  - セットアップフロー詳細
+  - プラットフォーム対応表
+  - トラブルシューティング
+
+#### ユーザー体験の改善
+
+**従来の手順**:
+
+```bash
+# 1. Node.js を手動インストール
+# 2. VSCode で npm install 手動実行
+# 3. npm run dev で WebUI サーバー起動
+# 4. ゲームビルド
+```
+
+**改善後**:
+
+```bash
+git clone ...
+cmake -B build
+cmake --build build --config Release
+# ✅ 完了！すべて自動
+```
+
+#### 関連ドキュメント
+
+- 新規: `docs/CMAKE_NODEJS_INTEGRATION.md` - CMake + Node.js 統合ガイド
+- 参考: `CMakeLists.txt` - 実装詳細
+- 参考: `PHASE6_PLAN.md` (このファイル) - 全体計画
+
+---
+
 ## 概要
 
 Phase 6では、WebUIエディターにスキル・特殊能力、エフェクト、サウンドの管理機能を統合し、TD/Nethackの統一キャラクター定義システムを完成させます。
@@ -169,6 +220,7 @@ DELETE /api/sound-banks/{id}    # 削除
 ## JSON定義ファイル構成
 
 ### assets/definitions/skills/
+
 ```json
 {
   "id": "fireball",
@@ -196,6 +248,7 @@ DELETE /api/sound-banks/{id}    # 削除
 ```
 
 ### assets/definitions/effects/
+
 ```json
 {
   "id": "hit_explosion",
@@ -217,6 +270,7 @@ DELETE /api/sound-banks/{id}    # 削除
 ```
 
 ### assets/definitions/sounds/
+
 ```json
 {
   "id": "explosion",
@@ -261,16 +315,19 @@ DELETE /api/sound-banks/{id}    # 削除
 ## 実装優先度
 
 ### 高優先度
+
 1. **SkillEditor** - キャラクター能力の基本
 2. **EffectEditor（パーティクル）** - ビジュアル表現の中核
 3. **SoundEditor** - サウンド統合の基本
 
 ### 中優先度
+
 4. **StatusEffectEditor** - ゲームバランス調整
 5. **AbilityEditor** - キャラクター固有の特性
 6. **ScreenEffectEditor** - ビジュアル演出
 
 ### 低優先度
+
 7. **MusicEditor** - BGM管理
 8. **SoundBankEditor** - サウンド組織化
 
@@ -308,4 +365,3 @@ DELETE /api/sound-banks/{id}    # 削除
 
 4. **ファイル監視**: 大量の定義ファイルの変更検知
    → ディバウンス、キャッシング機構強化
-
