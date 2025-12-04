@@ -14,6 +14,8 @@
 #include "../Components/CombatComponents.h"
 #include "../Components/HungerComponents.h"
 
+// Phase 3: このファイルは include/Domain/Roguelike/Systems/ItemSystem.h に移行されました
+// 後方互換性のため、一時的に残しています
 namespace Roguelike::Systems {
 
 /**

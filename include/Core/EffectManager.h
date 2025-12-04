@@ -11,7 +11,7 @@
 
 #include "Core/Platform.h"
 #include "Data/EffectDef.h"
-#include "Core/DefinitionRegistry.h"
+#include "Data/Registry.h"
 #include <vector>
 #include <memory>
 #include <random>

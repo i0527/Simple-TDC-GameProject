@@ -266,6 +266,10 @@ Cursor IDE でマルチエージェント開発を行う場合は、以下のド
 - **[.cursor/ARCHITECTURE_DIAGRAMS.md](.cursor/ARCHITECTURE_DIAGRAMS.md)** - アーキテクチャ図解
 - **[.cursorrules](.cursorrules)** - Cursor プロジェクトルール
 
+### Cursor でのビルド
+
+Cursor は VS Code の拡張としても動作するため、`.vscode/tasks.json` に用意したビルドタスクを `Ctrl+Shift+B`（または Command⌘+Shift+B）で呼び出すことで、`scripts/build-with-ninja.ps1` を使った Debug ビルドを実行できます。Release ビルドはコマンドパレットの「Tasks: Run Build Task」で `Build SimpleTDCGame_NewArch (Release)` を選ぶか、ショートカットで直接起動してください。タスクは Ninja と VS 環境を自動セットアップした後、`SimpleTDCGame_NewArch` をビルドします。
+
 これらのドキュメントには以下が含まれます：
 
 - マルチエージェント開発戦略

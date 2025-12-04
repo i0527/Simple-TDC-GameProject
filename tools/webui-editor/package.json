@@ -13,13 +13,11 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@xyflow/react": "^11.10.1",
-    "@xyflow/system": "^1.0.27",
     "zustand": "^4.4.7",
     "axios": "^1.6.2",
     "zod": "^3.22.4",
     "clsx": "^2.0.0",
-    "tailwind-merge": "^2.1.0",
-    "event-emitter": "^0.3.6"
+    "tailwind-merge": "^2.1.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
