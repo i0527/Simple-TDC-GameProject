@@ -4,6 +4,7 @@ import Sidebar from './components/Layout/Sidebar'
 import EntityEditor from './components/Editors/EntityEditor'
 import StageEditor from './components/Editors/StageEditor'
 import UIEditor from './components/Editors/UIEditor'
+import ServerEventListener from './components/ServerEventListener'
 import { EditorMode } from './types/editor'
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
           {renderEditor()}
         </main>
       </div>
+      <ServerEventListener />
     </div>
   )
 }
