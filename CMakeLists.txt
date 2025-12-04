@@ -157,9 +157,17 @@ FetchContent_Declare(
     GIT_TAG 57efef06f69b50ed9ac0834a963a8aefcc59d588
 )
 
+# cpp-httplib (HTTP server library for Phase 4)
+FetchContent_Declare(
+    httplib
+    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+    GIT_TAG v0.14.3
+    GIT_SHALLOW TRUE
+)
+
 # 依存ライブラリを取得
 message(STATUS "Fetching dependencies (this may take a while on first run)...")
-FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui)
+FetchContent_MakeAvailable(EnTT json raylib raygui dearimgui rlimgui httplib)
 
 # ============================================================================
 # ImGuiライブラリの構築
@@ -182,31 +190,38 @@ target_include_directories(rlimgui_lib PUBLIC ${rlimgui_SOURCE_DIR})
 target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 
 # ============================================================================
-# メイン実行ファイル: SimpleTDCGame
+# 統合ゲームプラットフォーム: SimpleTDCGame
+# 
+# Phase 3: TDとRoguelikeを統合した単一プラットフォーム
+# - エントリポイント: src/main_unified.cpp
+# - UnifiedGameクラスでゲームモード（Menu/TD/Roguelike）を管理
+# - ホームシーンからゲームモードを選択可能
 # ============================================================================
-# ソースファイルを明示的に指定（GLOB_RECURSEによる問題を回避）
-# 注意: FileUtils.cpp, GameNew.cpp, main_new.cpp, main_roguelike.cppは
-#       別ターゲット（SimpleTDCGame_NewArch, NetHackGame）用のため除外
-set(MAIN_SOURCES
-    src/main.cpp
-    src/Game.cpp
-    src/ConfigManager.cpp
-    src/InputManager.cpp
-    src/SceneManager.cpp
-    src/SystemManager.cpp
-    src/Systems.cpp
-    src/ResourceManager.cpp
-    src/UIManager.cpp
-    src/TestScene.cpp
-    src/Scenes/TitleScene.cpp
-    src/Scenes/HomeScene.cpp
-    src/Scenes/TDGameScene.cpp
-    src/Scenes/TDTestGameScene.cpp
-    src/Scenes/NethackGameScene.cpp
+set(UNIFIED_SOURCES
+    # エントリポイント
+    src/main_unified.cpp
+    
+    # Application層
+    src/Application/UnifiedGame.cpp
+    src/Application/HomeScene.cpp
+    
+    # Core層ユーティリティ
+    src/FileUtils.cpp
+    src/Core/HTTPServer.cpp
+    
+    # Data層シリアライザー
+    src/Data/Serializers/UISerializer.cpp
+    src/Data/Serializers/CharacterSerializer.cpp
+    src/Data/Serializers/StageSerializer.cpp
+    
+    # Game層システム（必要な場合）
+    src/Game/Systems/InputSystem.cpp
+    src/Game/Systems/MovementSystem.cpp
+    src/Game/Systems/RenderSystem.cpp
 )
 
 # 実行ファイル作成
-add_executable(${PROJECT_NAME} ${MAIN_SOURCES})
+add_executable(${PROJECT_NAME} ${UNIFIED_SOURCES})
 
 # インクルードディレクトリ
 target_include_directories(${PROJECT_NAME} 
@@ -215,6 +230,7 @@ target_include_directories(${PROJECT_NAME}
         ${raygui_SOURCE_DIR}/src
         ${dearimgui_SOURCE_DIR}
         ${rlimgui_SOURCE_DIR}
+        ${httplib_SOURCE_DIR}
 )
 
 # リンクライブラリ
@@ -232,73 +248,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
         $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
-    COMMENT "Copying assets to build directory..."
-)
-
-# ============================================================================
-# 新アーキテクチャテスト用ターゲット: SimpleTDCGame_NewArch
-# ============================================================================
-set(NEW_ARCH_SOURCES
-    src/main_new.cpp
-    src/GameNew.cpp
-    src/FileUtils.cpp
-)
-
-add_executable(SimpleTDCGame_NewArch ${NEW_ARCH_SOURCES})
-
-target_include_directories(SimpleTDCGame_NewArch 
-    PRIVATE 
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${raygui_SOURCE_DIR}/src
-        ${dearimgui_SOURCE_DIR}
-        ${rlimgui_SOURCE_DIR}
-)
-
-target_link_libraries(SimpleTDCGame_NewArch 
-    PRIVATE 
-        EnTT::EnTT
-        nlohmann_json::nlohmann_json
-        raylib
-)
-
-add_custom_command(TARGET SimpleTDCGame_NewArch POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:SimpleTDCGame_NewArch>/assets
-    COMMENT "Copying assets to build directory..."
-)
-
-# ============================================================================
-# NetHack風ローグライク用ターゲット: NetHackGame
-# (Roguelikeモジュールはヘッダーオンリーのため、main_roguelike.cppのみ)
-# ============================================================================
-set(NETHACK_SOURCES
-    src/main_roguelike.cpp
-)
-
-add_executable(NetHackGame ${NETHACK_SOURCES})
-
-target_include_directories(NetHackGame 
-    PRIVATE 
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${raygui_SOURCE_DIR}/src
-        ${dearimgui_SOURCE_DIR}
-        ${rlimgui_SOURCE_DIR}
-)
-
-target_link_libraries(NetHackGame 
-    PRIVATE 
-        EnTT::EnTT
-        nlohmann_json::nlohmann_json
-        raylib
-        rlimgui_lib
-        imgui_lib
-)
-
-add_custom_command(TARGET NetHackGame POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:NetHackGame>/assets
     COMMENT "Copying assets to build directory..."
 )
 
