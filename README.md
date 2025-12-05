@@ -254,18 +254,57 @@ git submodule update --init --recursive
 
 注意: サブモジュールを使用する場合は、CMakeLists.txt の FetchContent 部分を適宜修正してください。
 
-## ImGui内蔵エディター
+## 開発者モード（予定）
 
 ### 概要
 
-F1キーで開くImGuiベースの内蔵エディターで、ゲームの定義ファイル（キャラクター、ステージ、UI、スキル、エフェクト、サウンド）を直感的に編集できます。
+**🚧 実装予定**: WebUIを廃止し、ゲーム内に統合された開発者モードを実装します。F1キーで起動し、Asepriteライクなウィンドウ配置で、エンティティ、ステージ、イベント、UIをリアルタイムで編集できます。
 
-### 主な機能
+### 主な機能（予定）
 
-- **キャラクターエディター**: キャラクター定義の閲覧・編集
+- **エンティティエディター**: TD専用のエンティティ動作定義
+  - スプライトアニメーション設定
+  - ステートマシンのビジュアル編集
+  - エフェクト・サウンドのタイミング調整
+  - プレビュー機能
+
+- **ステージエディター**: ステージ制作
+  - Wave構成の定義
+  - エンティティ配置・タイミング設定
+  - プレビュー再生
+
+- **イベントエディター**: イベント制作
+  - トリガー条件設定
+  - アクションシーケンス
+  - カットシーン制作
+
+- **UIエディター**: UI定義
+  - レイアウト調整
+  - インタラクション設定
+
+- **ホットリロード**: JSON定義ファイルの変更を自動検知し、ゲーム実行中にリアルタイム反映
+
+### 詳細ドキュメント
+
+- [開発者モード設計書](docs/DEVELOPER_MODE_DESIGN.md) - アーキテクチャと設計方針
+- [TD専用エンティティ動作システム](docs/TD_ENTITY_BEHAVIOR_SYSTEM.md) - にゃんこ大戦争風のシンプルな動作定義
+- [WebUI移行ガイド](docs/WEBUI_TO_INGAME_EDITOR_MIGRATION.md) - HTTPServer廃止と移行計画
+- [開発者モード クイックリファレンス](docs/DEVELOPER_MODE_QUICK_REFERENCE.md) - 操作方法と機能一覧
+- [実装ロードマップ](docs/DEVELOPER_MODE_IMPLEMENTATION_ROADMAP.md) - 8週間の実装計画
+
+## ImGui内蔵エディター（現行）
+
+### 概要
+
+F1キーで開くImGuiベースの内蔵エディターで、ゲームの定義ファイル（キャラクター、ステージ、UI、スキル、エフェクト、サウンド）を閲覧できます。
+
+> **Note**: 現在は閲覧機能のみ実装されています。上記の「開発者モード」で完全な編集機能を提供する予定です。
+
+### 現在の機能
+
+- **キャラクターエディター**: キャラクター定義の閲覧
   - キャラクターリスト表示
   - 詳細情報ビュー（ID、名前、説明、ステータス）
-  - 将来的に編集機能を実装予定
 
 - **コンソール**: ログメッセージの表示
   - タイムスタンプ付きログ
@@ -388,8 +427,8 @@ F1キーで開くImGuiベースの内蔵エディターで、ゲームの定義�
 - `assets/definitions/effects/*.effect.json` - エフェクト定義（Phase 6）
 - `assets/definitions/sounds/*.sound.json` - サウンド定義（Phase 6）
 
-**WebUIエディター連携:**
-これらのJSON定義ファイルは、WebUIエディターで視覚的に編集でき、ホットリロード機能によりゲーム実行中にリアルタイムで反映されます。
+**開発者モード（予定）:**
+これらのJSON定義ファイルは、ゲーム内蔵の開発者モードで視覚的に編集でき、ホットリロード機能によりゲーム実行中にリアルタイムで反映されます。詳細は[開発者モード設計書](docs/DEVELOPER_MODE_DESIGN.md)を参照してください。
 
 ### UIシステム (raygui + Dear ImGui)
 
@@ -402,8 +441,9 @@ F1キーで開くImGuiベースの内蔵エディターで、ゲームの定義�
 
 #### Dear ImGui (rlImGui経由)
 
-- **用途**: デバッグウィンドウ、開発ツール、プロファイラ
+- **用途**: 開発者モード、デバッグウィンドウ、開発ツール
 - **特徴**: 豊富なウィジェット、Docking対応、業界標準
+- **将来**: ゲーム内蔵エディタのメインUIとして使用予定
 
 #### 描画順序
 
@@ -480,6 +520,8 @@ Cursor は VS Code の拡張としても動作するため、`.vscode/tasks.json
 
 - **[docs/CHARACTER_SYSTEM_DESIGN.md](docs/CHARACTER_SYSTEM_DESIGN.md)** - 統一キャラクターシステム設計
 - **[docs/ROGUELIKE_SYSTEM_DESIGN.md](docs/ROGUELIKE_SYSTEM_DESIGN.md)** - Roguelikeシステム設計
+- **[docs/DEVELOPER_MODE_DESIGN.md](docs/DEVELOPER_MODE_DESIGN.md)** - 開発者モード設計書（新規）
+- **[docs/TD_ENTITY_BEHAVIOR_SYSTEM.md](docs/TD_ENTITY_BEHAVIOR_SYSTEM.md)** - TD専用エンティティ動作システム（新規）
 - **[docs/CODE_ANALYSIS.md](docs/CODE_ANALYSIS.md)** - 詳細なコード分析レポート
 - **[docs/REFACTORING_PLAN.md](docs/REFACTORING_PLAN.md)** - リファクタリング計画
 
@@ -487,14 +529,19 @@ Cursor は VS Code の拡張としても動作するため、`.vscode/tasks.json
 
 - **[docs/DEVELOPER_MANUAL.md](docs/DEVELOPER_MANUAL.md)** - 開発者マニュアル
 - **[docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md)** - 旧アーキテクチャからの移行ガイド
+- **[docs/WEBUI_TO_INGAME_EDITOR_MIGRATION.md](docs/WEBUI_TO_INGAME_EDITOR_MIGRATION.md)** - WebUI移行ガイド（新規）
+- **[docs/DEVELOPER_MODE_QUICK_REFERENCE.md](docs/DEVELOPER_MODE_QUICK_REFERENCE.md)** - 開発者モード クイックリファレンス（新規）
+- **[docs/DEVELOPER_MODE_IMPLEMENTATION_ROADMAP.md](docs/DEVELOPER_MODE_IMPLEMENTATION_ROADMAP.md)** - 実装ロードマップ（新規）
 - **[docs/BUILD_WITH_NINJA.md](docs/BUILD_WITH_NINJA.md)** - Ninjaビルドガイド
 - **[docs/FONT_SETUP.md](docs/FONT_SETUP.md)** - 日本語フォント設定
 - **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - クイックリファレンス
 - **[docs/OPTIMIZATION_SUMMARY.md](docs/OPTIMIZATION_SUMMARY.md)** - 最適化サマリー
 
-### WebUIエディター
+### WebUIエディター（廃止予定）
 
-- **[tools/webui-editor/README.md](tools/webui-editor/README.md)** - WebUIエディター使用ガイド
+> **Note**: WebUIエディターは将来的に廃止され、ゲーム内蔵の開発者モードに置き換えられます。
+
+- **[tools/webui-editor/README.md](tools/webui-editor/README.md)** - WebUIエディター使用ガイド（参考用）
 
 ### Phase完了レポート
 
@@ -516,26 +563,42 @@ Phase 5:   HTTPサーバー完成             ✅ 完了
   5B:      エンティティエディター       ✅ 完了
   5C:      ステージエディター          ✅ 完了
   5D:      UIエディター                ✅ 完了
-Phase 6:   ドキュメント整理             ⏳ 計画中
+Phase 6:   ドキュメント整理             ✅ 完了
+  6A:      開発者モード設計書          ✅ 完了
+  6B:      TD専用エンティティ設計       ✅ 完了
+  6C:      WebUI移行計画               ✅ 完了
+Phase 7:   開発者モード実装             📋 設計完了
+  7A:      基盤構築 (2週間)            ⏳ 計画中
+  7B:      ホットリロード (1週間)       ⏳ 計画中
+  7C:      エンティティエディタ (2週間) ⏳ 計画中
+  7D:      ステージエディタ (1週間)     ⏳ 計画中
+  7E:      統合・最適化 (2週間)         ⏳ 計画中
 ```
 
 ## 今後の展望
 
 ### 短期目標（Phase 7）
 
-- C++ APIサーバー実装とWebUI API統合
-- JSON定義ファイルのサンプル作成
-- プレビュー機能の実装
+- **開発者モード実装**: WebUIを廃止し、ゲーム内蔵エディタを実装
+  - DockSpaceベースのウィンドウ管理
+  - エンティティ・ステージ・イベント・UIエディタ
+  - ホットリロードシステム
+  - ビジュアルステートマシンエディタ
+  - リアルタイムプレビュー機能
 
 ### 中期目標（Phase 8）
 
+- TD専用ゲーム開発環境の完成
+  - にゃんこ大戦争風のシンプルなTDゲーム制作
+  - レベルデザイナー向けワークフロー最適化
 - Roguelikeゲームの実装開始（基本移動、ダンジョン生成、戦闘システム）
 - パフォーマンス最適化
 - テストカバレッジ拡充
 
 ### 長期目標
 
-- 旧TDゲームの完全廃止
+- HTTPServer完全廃止とWebUI削除
+- 開発環境の完全なゲーム内統合
 - プラグイン化による統合プラットフォーム完成
 - クロスプラットフォーム対応の検討
 
