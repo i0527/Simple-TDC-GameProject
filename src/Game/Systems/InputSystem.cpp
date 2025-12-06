@@ -1,5 +1,5 @@
 #include "Game/Systems/InputSystem.h"
-#include "Components.h"
+#include "ComponentsNew.h"
 #include <raylib.h>
 
 namespace Systems {

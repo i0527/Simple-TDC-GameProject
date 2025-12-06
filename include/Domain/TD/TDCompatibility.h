@@ -7,14 +7,13 @@
  */
 #pragma once
 
-// TD名前空間の互換性エイリアス
 namespace TD {
     namespace Components = Domain::TD::Components;
     namespace Systems = Domain::TD::Systems;
     namespace Managers = Domain::TD::Managers;
+    namespace UI = Domain::TD::UI;
 }
 
-// 既存のincludeパスから新しい構造への移行を容易にするためのエイリアス
 namespace TD::Components {
     using namespace Domain::TD::Components;
 }
@@ -27,3 +26,6 @@ namespace TD::Managers {
     using namespace Domain::TD::Managers;
 }
 
+namespace TD::UI {
+    using namespace Domain::TD::UI;
+}

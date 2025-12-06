@@ -703,9 +703,66 @@ public:
 
 ---
 
-## 付録A: ファイル別詳細分析
+## 付録B: インクルード依存関係図
 
-### 旧アーキテクチャファイル（要整理）
+### レイヤー間の依存関係
+
+```
+Application Layer
+  ├─ UnifiedGame.h/cpp
+  ├─ HomeScene.h/cpp
+  ├─ TDGameScene.h/cpp
+  └─ RoguelikeGameScene.h/cpp
+       ↓ depends on
+Game Layer
+  ├─ Systems/ (AnimationSystem, etc.)
+  ├─ Components/ (GameComponents.h)
+  ├─ DevMode/ (DevModeManager, etc.)
+  └─ Resources/ (ResourceManager, etc.)
+       ↓ depends on
+Domain Layer
+  ├─ TD/ (Components, Systems, Managers)
+  ├─ Roguelike/ (Components, Systems, Managers)
+  └─ Compatibility/ (TDCompatibility.h)
+       ↓ depends on
+Core Layer
+  ├─ World.h (ECSレジストリ管理)
+  ├─ GameContext.h (DI コンテナ)
+  ├─ SystemRunner.h
+  ├─ Platform.h (Raylib wrapper)
+  ├─ Components/ (CoreComponents.h)
+  ├─ EntityFactory.h
+  ├─ NodeGraph/ (ノードグラフシステム)
+  └─ HotReloadSystem.h
+       ↓ depends on
+Data Layer
+  ├─ Registry.h (定義レジストリ)
+  ├─ Loaders/ (CharacterLoader, etc.)
+  └─ Serializers/
+       ↓ depends on
+External Libraries
+  ├─ entt/entt.hpp
+  ├─ nlohmann/json.hpp
+  ├─ raylib.h
+  └─ imgui.h (ImGui)
+```
+
+### インクルード最適化
+
+**実施済みの改善:**
+- ✅ 相対パスインクルード（`../`）を絶対パスに統一
+- ✅ インクルード順序を標準化
+- ✅ 前方宣言による循環依存の削減
+- ✅ Platform.h の統一的使用（Raylib競合回避）
+
+**今後の改善予定:**
+- 🔄 プリコンパイル済みヘッダー（PCH）の導入
+- 🔄 インクルード依存関係の可視化ツール導入
+- 🔄 循環依存の完全排除
+
+---
+
+## 付録A: ファイル別詳細分析
 
 | ファイル | 行数 | 状態 | 推奨アクション |
 |---------|------|------|---------------|
