@@ -105,17 +105,24 @@ systemRunner.RegisterSystem(std::make_unique<TestSystem2>());
 systemRunner.Update(context, 0.016f);
 ```
 
-#### 1.4 World (優先度: 中) ※現在保留
+#### 1.4 World (優先度: 中) ※決定期限: Phase 1完了まで
 - [ ] Worldクラス実装 または GameContextに統合
 - [ ] エンティティ名管理
 - [ ] コンポーネント操作ヘルパー
 
 **注意**: 現在`World`クラスは実装されていない。設計文書と実装の不一致を解消する必要あり。
 
-**選択肢**:
-1. `World`クラスを実装する（設計文書通り）
-2. `GameContext`に統合する（現在の実装方針）
-3. 後のフェーズで検討
+**決定方針**:
+1. **推奨**: `World`クラスを実装する（設計文書通り、レイヤー分離を維持）
+2. **代替**: `GameContext`に統合する（実装簡素化、Phase 1内で決定）
+3. **期限**: Phase 1完了（2-3週間後）までに決定・実装
+
+**決定基準**:
+- Phase 1での開発リソースの余裕
+- GameContextの責務肥大化の許容度
+- 将来の拡張性の重視度
+
+詳細は [QUICK_FIXES_GUIDE.md](QUICK_FIXES_GUIDE.md) § 問題1を参照
 
 ### Phase 1完了条件
 - [ ] GameContextが正常に初期化・終了できる
