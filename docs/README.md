@@ -1,6 +1,7 @@
 # Simple-TDC-GameProject ドキュメント
 
 > **スタートガイド**: [開発者向けマニュアル](DEVELOPER_MANUAL.md) を最初に読んでください
+> **アーカイブ**: 旧資料は `docs/archive/` 配下（例: `archive/docs/CODE_ANALYSIS.md`）
 
 ## 📚 ドキュメント構成
 
@@ -13,11 +14,11 @@
 ### 🏗️ アーキテクチャ・設計
 
 - [EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md) - プロジェクト全体概要
-- [CHARACTER_SYSTEM_DESIGN.md](CHARACTER_SYSTEM_DESIGN.md) - キャラクター・ステータスシステム設計
-- [ROGUELIKE_SYSTEM_DESIGN.md](ROGUELIKE_SYSTEM_DESIGN.md) - Roguelike システム設計
-- [INTEGRATION_STATUS.md](INTEGRATION_STATUS.md) - 統合状況・進捗
 - **[DEVELOPER_MODE_DESIGN.md](DEVELOPER_MODE_DESIGN.md)** - 開発者モード設計書
 - **[TD_ENTITY_BEHAVIOR_SYSTEM.md](TD_ENTITY_BEHAVIOR_SYSTEM.md)** - TD専用エンティティ動作システム設計
+- [archive/docs/CHARACTER_SYSTEM_DESIGN.md](archive/docs/CHARACTER_SYSTEM_DESIGN.md) - キャラクター・ステータスシステム設計 (アーカイブ)
+- [archive/docs/ROGUELIKE_SYSTEM_DESIGN.md](archive/docs/ROGUELIKE_SYSTEM_DESIGN.md) - Roguelike システム設計 (アーカイブ)
+- [archive/docs/INTEGRATION_STATUS.md](archive/docs/INTEGRATION_STATUS.md) - 統合状況・進捗 (アーカイブ)
 
 ### 📖 技術ガイド
 
@@ -30,9 +31,9 @@
 
 ### 🔧 保守・改善
 
-- [CODE_ANALYSIS.md](CODE_ANALYSIS.md) - コード品質分析
-- [REFACTORING_PLAN.md](REFACTORING_PLAN.md) - リファクタリング計画
-- [OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md) - パフォーマンス最適化
+- [archive/docs/CODE_ANALYSIS.md](archive/docs/CODE_ANALYSIS.md) - コード品質分析 (アーカイブ)
+- [archive/docs/REFACTORING_PLAN.md](archive/docs/REFACTORING_PLAN.md) - リファクタリング計画 (アーカイブ)
+- [archive/docs/OPTIMIZATION_SUMMARY.md](archive/docs/OPTIMIZATION_SUMMARY.md) - パフォーマンス最適化 (アーカイブ)
 
 ### 🤝 開発チーム向け
 
@@ -54,23 +55,23 @@
 
 ```
 1. 開発者向けマニュアル
-2. CHARACTER_SYSTEM_DESIGN.md
-3. CODE_ANALYSIS.md
+2. archive/docs/CHARACTER_SYSTEM_DESIGN.md
+3. archive/docs/CODE_ANALYSIS.md
 ```
 
 ### ImGui エディター開発者
 
 ```
 1. 開発者向けマニュアル
-2. CHARACTER_SYSTEM_DESIGN.md
-3. CODE_ANALYSIS.md
+2. archive/docs/CHARACTER_SYSTEM_DESIGN.md
+3. archive/docs/CODE_ANALYSIS.md
 ```
 
 ### ゲームデザイナー
 
 ```
-1. CHARACTER_SYSTEM_DESIGN.md
-2. ROGUELIKE_SYSTEM_DESIGN.md
+1. archive/docs/CHARACTER_SYSTEM_DESIGN.md
+2. archive/docs/ROGUELIKE_SYSTEM_DESIGN.md
 3. DATA_DEFINITION.md (後续作成)
 ```
 
@@ -86,16 +87,16 @@
 | TD_ENTITY_BEHAVIOR_SYSTEM.md | ✅ 新規作成 | 2025-12-04 |
 | WEBUI_TO_INGAME_EDITOR_MIGRATION.md | ✅ 新規作成 | 2025-12-04 |
 | DEVELOPER_MODE_QUICK_REFERENCE.md | ✅ 新規作成 | 2025-12-04 |
-| CHARACTER_SYSTEM_DESIGN.md | ✅ 既存 | - |
-| ROGUELIKE_SYSTEM_DESIGN.md | ✅ 既存 | - |
-| CODE_ANALYSIS.md | ✅ 既存 | - |
+| archive/docs/CHARACTER_SYSTEM_DESIGN.md | ✅ アーカイブ | - |
+| archive/docs/ROGUELIKE_SYSTEM_DESIGN.md | ✅ アーカイブ | - |
+| archive/docs/CODE_ANALYSIS.md | ✅ アーカイブ | - |
 | EXECUTIVE_SUMMARY.md | ✅ 既存 | - |
 | BUILD_WITH_NINJA.md | ✅ 既存 | - |
 | FONT_SETUP.md | ✅ 既存 | - |
 | MIGRATION_GUIDE.md | ✅ 既存 | - |
-| INTEGRATION_STATUS.md | ✅ 既存 | - |
-| REFACTORING_PLAN.md | ✅ 既存 | - |
-| OPTIMIZATION_SUMMARY.md | ✅ 既存 | - |
+| archive/docs/INTEGRATION_STATUS.md | ✅ アーカイブ | - |
+| archive/docs/REFACTORING_PLAN.md | ✅ アーカイブ | - |
+| archive/docs/OPTIMIZATION_SUMMARY.md | ✅ アーカイブ | - |
 | HANDOVER.md | ✅ 既存 | - |
 | ARCHITECTURE.md | ⏳ 計画中 | - |
 | IMGUI_EDITOR_GUIDE.md | ⏳ 計画中 | - |
@@ -121,7 +122,7 @@
 
 ### ゲームシステム設計
 
-**CHARACTER_SYSTEM_DESIGN.md**
+**archive/docs/CHARACTER_SYSTEM_DESIGN.md**
 
 - キャラクター定義（JSON スキーマ）
 - ステータスシステム
@@ -129,7 +130,7 @@
 - スキル・能力システム
 - ゲーム設計概要
 
-**ROGUELIKE_SYSTEM_DESIGN.md**
+**archive/docs/ROGUELIKE_SYSTEM_DESIGN.md**
 
 - ダンジョン生成
 - 戦闘・AI システム
@@ -138,7 +139,7 @@
 
 ### 技術・アーキテクチャ
 
-**CODE_ANALYSIS.md**
+**archive/docs/CODE_ANALYSIS.md**
 
 - コード品質評価
 - 改善案

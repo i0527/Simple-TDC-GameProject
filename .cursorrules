@@ -138,6 +138,91 @@ cmake --build --preset ninja-release --target SimpleTDCGame_NewArch
 - **ドキュメント索引**: `docs/README.md`
 - **Roguelike設計**: `docs/ROGUELIKE_SYSTEM_DESIGN.md`
 
+## 📋 インクルード標準化ガイドライン
+
+### インクルード順序（.cpp ファイル）
+
+すべてのソースファイルは以下の順序でインクルードを整理してください：
+
+1. **対応するヘッダーファイル**
+   ```cpp
+   #include "Game/Systems/AnimationSystem.h"
+   ```
+
+2. **プラットフォームヘッダー（Raylib使用時）**
+   ```cpp
+   #include "Core/Platform.h"
+   ```
+
+3. **標準ライブラリ**
+   ```cpp
+   #include <iostream>
+   #include <vector>
+   #include <unordered_map>
+   ```
+
+4. **外部ライブラリ**
+   ```cpp
+   #include <entt/entt.hpp>
+   #include <nlohmann/json.hpp>
+   ```
+
+5. **プロジェクト内ヘッダー（レイヤー順）**
+   ```cpp
+   #include "Core/World.h"
+   #include "Game/Components/GameComponents.h"
+   #include "Domain/TD/Components/TDComponents.h"
+   ```
+
+### インクルード順序（.h ファイル）
+
+1. **プリコンパイル済みヘッダーガード**
+   ```cpp
+   #pragma once
+   ```
+
+2. **標準ライブラリ**
+   ```cpp
+   #include <string>
+   #include <vector>
+   ```
+
+3. **外部ライブラリ**
+   ```cpp
+   #include <entt/entt.hpp>
+   ```
+
+4. **プロジェクト内ヘッダー**
+   ```cpp
+   #include "Core/Components/CoreComponents.h"
+   ```
+
+### パスルール
+
+#### ✅ 絶対パスを使用する
+
+```cpp
+// ✅ 正しい
+#include "Domain/Roguelike/Components/RoguelikeComponents.h"
+#include "Core/NodeGraph/Node.h"
+```
+
+#### ❌ 相対パスを避ける
+
+```cpp
+// ❌ 避けるべき
+#include "../Components/RoguelikeComponents.h"
+#include "../../Domain/TD/Components/TDComponents.h"
+```
+
+### 命名規則
+
+- **ファイル**: `PascalCase.h` / `PascalCase.cpp`
+  - 例: `AnimationSystem.h`, `GameViewRenderer.cpp`
+- **ヘッダーガード**: `#pragma once`（推奨）
+- **インクルードパス**: ディレクトリ構造に従う相対パス
+  - 例: `#include "Domain/TD/Systems/TDSystems.h"`
+
 ## 🎯 マルチエージェント開発
 
 ### エージェント役割

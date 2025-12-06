@@ -12,9 +12,9 @@
 #include "Core/World.h"
 #include "Core/GameContext.h"
 #include "Core/SystemRunner.h"
-#include "Core/HTTPServer.h"
 #include "Data/Registry.h"
 #include "Data/Loaders/DefinitionLoader.h"
+#include "Game/DevMode/DevModeManager.h"
 #include <nlohmann/json.hpp>
 #include <memory>
 #include <string>
@@ -45,11 +45,9 @@ public:
      * @brief 初期化
      * @param definitionsPath 定義ファイルのベースパス
      */
-        bool Initialize(
-            const std::string& definitionsPath = "assets/definitions",
-            bool enableHTTPServer = false,
-            int httpServerPort = 8080
-        );
+    bool Initialize(
+        const std::string& definitionsPath = "assets/definitions"
+    );
     
     /**
      * @brief ゲームモードを設定
@@ -128,11 +126,6 @@ private:
      */
     nlohmann::json GetGameState() const;
 
-    /**
-     * @brief ファイル変更通知ハンドラ（ホットリロード用）
-     */
-    void OnFileChanged(const std::string& filePath);
-
     // ===== 開発者モード用エンティティ操作 =====
 
     /**
@@ -190,23 +183,17 @@ private:
     GameMode currentMode_ = GameMode::Menu;
     std::string currentSceneName_;
     
-    // コアコンポーネント
     std::unique_ptr<Core::World> world_;
     std::unique_ptr<Core::GameContext> context_;
     std::unique_ptr<Core::SystemRunner> systemRunner_;
     
-    // データ定義
     std::unique_ptr<Data::DefinitionRegistry> definitions_;
     std::unique_ptr<Data::DefinitionLoader> definitionLoader_;
     
-    // HTTPサーバー（UIエディター用）
-    std::unique_ptr<Core::HTTPServer> httpServer_;
-    int httpServerPort_ = 8080;
-    bool enableHTTPServer_ = false;
-    
-    // シーン管理
     std::unordered_map<std::string, std::unique_ptr<IScene>> scenes_;
-    std::string nextSceneName_;  // 次のフレームに切り替えるシーン
+    std::string nextSceneName_;
+    
+    std::unique_ptr<Game::DevMode::DevModeManager> devMode_;
     
     // 状態
     bool initialized_ = false;

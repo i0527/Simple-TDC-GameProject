@@ -1,5 +1,5 @@
 #include "Game/Systems/RenderSystem.h"
-#include "Components.h"
+#include "ComponentsNew.h"
 #include <raylib.h>
 
 namespace Systems {
