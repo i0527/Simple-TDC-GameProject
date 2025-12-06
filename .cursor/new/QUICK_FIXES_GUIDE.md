@@ -75,13 +75,15 @@ public:
     const entt::registry& GetRegistry() const { return registry_; }
 
 private:
-    entt::registry& registry_;
+    entt::registry& registry_;  // 注: 参照を保持（所有権なし）
     std::unordered_map<std::string, entt::entity> nameToEntity_;
     std::unordered_map<entt::entity, std::string> entityToName_;
 };
 
 } // namespace New::Core
 ```
+
+**重要**: `World`は`registry`の参照を保持するため、`registry`のライフタイムは`World`より長くなければなりません。`GameContext`での使用を想定しているため、`GameContext`が`registry`と`World`の両方を所有することで、この条件を満たします。
 
 2. **`World.cpp`の実装**
 ```cpp
