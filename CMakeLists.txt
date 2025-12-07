@@ -182,99 +182,33 @@ target_include_directories(rlimgui_lib PUBLIC ${rlimgui_SOURCE_DIR})
 target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 
 # ============================================================================
-# 統合ゲームプラットフォーム: SimpleTDCGame
-# 
-# Phase 3: TDとRoguelikeを統合した単一プラットフォーム
-# - エントリポイント: src/main_unified.cpp
-# - UnifiedGameクラスでゲームモード（Menu/TD/Roguelike）を管理
-# - ホームシーンからゲームモードを選択可能
+# 新アーキテクチャ: SimpleTDCGame_NewArch
+# - 新階層（include/, src/）に昇格済みのコードのみを使用
+# - 最小限のウィンドウとレンダラーを構築
 # ============================================================================
-set(UNIFIED_SOURCES
-    # エントリポイント
-    src/main_unified.cpp
-    
-    # Application層
-    src/Application/UnifiedGame.cpp
-    src/Application/HomeScene.cpp
-    src/Application/TDGameScene.cpp
-    src/Application/RoguelikeGameScene.cpp
-    
-    # Core層ユーティリティ
-    src/FileUtils.cpp
-    src/Core/HotReloadSystem.cpp
-    
-    # Game層（エディター）
-    src/Game/Editor/EditorManager.cpp
-    src/Game/DevMode/DevModeManager.cpp
-    src/Game/DevMode/GameViewRenderer.cpp
-    src/Game/DevMode/WindowManager.cpp
-    src/Game/DevMode/Workspace.cpp
-    src/Game/DevMode/CharacterEditor.cpp
-    src/Game/DevMode/Editors.cpp
-    src/Game/DevMode/DebugTools.cpp
-    src/Game/Systems/AnimationSystem.cpp
-    
-    # Data層シリアライザー
-    src/Data/Serializers/UISerializer.cpp
-    src/Data/Serializers/CharacterSerializer.cpp
-    src/Data/Serializers/StageSerializer.cpp
+set(NEW_ARCH_SOURCES
+    src/main_new.cpp
+    src/Core/GameContext.cpp
+    src/Core/World.cpp
+    src/Core/GameRenderer.cpp
+    src/Core/HotReloadApplier.cpp
+    src/Core/WorkspaceSettings.cpp
+    src/Data/Validators/SchemaValidator.cpp
+    src/Data/Validators/ReferenceValidator.cpp
+    src/Data/Validators/MapValidator.cpp
 )
 
-# 実行ファイル作成
-add_executable(${PROJECT_NAME} ${UNIFIED_SOURCES})
+add_executable(SimpleTDCGame_NewArch ${NEW_ARCH_SOURCES})
 
-# インクルードディレクトリ
-target_include_directories(${PROJECT_NAME} 
-    PRIVATE 
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${raygui_SOURCE_DIR}/src
-        ${dearimgui_SOURCE_DIR}
-        ${rlimgui_SOURCE_DIR}
-)
-
-# リンクライブラリ
-target_link_libraries(${PROJECT_NAME} 
-    PRIVATE 
-        EnTT::EnTT
-        nlohmann_json::nlohmann_json
-        raylib
-        rlimgui_lib
-        imgui_lib
-)
-
-# アセットコピー（ビルド後）
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
-    COMMENT "Copying assets to build directory..."
-)
-
-# ============================================================================
-# 新アーキテクチャ（プレースホルダー）: SimpleTDCGame_NewArchNext
-# - 完全分離の new/ 階層を使用
-# - 最小限のウィンドウとレンダラーのみを構築
-# ============================================================================
-set(NEW_ARCH_NEXT_SOURCES
-    src/new/main_new.cpp
-    src/new/Core/GameContext.cpp
-    src/new/Core/World.cpp
-    src/new/Core/GameRenderer.cpp
-    src/new/Data/Validators/SchemaValidator.cpp
-)
-
-add_executable(SimpleTDCGame_NewArchNext ${NEW_ARCH_NEXT_SOURCES})
-
-target_include_directories(SimpleTDCGame_NewArchNext
+target_include_directories(SimpleTDCGame_NewArch
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/new
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${raygui_SOURCE_DIR}/src
         ${dearimgui_SOURCE_DIR}
         ${rlimgui_SOURCE_DIR}
 )
 
-target_link_libraries(SimpleTDCGame_NewArchNext
+target_link_libraries(SimpleTDCGame_NewArch
     PRIVATE
         EnTT::EnTT
         nlohmann_json::nlohmann_json
@@ -283,11 +217,11 @@ target_link_libraries(SimpleTDCGame_NewArchNext
         imgui_lib
 )
 
-add_custom_command(TARGET SimpleTDCGame_NewArchNext POST_BUILD
+add_custom_command(TARGET SimpleTDCGame_NewArch POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:SimpleTDCGame_NewArchNext>/assets
-    COMMENT "Copying assets to build directory for NewArchNext..."
+        $<TARGET_FILE_DIR:SimpleTDCGame_NewArch>/assets
+    COMMENT "Copying assets to build directory for NewArch..."
 )
 
 # ============================================================================
