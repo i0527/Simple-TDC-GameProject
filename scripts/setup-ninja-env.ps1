@@ -74,7 +74,7 @@ Write-InfoMessage "Setting up Visual Studio environment..."
 
 # Run vcvarsall and capture environment variables
 $tempFile = [System.IO.Path]::GetTempFileName()
-cmd /c "`"$vcvarsall`" x64 && set > `"$tempFile`""
+& $env:ComSpec /c "`"$vcvarsall`" x64 && set > `"$tempFile`""
 
 Get-Content $tempFile | ForEach-Object {
     if ($_ -match '^([^=]+)=(.*)$') {

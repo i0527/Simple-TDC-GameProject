@@ -1,0 +1,17 @@
+[
+  {
+    "id": "enemy_slime_debug",
+    "name": "Slime Debug",
+    "health": 40
+  },
+  {
+    "id": "enemy_ogre_debug",
+    "name": "Ogre Debug",
+    "health": 120
+  },
+  {
+    "name": "NoIdEnemy",
+    "health": 50
+  },
+  "invalid_entry"
+]

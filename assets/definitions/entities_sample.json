@@ -1,0 +1,17 @@
+[
+  {
+    "id": "enemy_slime",
+    "name": "Slime",
+    "health": 70
+  },
+  {
+    "id": "enemy_goblin",
+    "name": "Goblin",
+    "health": 110
+  },
+  {
+    "id": "enemy_brute",
+    "name": "Brute",
+    "health": 180
+  }
+]

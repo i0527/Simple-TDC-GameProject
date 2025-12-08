@@ -1,0 +1,33 @@
+[
+  {
+    "id": "wave_debug",
+    "entries": [
+      {
+        "enemyId": "enemy_slime_debug",
+        "lane": 0,
+        "delay": 0.0,
+        "count": 3,
+        "interval": 0.6
+      },
+      {
+        "enemyId": "enemy_ogre_debug",
+        "lane": 0,
+        "delay": 1.5,
+        "count": 1,
+        "interval": 1.5
+      },
+      "invalid_entry"
+    ]
+  },
+  {
+    "id": "wave_broken",
+    "entries": [
+      {
+        "lane": 0
+      },
+      {
+        "enemyId": "missing_enemy"
+      }
+    ]
+  }
+]
