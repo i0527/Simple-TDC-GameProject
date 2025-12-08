@@ -1,0 +1,33 @@
+[
+  {
+    "id": "fireball_debug",
+    "name": "Fireball Debug",
+    "description": 123,
+    "cost": -5,
+    "cooldown": -1.0,
+    "type": 999,
+    "element": "fire",
+    "power": -20,
+    "target": "enemy"
+  },
+  {
+    "id": "heal_debug",
+    "name": "Heal Debug",
+    "description": "heals ally but cheap",
+    "cost": 2,
+    "cooldown": 0.5,
+    "type": "heal",
+    "element": "holy",
+    "power": 30,
+    "target": "ally",
+    "critMultiplier": 0.8,
+    "duration": 0.0,
+    "modifiers": []
+  },
+  {
+    "name": "NoIdAbility",
+    "cost": "ten",
+    "cooldown": "fast"
+  },
+  "invalid_entry"
+]

@@ -1,5 +1,22 @@
 cmake_minimum_required(VERSION 3.19)
-project(SimpleTDCGame VERSION 0.1.0 LANGUAGES CXX C)
+
+# RC.exe を明示的に検出してから project() を呼び出す
+find_program(RC_EXECUTABLE rc PATHS ENV PATH)
+if(NOT RC_EXECUTABLE)
+    # Visual Studio に内蔵の RC.exe を探す
+    find_program(RC_EXECUTABLE rc
+        PATHS "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64"
+    )
+endif()
+
+if(RC_EXECUTABLE)
+    message(STATUS "Found RC.exe: ${RC_EXECUTABLE}")
+    set(CMAKE_RC_COMPILER ${RC_EXECUTABLE})
+else()
+    message(WARNING "RC.exe not found; using default")
+endif()
+
+project(SimpleTDCGame VERSION 0.1.0 LANGUAGES CXX C RC)
 
 # ============================================================================
 # Ninja自動セットアップ (Windows)
@@ -74,6 +91,10 @@ if(MSVC)
     add_compile_options(/W4)
     # 警告をエラーとして扱わない（/WXの無効化）
     add_compile_options(/WX-)
+    # マニフェスト生成を無効化（RC.exe エラー対応）
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " /MANIFEST:NO")
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " /MANIFEST:NO")
+    string(APPEND CMAKE_MODULE_LINKER_FLAGS " /MANIFEST:NO")
     
     message(STATUS "Compiler: MSVC ${MSVC_VERSION}")
 else()
@@ -116,11 +137,11 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-# nlohmann/json
+# nlohmann/json (using newer version compatible with modern CMake)
 FetchContent_Declare(
     json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.2
+    GIT_TAG v3.11.3
     GIT_SHALLOW TRUE
 )
 
@@ -130,7 +151,7 @@ set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
-    GIT_TAG 5.0
+    GIT_TAG 5.5
     GIT_SHALLOW TRUE
 )
 
@@ -189,13 +210,38 @@ target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 set(NEW_ARCH_SOURCES
     src/main_new.cpp
     src/Core/GameContext.cpp
+    src/Core/InputManager.cpp
+    src/Core/ResourceManager.cpp
     src/Core/World.cpp
     src/Core/GameRenderer.cpp
     src/Core/HotReloadApplier.cpp
     src/Core/WorkspaceSettings.cpp
+    src/Data/DefinitionRegistry.cpp
+    src/Data/Loaders/DataLoaderBase.cpp
+    src/Data/Loaders/EntityLoader.cpp
+    src/Data/Loaders/WaveLoader.cpp
+    src/Data/Loaders/AbilityLoader.cpp
+    src/Data/Loaders/StageLoader.cpp
+    src/Data/Loaders/DeckLoader.cpp
+    src/Game/Editor/HotReload/HotReloadSystem.cpp
     src/Data/Validators/SchemaValidator.cpp
     src/Data/Validators/ReferenceValidator.cpp
     src/Data/Validators/MapValidator.cpp
+    src/new/Game/Systems/RenderSystem.cpp
+    src/new/Game/Systems/HudSystem.cpp
+    src/new/Game/Systems/CostSystem.cpp
+    src/new/Game/Systems/PlacementSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/LaneMovementSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/SimpleCombatSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/LineTDSpawnSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/CostSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/PlacementSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/DeathCheckSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/WaveSchedulerSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/BaseArrivalSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/CombatResolveSystem.cpp
+    src/new/Domain/TD/LineTD/Systems/FrontlineSystem.cpp
+    src/new/Domain/TD/LineTD/Managers/WaveManager.cpp
 )
 
 add_executable(SimpleTDCGame_NewArch ${NEW_ARCH_SOURCES})

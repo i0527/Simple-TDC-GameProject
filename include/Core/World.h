@@ -4,7 +4,6 @@
 #include <string>
 #include <unordered_map>
 
-
 namespace New::Core {
 
 class World {
@@ -22,6 +21,8 @@ public:
   void SetName(entt::entity entity, const std::string &name);
   std::string GetName(entt::entity entity) const;
   entt::entity FindByName(const std::string &name) const;
+  bool HasName(entt::entity entity) const;
+  bool IsValid(entt::entity entity) const;
 
   template <typename Component, typename... Args>
   Component &Add(entt::entity entity, Args &&...args) {

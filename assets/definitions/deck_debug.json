@@ -1,0 +1,91 @@
+[
+  {
+    "id": "deck_debug",
+    "slots": [
+      {
+        "slotId": "slot1",
+        "cost": 12,
+        "health": 160,
+        "attackDamage": 20,
+        "attackRange": 240,
+        "attackCooldown": 0.75,
+        "spawnCooldown": 0.50,
+        "knockback": 26.0,
+        "attackType": "single",
+        "hitCount": 1
+      },
+      {
+        "slotId": "slot2",
+        "cost": 20,
+        "health": 240,
+        "attackDamage": 28,
+        "attackRange": 260,
+        "attackCooldown": 0.9,
+        "spawnCooldown": 0.6,
+        "knockback": 32.0,
+        "attackType": "multi",
+        "hitCount": 2
+      },
+      {
+        "slotId": "slot3",
+        "cost": 30,
+        "health": 200,
+        "attackDamage": 35,
+        "attackRange": 280,
+        "attackCooldown": 1.0,
+        "spawnCooldown": 0.8,
+        "knockback": 34.0,
+        "attackType": "pierce",
+        "hitCount": 3
+      },
+      {
+        "slotId": "slot4",
+        "cost": 40,
+        "health": 280,
+        "attackDamage": 26,
+        "attackRange": 240,
+        "attackCooldown": 0.7,
+        "spawnCooldown": 1.0,
+        "knockback": 30.0,
+        "attackType": "single",
+        "hitCount": 1
+      },
+      {
+        "slotId": "slot5",
+        "cost": 46,
+        "health": 340,
+        "attackDamage": 32,
+        "attackRange": 300,
+        "attackCooldown": 1.10,
+        "spawnCooldown": 1.00,
+        "knockback": 36.0,
+        "attackType": "multi",
+        "hitCount": 2
+      },
+      {
+        "slotId": "slot6",
+        "cost": 16,
+        "health": 150,
+        "attackDamage": 16,
+        "attackRange": 220,
+        "attackCooldown": 0.70,
+        "spawnCooldown": 0.40,
+        "knockback": 18.0,
+        "attackType": "single",
+        "hitCount": 1
+      },
+      {
+        "slotId": "slot7",
+        "cost": 24,
+        "health": 190,
+        "attackDamage": 22,
+        "attackRange": 240,
+        "attackCooldown": 0.85,
+        "spawnCooldown": 0.70,
+        "knockback": 22.0,
+        "attackType": "multi",
+        "hitCount": 2
+      }
+    ]
+  }
+]

@@ -1,25 +1,216 @@
 #include "Data/Validators/SchemaValidator.h"
 #include <filesystem>
+#include <unordered_set>
 
 namespace New::Data::Validators {
 
 ValidationReport
 SchemaValidator::ValidateEntityDef(const nlohmann::json &json) {
   Clear();
-  RequireType(json, "entities", nlohmann::json::value_t::array, "entities");
+  if (!RequireType(json, "entities", nlohmann::json::value_t::array,
+                   "entities")) {
+    return MakeReport();
+  }
+
+  const auto &arr = json.at("entities");
+  std::unordered_set<std::string> ids;
+  for (size_t i = 0; i < arr.size(); ++i) {
+    const auto &e = arr.at(i);
+    const std::string base = "entities[" + std::to_string(i) + "]";
+    if (!e.is_object()) {
+      AddIssue(Severity::Error, base, "entity must be object");
+      continue;
+    }
+    if (RequireType(e, "id", nlohmann::json::value_t::string, base)) {
+      const auto id = e.at("id").get<std::string>();
+      if (ids.count(id) > 0) {
+        AddIssue(Severity::Warning, base, "duplicate id '" + id + "'");
+      }
+      ids.insert(id);
+    }
+    RequireType(e, "name", nlohmann::json::value_t::string, base,
+                Severity::Warning);
+    if (RequireType(e, "health", nlohmann::json::value_t::number_integer, base,
+                    Severity::Warning)) {
+      const int hp = e.at("health").get<int>();
+      if (hp <= 0) {
+        AddIssue(Severity::Warning, base, "health should be > 0");
+      }
+    }
+  }
   return MakeReport();
 }
 
 ValidationReport SchemaValidator::ValidateWaveDef(const nlohmann::json &json) {
   Clear();
-  RequireType(json, "waves", nlohmann::json::value_t::array, "waves");
+  if (!RequireType(json, "waves", nlohmann::json::value_t::array, "waves")) {
+    return MakeReport();
+  }
+
+  const auto &arr = json.at("waves");
+  std::unordered_set<std::string> ids;
+  for (size_t i = 0; i < arr.size(); ++i) {
+    const auto &w = arr.at(i);
+    const std::string base = "waves[" + std::to_string(i) + "]";
+    if (!w.is_object()) {
+      AddIssue(Severity::Error, base, "wave must be object");
+      continue;
+    }
+    if (RequireType(w, "id", nlohmann::json::value_t::string, base)) {
+      const auto id = w.at("id").get<std::string>();
+      if (ids.count(id) > 0) {
+        AddIssue(Severity::Warning, base, "duplicate id '" + id + "'");
+      }
+      ids.insert(id);
+    }
+    if (w.contains("entries")) {
+      RequireType(w, "entries", nlohmann::json::value_t::array, base);
+      if (w.at("entries").is_array()) {
+        const auto &entries = w.at("entries");
+        for (size_t j = 0; j < entries.size(); ++j) {
+          const auto &entry = entries.at(j);
+          const std::string eb = base + ".entries[" + std::to_string(j) + "]";
+          if (!entry.is_object()) {
+            AddIssue(Severity::Error, eb, "entry must be object");
+            continue;
+          }
+          RequireType(entry, "enemyId", nlohmann::json::value_t::string, eb);
+          if (entry.contains("delay")) {
+            RequireType(entry, "delay", nlohmann::json::value_t::number_float,
+                        eb);
+            if (entry.at("delay").is_number()) {
+              const double d = entry.at("delay").get<double>();
+              if (d < 0.0) {
+                AddIssue(Severity::Warning, eb, "delay should be >= 0");
+              }
+            }
+          }
+        }
+      }
+    } else {
+      AddIssue(Severity::Error, base, "missing entries array");
+    }
+  }
   return MakeReport();
 }
 
 ValidationReport
 SchemaValidator::ValidateAbilityDef(const nlohmann::json &json) {
   Clear();
-  RequireType(json, "abilities", nlohmann::json::value_t::array, "abilities");
+  if (!RequireType(json, "abilities", nlohmann::json::value_t::array,
+                   "abilities")) {
+    return MakeReport();
+  }
+
+  const auto &arr = json.at("abilities");
+  std::unordered_set<std::string> ids;
+  for (size_t i = 0; i < arr.size(); ++i) {
+    const auto &a = arr.at(i);
+    const std::string base = "abilities[" + std::to_string(i) + "]";
+    if (!a.is_object()) {
+      AddIssue(Severity::Error, base, "ability must be object");
+      continue;
+    }
+    if (RequireType(a, "id", nlohmann::json::value_t::string, base)) {
+      const auto id = a.at("id").get<std::string>();
+      if (ids.count(id) > 0) {
+        AddIssue(Severity::Warning, base, "duplicate id '" + id + "'");
+      }
+      ids.insert(id);
+    }
+    RequireType(a, "name", nlohmann::json::value_t::string, base,
+                Severity::Warning);
+    if (a.contains("description")) {
+      RequireType(a, "description", nlohmann::json::value_t::string, base,
+                  Severity::Warning);
+    }
+    if (a.contains("cost")) {
+      RequireType(a, "cost", nlohmann::json::value_t::number_integer, base,
+                  Severity::Warning);
+      if (a.at("cost").is_number_integer() && a.at("cost").get<int>() < 0) {
+        AddIssue(Severity::Warning, base, "cost should be >= 0");
+      }
+    }
+    if (a.contains("cooldown")) {
+      RequireType(a, "cooldown", nlohmann::json::value_t::number_float, base,
+                  Severity::Warning);
+      if (a.at("cooldown").is_number()) {
+        const double cd = a.at("cooldown").get<double>();
+        if (cd < 0.0) {
+          AddIssue(Severity::Warning, base, "cooldown should be >= 0");
+        }
+      }
+    }
+    if (a.contains("power")) {
+      if (a.at("power").is_number()) {
+        const double p = a.at("power").get<double>();
+        if (p < 0.0) {
+          AddIssue(Severity::Warning, base, "power should be >= 0");
+        }
+      } else {
+        AddIssue(Severity::Warning, base, "power has unexpected type");
+      }
+    }
+    if (a.contains("type") && !a.at("type").is_string()) {
+      AddIssue(Severity::Warning, base, "type should be string");
+    }
+    if (a.contains("element") && !a.at("element").is_string()) {
+      AddIssue(Severity::Warning, base, "element should be string");
+    }
+    if (a.contains("target") && !a.at("target").is_string()) {
+      AddIssue(Severity::Warning, base, "target should be string");
+    }
+    if (a.contains("critMultiplier")) {
+      if (a.at("critMultiplier").is_number()) {
+        const double cm = a.at("critMultiplier").get<double>();
+        if (cm < 0.0) {
+          AddIssue(Severity::Warning, base, "critMultiplier should be >= 0");
+        }
+      } else {
+        AddIssue(Severity::Warning, base, "critMultiplier has unexpected type");
+      }
+    }
+    if (a.contains("duration")) {
+      if (a.at("duration").is_number()) {
+        const double dur = a.at("duration").get<double>();
+        if (dur < 0.0) {
+          AddIssue(Severity::Warning, base, "duration should be >= 0");
+        }
+      } else {
+        AddIssue(Severity::Warning, base, "duration has unexpected type");
+      }
+    }
+    if (a.contains("isDot") && !a.at("isDot").is_boolean()) {
+      AddIssue(Severity::Warning, base, "isDot should be boolean");
+    }
+    if (a.contains("isHot") && !a.at("isHot").is_boolean()) {
+      AddIssue(Severity::Warning, base, "isHot should be boolean");
+    }
+    if (a.contains("modifiers")) {
+      if (!a.at("modifiers").is_array()) {
+        AddIssue(Severity::Warning, base, "modifiers should be an array");
+      } else {
+        const auto &mods = a.at("modifiers");
+        for (size_t j = 0; j < mods.size(); ++j) {
+          const auto &m = mods.at(j);
+          const std::string mb = base + ".modifiers[" + std::to_string(j) + "]";
+          if (!m.is_object()) {
+            AddIssue(Severity::Warning, mb, "modifier must be object");
+            continue;
+          }
+          RequireType(m, "stat", nlohmann::json::value_t::string, mb,
+                      Severity::Warning);
+          if (m.contains("amount")) {
+            if (!m.at("amount").is_number_integer()) {
+              AddIssue(Severity::Warning, mb, "amount must be integer");
+            }
+          } else {
+            AddIssue(Severity::Warning, mb, "missing key 'amount'");
+          }
+        }
+      }
+    }
+  }
   return MakeReport();
 }
 

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "stage_debug",
+    "lanes": [
+      {
+        "index": 0,
+        "y": 360,
+        "startX": 120,
+        "endX": 1800
+      }
+    ],
+    "waves": [
+      "wave_debug",
+      "wave_broken"
+    ],
+    "playerLife": 18,
+    "startingCost": 200,
+    "baseArrivalDamage": 1,
+    "killReward": 8,
+    "minGap": 76,
+    "frontlineIterations": 3
+  }
+]
