@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <iostream>
 #include <raylib.h>
+#include <rlImGui.h>
+#include <imgui.h>
 #include <sstream>
 
 #include "Data/Loaders/AbilityLoader.h"
@@ -60,6 +62,9 @@ bool GameApp::Initialize() {
   // ESC終了のデフォルト挙動を無効化（シーン側で管理）
   SetExitKey(KEY_NULL);
 
+  rlImGuiSetup(true);
+  imgui_initialized_ = true;
+
   if (!IsAudioDeviceReady()) {
     InitAudioDevice();
     audio_initialized_ = true;
@@ -72,6 +77,13 @@ bool GameApp::Initialize() {
   default_font_ =
       font_manager_->LoadJapaneseFont("assets/fonts/NotoSansJP-Medium.ttf", 32);
   owns_font_ = default_font_.texture.id != GetFontDefault().texture.id;
+  ImGuiIO &io = ImGui::GetIO();
+  imgui_font_ =
+      font_manager_->LoadImGuiJapaneseFont("assets/fonts/NotoSansJP-Medium.ttf",
+                                           18.0f);
+  if (imgui_font_ != nullptr) {
+    io.FontDefault = imgui_font_;
+  }
 
   // SceneManager 初期化
   scene_manager_ = std::make_unique<Game::Scenes::SceneManager>();
@@ -108,6 +120,11 @@ void GameApp::Shutdown() {
     return;
 
   std::cout << "=== GameApp Shutdown ===" << std::endl;
+
+  if (imgui_initialized_) {
+    rlImGuiShutdown();
+    imgui_initialized_ = false;
+  }
 
   entity_manager_->Shutdown();
   skill_manager_->Shutdown();
@@ -148,7 +165,8 @@ void GameApp::Update(float delta_time) {
           }
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
+                  user_data_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::FADE);
           return;
         }
@@ -178,13 +196,34 @@ void GameApp::Update(float delta_time) {
         case Game::Scenes::TitleScene::MenuAction::ContinueGame:
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, user_data_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::FADE);
           break;
         case Game::Scenes::TitleScene::MenuAction::Settings:
         case Game::Scenes::TitleScene::MenuAction::None:
         default:
           break;
+        }
+
+        int save_slot = title->ConsumeRequestedSaveSlot();
+        if (save_slot >= 0) {
+          bool ok = SaveToSlot(save_slot);
+          title->SetInfoMessage(ok ? "保存しました" : "保存に失敗しました",
+                                2.0f);
+        }
+        int load_slot = title->ConsumeRequestedLoadSlot();
+        if (load_slot >= 0) {
+          bool ok = LoadFromSlot(load_slot);
+          title->SetInfoMessage(ok ? "ロードしました" : "ロードに失敗しました",
+                                2.0f);
+          if (ok) {
+            scene_manager_->ReplaceScene(
+                std::make_unique<Game::Scenes::HomeScene>(
+                    default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
+                    user_data_manager_.get()),
+                Game::Scenes::SceneManager::TransitionType::FADE);
+            return;
+          }
         }
 
         if (title->ConsumeExit()) {
@@ -195,7 +234,7 @@ void GameApp::Update(float delta_time) {
             action == Game::Scenes::TitleScene::MenuAction::None) {
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, user_data_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
         }
       } else if (auto *home = dynamic_cast<Game::Scenes::HomeScene *>(scene)) {
@@ -210,20 +249,22 @@ void GameApp::Update(float delta_time) {
         case Game::Scenes::HomeScene::Action::Formation:
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::FormationScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, *definitions_,
+                  *formation_manager_),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
           return;
         case Game::Scenes::HomeScene::Action::SaveAndTitle:
-          QuickSaveSlot0();
+          SaveToSlot(0);
           rendering_system_.Shutdown(registry_);
           registry_.clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
+                  user_data_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         case Game::Scenes::HomeScene::Action::SaveAndExit:
-          QuickSaveSlot0();
+          SaveToSlot(0);
           is_running_ = false;
           return;
         case Game::Scenes::HomeScene::Action::QuitWithoutSave:
@@ -231,12 +272,24 @@ void GameApp::Update(float delta_time) {
           registry_.clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
+                  user_data_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         case Game::Scenes::HomeScene::Action::None:
         default:
           break;
+        }
+
+        int save_slot = home->ConsumeRequestedSaveSlot();
+        if (save_slot >= 0) {
+          bool ok = SaveToSlot(save_slot);
+          home->SetInfoMessage(ok ? "Saved" : "Save failed");
+        }
+        int load_slot = home->ConsumeRequestedLoadSlot();
+        if (load_slot >= 0) {
+          bool ok = LoadFromSlot(load_slot);
+          home->SetInfoMessage(ok ? "Loaded" : "Load failed");
         }
       } else if (auto *select =
                      dynamic_cast<Game::Scenes::StageSelectScene *>(scene)) {
@@ -245,7 +298,7 @@ void GameApp::Update(float delta_time) {
           registry_.clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, user_data_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         }
@@ -253,12 +306,13 @@ void GameApp::Update(float delta_time) {
         if (select->ShouldStartGame()) {
           std::string stage_id = select->ConsumeSelectedStage();
           if (!stage_id.empty()) {
+            current_stage_id_ = stage_id;
             rendering_system_.Shutdown(registry_);
             registry_.clear();
             scene_manager_->ReplaceScene(
                 std::make_unique<Game::Scenes::TDGameScene>(
                     registry_, rendering_system_, *definitions_, Settings(),
-                    default_font_, stage_id),
+                    default_font_, stage_id, formation_manager_.get()),
                 Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
             return;
           }
@@ -268,7 +322,7 @@ void GameApp::Update(float delta_time) {
         if (formation->ConsumeReturnHome()) {
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, user_data_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         }
@@ -278,17 +332,20 @@ void GameApp::Update(float delta_time) {
           registry_.clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
+                  user_data_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         }
         if (td->ConsumeRetryRequest()) {
           rendering_system_.Shutdown(registry_);
           registry_.clear();
+          current_stage_id_ = td->GetCurrentStageId();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TDGameScene>(
                   registry_, rendering_system_, *definitions_, Settings(),
-                  default_font_, td->GetCurrentStageId()),
+                  default_font_, td->GetCurrentStageId(),
+                  formation_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
           return;
         }
@@ -296,10 +353,11 @@ void GameApp::Update(float delta_time) {
         if (!next_stage.empty()) {
           rendering_system_.Shutdown(registry_);
           registry_.clear();
+          current_stage_id_ = next_stage;
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TDGameScene>(
                   registry_, rendering_system_, *definitions_, Settings(),
-                  default_font_, next_stage),
+                  default_font_, next_stage, formation_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
           return;
         }
@@ -321,12 +379,20 @@ void GameApp::Render() {
   BeginDrawing();
   ClearBackground(BLACK);
 
+  if (imgui_initialized_) {
+    rlImGuiBegin();
+  }
+
   if (scene_manager_) {
     scene_manager_->Draw();
   } else {
     // シーンが無い場合の簡易描画
     DrawTextEx(default_font_, "No Scene", {50.0f, 50.0f}, 32.0f, 2.0f,
                RAYWHITE);
+  }
+
+  if (imgui_initialized_) {
+    rlImGuiEnd();
   }
 
   EndDrawing();
@@ -348,24 +414,39 @@ void GameApp::HandleResize() {
   viewport_y_ = (current_height - viewport_height_) / 2;
 }
 
-bool GameApp::QuickSaveSlot0() {
+bool GameApp::SaveToSlot(int slot_id) {
   if (!user_data_manager_) {
     std::cerr << "[GameApp] Save manager not initialized" << std::endl;
     return false;
   }
-
-  Shared::Data::SaveData data = BuildPlaceholderSaveData();
+  Shared::Data::SaveData data = BuildSaveData(slot_id);
   if (!user_data_manager_->SaveSlot(data)) {
-    std::cerr << "[GameApp] Quick save failed" << std::endl;
+    std::cerr << "[GameApp] Save failed for slot " << slot_id << std::endl;
     return false;
   }
-  std::cout << "[GameApp] Quick saved to slot 0" << std::endl;
+  std::cout << "[GameApp] Saved slot " << slot_id << std::endl;
   return true;
 }
 
-Shared::Data::SaveData GameApp::BuildPlaceholderSaveData() const {
+bool GameApp::LoadFromSlot(int slot_id) {
+  if (!user_data_manager_) {
+    std::cerr << "[GameApp] Save manager not initialized" << std::endl;
+    return false;
+  }
   Shared::Data::SaveData data;
-  data.slot_id = 0;
+  if (!user_data_manager_->LoadSlot(slot_id, data)) {
+    std::cerr << "[GameApp] Load failed for slot " << slot_id << std::endl;
+    return false;
+  }
+  ApplyLoadedSave(data);
+  loaded_save_ = data;
+  std::cout << "[GameApp] Loaded slot " << slot_id << std::endl;
+  return true;
+}
+
+Shared::Data::SaveData GameApp::BuildSaveData(int slot_id) const {
+  Shared::Data::SaveData data;
+  data.slot_id = slot_id;
 
   auto now = std::chrono::system_clock::now();
   std::time_t t = std::chrono::system_clock::to_time_t(now);
@@ -378,13 +459,28 @@ Shared::Data::SaveData GameApp::BuildPlaceholderSaveData() const {
     data.saved_at = "";
   }
 
-  // ひとまず空の進行状況を保存（将来の拡張用）
-  data.stage_progress = {};
-  data.characters.clear();
-  data.gold = 0;
+  data.stage_progress.current_stage_id = current_stage_id_;
+  data.stage_progress.cleared_stage_ids = {};
+  if (formation_manager_) {
+    formation_manager_->ExportForSave(data.formation_slots,
+                                      data.formation_unlocked_ids);
+  }
+  data.gold = current_gold_;
   data.tower.hp_level = 1;
+  data.settings = Settings().Data();
 
   return data;
+}
+
+void GameApp::ApplyLoadedSave(const Shared::Data::SaveData &data) {
+  current_stage_id_ = data.stage_progress.current_stage_id;
+  current_gold_ = data.gold;
+  if (formation_manager_) {
+    formation_manager_->SetSlots(data.formation_slots);
+    formation_manager_->SetUnlocked(data.formation_unlocked_ids);
+  }
+  Settings().Data() = data.settings;
+  Settings().Save("saves/settings.json");
 }
 
 bool GameApp::LoadDefinitions() {
@@ -395,6 +491,10 @@ bool GameApp::LoadDefinitions() {
   if (!Shared::Data::EntityLoader::LoadFromJson(entity_path, *definitions_)) {
     return false;
   }
+  // 編成デバッグ用の味方キャラ定義
+  std::string formation_entity_path =
+      context_->GetDataPath("entities_formation_debug.json");
+  Shared::Data::EntityLoader::LoadFromJson(formation_entity_path, *definitions_);
 
   // Skill定義（abilities_debug.jsonから）
   std::string ability_path = context_->GetDataPath("abilities_debug.json");
@@ -440,12 +540,15 @@ bool GameApp::SetupGameResources(std::string &message) {
   message = "Initializing managers...";
   entity_manager_ =
       std::make_unique<Game::Managers::EntityManager>(*context_, *definitions_);
+  formation_manager_ = std::make_unique<Game::Managers::FormationManager>(
+      *context_, *definitions_);
   skill_manager_ =
       std::make_unique<Game::Managers::SkillManager>(*context_, *definitions_);
   stage_manager_ =
       std::make_unique<Game::Managers::StageManager>(*context_, *definitions_);
 
   entity_manager_->Initialize();
+  // FormationManager はデータ読み込みのみで初期化
   skill_manager_->Initialize();
   stage_manager_->Initialize();
 

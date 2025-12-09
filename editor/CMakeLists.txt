@@ -29,7 +29,7 @@ if(NOT TARGET imgui_lib)
     FetchContent_Declare(
         imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
-        GIT_TAG v1.89.9
+        GIT_TAG docking
     )
 
     FetchContent_MakeAvailable(imgui)
@@ -45,27 +45,30 @@ if(NOT TARGET imgui_lib)
     target_include_directories(imgui_lib PUBLIC ${imgui_SOURCE_DIR})
 endif()
 
-FetchContent_Declare(
-    rlimgui
-    GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
-    GIT_TAG main
-)
+if(NOT TARGET rlimgui_lib)
+    FetchContent_Declare(
+        rlimgui
+        GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
+        GIT_TAG main
+    )
 
-FetchContent_GetProperties(rlimgui)
-if(NOT rlimgui_POPULATED)
-    FetchContent_Populate(rlimgui)
+    FetchContent_GetProperties(rlimgui)
+    if(NOT rlimgui_POPULATED)
+        FetchContent_Populate(rlimgui)
+    endif()
+
+    add_library(rlimgui_lib STATIC
+        ${rlimgui_SOURCE_DIR}/rlImGui.cpp
+    )
+
+    target_include_directories(rlimgui_lib PUBLIC
+        ${rlimgui_SOURCE_DIR}
+    )
+
+    target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
+else()
+    message(STATUS "Reusing existing rlimgui_lib target")
 endif()
-
-# rlImGui ライブラリ
-add_library(rlimgui_lib STATIC
-    ${rlimgui_SOURCE_DIR}/rlImGui.cpp
-)
-
-target_include_directories(rlimgui_lib PUBLIC
-    ${rlimgui_SOURCE_DIR}
-)
-
-target_link_libraries(rlimgui_lib PUBLIC raylib imgui_lib)
 
 # Shared Layer とリンク
 target_link_libraries(SimpleTDCEditor

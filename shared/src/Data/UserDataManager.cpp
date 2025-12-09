@@ -60,6 +60,7 @@ bool UserDataManager::SaveSlot(const SaveData &data) const {
   j["saved_at"] = data.saved_at;
   j["stage_progress"]["cleared_stage_ids"] =
       data.stage_progress.cleared_stage_ids;
+  j["stage_progress"]["current_stage_id"] = data.stage_progress.current_stage_id;
 
   nlohmann::json chars = nlohmann::json::array();
   for (const auto &ch : data.characters) {
@@ -72,8 +73,17 @@ bool UserDataManager::SaveSlot(const SaveData &data) const {
   }
   j["characters"] = chars;
 
+  j["formation"]["slots"] = data.formation_slots;
+  j["formation"]["unlocked_ids"] = data.formation_unlocked_ids;
+
   j["gold"] = data.gold;
   j["tower"]["hp_level"] = data.tower.hp_level;
+  j["settings"]["masterVolume"] = data.settings.masterVolume;
+  j["settings"]["bgmMuted"] = data.settings.bgmMuted;
+  j["settings"]["sfxMuted"] = data.settings.sfxMuted;
+  j["settings"]["language"] = data.settings.language;
+  j["settings"]["quality"] = data.settings.quality;
+  j["settings"]["windowMode"] = data.settings.windowMode;
   j["meta"]["save_manager_version"] = data.meta.save_manager_version;
 
   try {
@@ -120,6 +130,8 @@ bool UserDataManager::LoadSlot(int slot_id, SaveData &out_data) const {
       const auto &sp = j.at("stage_progress");
       d.stage_progress.cleared_stage_ids =
           ValueOrDefault<std::vector<std::string>>(sp, "cleared_stage_ids", {});
+      d.stage_progress.current_stage_id =
+          ValueOrDefault<std::string>(sp, "current_stage_id", "");
     }
 
     d.characters.clear();
@@ -135,11 +147,32 @@ bool UserDataManager::LoadSlot(int slot_id, SaveData &out_data) const {
       }
     }
 
+    if (j.contains("formation")) {
+      const auto &fm = j.at("formation");
+      d.formation_slots =
+          ValueOrDefault<std::vector<std::string>>(fm, "slots", {});
+      d.formation_unlocked_ids =
+          ValueOrDefault<std::vector<std::string>>(fm, "unlocked_ids", {});
+    }
+
     d.gold = ValueOrDefault<int>(j, "gold", 0);
 
     if (j.contains("tower")) {
       const auto &tw = j.at("tower");
       d.tower.hp_level = ValueOrDefault<int>(tw, "hp_level", 1);
+    }
+
+    if (j.contains("settings")) {
+      const auto &st = j.at("settings");
+      d.settings.masterVolume =
+          ValueOrDefault<float>(st, "masterVolume", 1.0f);
+      d.settings.bgmMuted = ValueOrDefault<bool>(st, "bgmMuted", false);
+      d.settings.sfxMuted = ValueOrDefault<bool>(st, "sfxMuted", false);
+      d.settings.language =
+          ValueOrDefault<std::string>(st, "language", "ja");
+      d.settings.quality = ValueOrDefault<std::string>(st, "quality", "high");
+      d.settings.windowMode =
+          ValueOrDefault<std::string>(st, "windowMode", "window");
     }
 
     if (j.contains("meta")) {

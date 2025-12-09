@@ -57,7 +57,7 @@ if(NOT TARGET imgui_lib)
     FetchContent_Declare(
         imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
-        GIT_TAG v1.89.9
+        GIT_TAG docking
     )
     FetchContent_MakeAvailable(imgui)
 
@@ -70,6 +70,7 @@ if(NOT TARGET imgui_lib)
     )
 
     target_include_directories(imgui_lib PUBLIC ${imgui_SOURCE_DIR})
+    target_compile_definitions(imgui_lib PUBLIC IMGUI_ENABLE_DOCKING IMGUI_ENABLE_VIEWPORTS)
 endif()
 
 FetchContent_MakeAvailable(json)

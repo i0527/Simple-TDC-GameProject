@@ -1,5 +1,6 @@
 #include "Game/Scenes/TDGameScene.h"
 #include <algorithm>
+#include <imgui.h>
 
 namespace {
 constexpr float BASE_WIDTH = 110.0f;
@@ -15,11 +16,12 @@ TDGameScene::TDGameScene(entt::registry &registry,
                          Game::Systems::RenderingSystem &renderer,
                          Shared::Data::DefinitionRegistry &definitions,
                          Shared::Core::SettingsManager &settings,
-                         const Font &font, const std::string &stage_id)
+                         const Font &font, const std::string &stage_id,
+                         Game::Managers::FormationManager *formation_manager)
     : registry_(registry), renderer_(renderer), definitions_(definitions),
-      settings_(settings), font_(font), current_stage_id_(stage_id) {
-  settings_draft_ = settings_.Data();
-  ApplySettings(settings_draft_);
+      settings_(settings), formation_manager_(formation_manager), font_(font),
+      current_stage_id_(stage_id) {
+  ApplySettings(settings_.Data());
 }
 
 bool TDGameScene::ConsumeRetryRequest() {
@@ -57,8 +59,16 @@ void TDGameScene::Update(float delta_time) {
     initialized_ = true;
   }
 
+  if (IsKeyPressed(KEY_F1)) {
+    debug_window_open_ = !debug_window_open_;
+  }
+
+  const bool input_blocked = debug_ui_wants_input_ && debug_window_open_;
+
   // Pause & speed UI handling (raw delta_time)
-  HandleTopUI(delta_time);
+  if (!input_blocked) {
+    HandleTopUI(delta_time);
+  }
 
   float speed = CurrentSpeedMultiplier();
   float dt = pause_overlay_open_ ? 0.0f : delta_time * speed;
@@ -132,10 +142,12 @@ void TDGameScene::Update(float delta_time) {
   UpdateDeckCooldowns(dt);
 
   // Input: deck selection & spawn
-  for (int i = 0; i < static_cast<int>(deck_.size()) && i < 9; ++i) {
-    if (IsKeyPressed(KEY_ONE + i)) {
-      selected_slot_ = i;
-      TrySpawnFromDeck(i);
+  if (!input_blocked) {
+    for (int i = 0; i < static_cast<int>(deck_.size()) && i < 9; ++i) {
+      if (IsKeyPressed(KEY_ONE + i)) {
+        selected_slot_ = i;
+        TrySpawnFromDeck(i);
+      }
     }
   }
 
@@ -160,19 +172,21 @@ void TDGameScene::Update(float delta_time) {
   float start_y =
       static_cast<float>(GetScreenHeight()) - deck_height - margin_bottom;
 
-  for (int i = 0; i < static_cast<int>(deck_.size()); ++i) {
-    int row = i / cols;
-    int col = i % cols;
-    float offset_y = (row == 0) ? 0.0f : skew * 0.5f;
-    Rectangle rect{start_x + col * (slot_width + slot_gap_x),
-                   start_y + offset_y + row * (slot_height + slot_gap_y),
-                   slot_width, slot_height};
-    // クリック判定は矩形で代用
-    if (CheckCollisionPointRec(mouse, rect)) {
-      if (mouse_click) {
-        selected_slot_ = i;
-        if (!deck_[i].entity_id.empty()) {
-          TrySpawnFromDeck(i);
+  if (!input_blocked) {
+    for (int i = 0; i < static_cast<int>(deck_.size()); ++i) {
+      int row = i / cols;
+      int col = i % cols;
+      float offset_y = (row == 0) ? 0.0f : skew * 0.5f;
+      Rectangle rect{start_x + col * (slot_width + slot_gap_x),
+                     start_y + offset_y + row * (slot_height + slot_gap_y),
+                     slot_width, slot_height};
+      // クリック判定は矩形で代用
+      if (CheckCollisionPointRec(mouse, rect)) {
+        if (mouse_click) {
+          selected_slot_ = i;
+          if (!deck_[i].entity_id.empty()) {
+            TrySpawnFromDeck(i);
+          }
         }
       }
     }
@@ -268,6 +282,8 @@ void TDGameScene::Draw() {
   draw_hp_text(static_cast<float>(GetScreenWidth()) - BASE_MARGIN -
                    BASE_WIDTH * 0.5f,
                hp_y, player_base);
+
+  DrawDebugWindow();
 
   if (victory_ || defeat_) {
     DrawResultOverlay();
@@ -628,17 +644,40 @@ void TDGameScene::CleanupDeadEntities(float delta_time) {
 }
 
 void TDGameScene::BuildDeckFromDefinitions() {
-  auto entities = definitions_.GetAllEntities();
-  for (const auto *ent : entities) {
-    if (ent->is_enemy)
-      continue;
-    DeckSlot slot;
-    slot.entity_id = ent->id;
-    slot.cost = ent->cost;
-    slot.cooldown = ent->cooldown;
-    deck_.push_back(slot);
-    if (static_cast<int>(deck_.size()) >= 5) {
-      break; // 最小UI用に5枠まで
+  deck_.clear();
+
+  // 編成マネージャー優先
+  if (formation_manager_ != nullptr) {
+    const auto &slots = formation_manager_->GetSlots();
+    for (const auto &id : slots) {
+      if (id.empty())
+        continue;
+      const auto *ent = definitions_.GetEntity(id);
+      if (ent == nullptr || ent->is_enemy) {
+        continue;
+      }
+      DeckSlot slot;
+      slot.entity_id = ent->id;
+      slot.cost = ent->cost;
+      slot.cooldown = ent->cooldown;
+      deck_.push_back(slot);
+    }
+  }
+
+  // デフォルトのフォールバック（友軍定義から先頭数件）
+  if (deck_.empty()) {
+    auto entities = definitions_.GetAllEntities();
+    for (const auto *ent : entities) {
+      if (ent->is_enemy)
+        continue;
+      DeckSlot slot;
+      slot.entity_id = ent->id;
+      slot.cost = ent->cost;
+      slot.cooldown = ent->cooldown;
+      deck_.push_back(slot);
+      if (static_cast<int>(deck_.size()) >= 5) {
+        break; // UIの最小枠に合わせる
+      }
     }
   }
 
@@ -649,6 +688,8 @@ void TDGameScene::BuildDeckFromDefinitions() {
     default_slot.cooldown = 1.0f;
     deck_.push_back(default_slot);
   }
+
+  selected_slot_ = 0;
 }
 
 void TDGameScene::TrySpawnFromDeck(int slot_index) {
@@ -1024,70 +1065,11 @@ void TDGameScene::DrawPauseOverlay() const {
   draw_btn(resume_btn, "再開");
   draw_btn(retry_btn, "リトライ");
   draw_btn(select_btn, "ステージ選択へ戻る");
-  draw_btn(settings_btn, settings_panel_open_ ? "設定を閉じる" : "設定", false);
+  draw_btn(settings_btn, settings_panel_.IsOpen() ? "設定を閉じる" : "設定",
+           false);
 
-  if (settings_panel_open_) {
-    float sx = panel.x + 40.0f;
-    float sy = start_y + 4 * (btn_h + gap) + 10.0f;
-    float slider_w = panel.width - 80.0f;
-
-    auto draw_toggle = [&](const Rectangle &r, const char *label, bool on) {
-      DrawRectangleRounded(
-          r, 0.12f, 6, on ? Color{80, 140, 200, 230} : Color{70, 70, 90, 200});
-      DrawRectangleLinesEx(r, 2.0f, Color{180, 210, 255, 230});
-      Vector2 ls = MeasureTextEx(font_, label, 20.0f, 2.0f);
-      DrawTextEx(font_, label, {r.x + 10.0f, r.y + (r.height - ls.y) * 0.5f},
-                 20.0f, 2.0f, RAYWHITE);
-    };
-
-    DrawTextEx(font_, "マスター音量", {sx, sy - 6.0f}, 18.0f, 2.0f, LIGHTGRAY);
-    Rectangle slider{sx, sy + 10.0f, slider_w, 12.0f};
-    DrawRectangleRec(slider, Color{60, 80, 110, 200});
-    float knob_x =
-        slider.x + slider.width * Clamp01(settings_draft_.masterVolume);
-    DrawRectangleRec({slider.x, slider.y, knob_x - slider.x, slider.height},
-                     Color{120, 180, 240, 200});
-    DrawCircleV({knob_x, slider.y + slider.height * 0.5f}, 10.0f,
-                Color{200, 220, 255, 230});
-
-    float toggle_y = slider.y + 32.0f;
-    Rectangle bgm_toggle{sx, toggle_y, 160.0f, 34.0f};
-    Rectangle sfx_toggle{sx + 180.0f, toggle_y, 160.0f, 34.0f};
-    draw_toggle(bgm_toggle,
-                settings_draft_.bgmMuted ? "BGMミュート ON" : "BGMミュート OFF",
-                settings_draft_.bgmMuted);
-    draw_toggle(sfx_toggle,
-                settings_draft_.sfxMuted ? "SFXミュート ON" : "SFXミュート OFF",
-                settings_draft_.sfxMuted);
-
-    float select_y = toggle_y + 46.0f;
-    auto draw_select = [&](const Rectangle &r, const std::string &label,
-                           const std::string &value) {
-      DrawRectangleRounded(r, 0.12f, 6, Color{60, 90, 130, 220});
-      DrawRectangleLinesEx(r, 2.0f, Color{180, 210, 255, 230});
-      Vector2 ls = MeasureTextEx(font_, label.c_str(), 18.0f, 2.0f);
-      Vector2 vs = MeasureTextEx(font_, value.c_str(), 20.0f, 2.0f);
-      DrawTextEx(font_, label.c_str(),
-                 {r.x + 10.0f, r.y + (r.height - ls.y) * 0.5f}, 18.0f, 2.0f,
-                 LIGHTGRAY);
-      DrawTextEx(font_, value.c_str(),
-                 {r.x + r.width - vs.x - 12.0f, r.y + (r.height - vs.y) * 0.5f},
-                 20.0f, 2.0f, RAYWHITE);
-    };
-
-    Rectangle lang_sel{sx, select_y, 220.0f, 40.0f};
-    Rectangle qual_sel{sx, select_y + 48.0f, 220.0f, 40.0f};
-    Rectangle win_sel{sx, select_y + 96.0f, 220.0f, 40.0f};
-    draw_select(lang_sel, "言語", settings_draft_.language);
-    draw_select(qual_sel, "画質", settings_draft_.quality);
-    draw_select(win_sel, "ウィンドウ", settings_draft_.windowMode);
-
-    Rectangle apply_btn{panel.x + panel.width - 200.0f,
-                        panel.y + panel.height - 70.0f, 90.0f, 44.0f};
-    Rectangle cancel_btn{panel.x + panel.width - 100.0f,
-                         panel.y + panel.height - 70.0f, 90.0f, 44.0f};
-    draw_btn(apply_btn, "保存");
-    draw_btn(cancel_btn, "戻る");
+  if (settings_panel_.IsOpen()) {
+    settings_panel_.Draw(panel, font_);
   }
 }
 
@@ -1151,19 +1133,6 @@ void TDGameScene::HandleTopUI(float) {
                          start_y + 3 * (btn_overlay_h + gap), btn_overlay_w,
                          btn_overlay_h};
 
-  auto clamp_settings = [&](Shared::Core::SettingsData &d) {
-    d.masterVolume = Clamp01(d.masterVolume);
-    if (d.language.empty()) {
-      d.language = "ja";
-    }
-    if (d.quality != "low" && d.quality != "medium" && d.quality != "high") {
-      d.quality = "high";
-    }
-    if (d.windowMode != "window" && d.windowMode != "fullscreen") {
-      d.windowMode = "window";
-    }
-  };
-
   if (click) {
     if (CheckCollisionPointRec(mouse, resume_btn)) {
       pause_overlay_open_ = false;
@@ -1174,61 +1143,22 @@ void TDGameScene::HandleTopUI(float) {
       pause_overlay_open_ = false;
       return_stage_select_requested_ = true;
     } else if (CheckCollisionPointRec(mouse, settings_btn)) {
-      settings_panel_open_ = !settings_panel_open_;
-      if (settings_panel_open_) {
-        settings_draft_ = settings_.Data();
+      if (settings_panel_.IsOpen()) {
+        settings_panel_.Close();
+      } else {
+        settings_panel_.Open(settings_.Data());
       }
     }
   }
 
-  if (!settings_panel_open_) {
-    return;
-  }
-
-  float sx = panel.x + 40.0f;
-  float sy = start_y + 4 * (btn_overlay_h + gap) + 10.0f;
-  float slider_w = panel.width - 80.0f;
-  Rectangle slider{sx, sy + 10.0f, slider_w, 12.0f};
-  Rectangle bgm_toggle{sx, slider.y + 32.0f, 160.0f, 34.0f};
-  Rectangle sfx_toggle{sx + 180.0f, slider.y + 32.0f, 160.0f, 34.0f};
-  Rectangle lang_sel{sx, slider.y + 78.0f, 220.0f, 40.0f};
-  Rectangle qual_sel{sx, slider.y + 126.0f, 220.0f, 40.0f};
-  Rectangle win_sel{sx, slider.y + 174.0f, 220.0f, 40.0f};
-  Rectangle apply_btn{panel.x + panel.width - 200.0f,
-                      panel.y + panel.height - 70.0f, 90.0f, 44.0f};
-  Rectangle cancel_btn{panel.x + panel.width - 100.0f,
-                       panel.y + panel.height - 70.0f, 90.0f, 44.0f};
-
-  if (click) {
-    if (CheckCollisionPointRec(mouse, slider)) {
-      float ratio = std::clamp((mouse.x - slider.x) / slider.width, 0.0f, 1.0f);
-      settings_draft_.masterVolume = ratio;
-    } else if (CheckCollisionPointRec(mouse, bgm_toggle)) {
-      settings_draft_.bgmMuted = !settings_draft_.bgmMuted;
-    } else if (CheckCollisionPointRec(mouse, sfx_toggle)) {
-      settings_draft_.sfxMuted = !settings_draft_.sfxMuted;
-    } else if (CheckCollisionPointRec(mouse, lang_sel)) {
-      settings_draft_.language =
-          (settings_draft_.language == "ja") ? "en" : "ja";
-    } else if (CheckCollisionPointRec(mouse, qual_sel)) {
-      if (settings_draft_.quality == "low")
-        settings_draft_.quality = "medium";
-      else if (settings_draft_.quality == "medium")
-        settings_draft_.quality = "high";
-      else
-        settings_draft_.quality = "low";
-    } else if (CheckCollisionPointRec(mouse, win_sel)) {
-      settings_draft_.windowMode =
-          (settings_draft_.windowMode == "window") ? "fullscreen" : "window";
-    } else if (CheckCollisionPointRec(mouse, apply_btn)) {
-      clamp_settings(settings_draft_);
-      settings_.Data() = settings_draft_;
+  if (settings_panel_.IsOpen()) {
+    Game::UI::SettingsPanel::Action act = settings_panel_.Update(panel);
+    if (act == Game::UI::SettingsPanel::Action::Apply) {
+      settings_.Data() = settings_panel_.Draft();
       settings_.Save(settings_path_);
       ApplySettings(settings_.Data());
-      settings_panel_open_ = false;
-    } else if (CheckCollisionPointRec(mouse, cancel_btn)) {
-      settings_panel_open_ = false;
-      settings_draft_ = settings_.Data();
+    } else if (act == Game::UI::SettingsPanel::Action::Cancel) {
+      // Closeのみ（draftを元に戻す必要なし、閉じるだけ）
     }
   }
 }
@@ -1267,6 +1197,200 @@ void TDGameScene::HandleCastleDamage() {
   for (auto e : to_destroy) {
     registry_.destroy(e);
   }
+}
+
+void TDGameScene::DrawDebugWindow() {
+  debug_ui_wants_input_ = false;
+
+  if (!debug_window_open_) {
+    return;
+  }
+
+  if (ImGui::GetCurrentContext() == nullptr) {
+    return;
+  }
+
+  ImGui::SetNextWindowBgAlpha(0.9f);
+  bool open = ImGui::Begin(u8"デバッグ (F1で表示/非表示)", &debug_window_open_);
+  if (open) {
+    if (ImGui::BeginTabBar("DebugTabs")) {
+      if (ImGui::BeginTabItem(u8"デッキ")) {
+        DrawDeckDebugTab();
+        ImGui::EndTabItem();
+      }
+      if (ImGui::BeginTabItem(u8"出撃中")) {
+        DrawEntitiesDebugTab();
+        ImGui::EndTabItem();
+      }
+      if (ImGui::BeginTabItem(u8"拠点")) {
+        DrawBaseDebugTab();
+        ImGui::EndTabItem();
+      }
+      ImGui::EndTabBar();
+    }
+  }
+
+  debug_ui_wants_input_ =
+      ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse;
+  ImGui::End();
+}
+
+void TDGameScene::DrawDeckDebugTab() {
+  if (deck_.empty()) {
+    ImGui::TextUnformatted(u8"デッキがありません");
+    return;
+  }
+
+  constexpr ImGuiTableFlags flags =
+      ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable;
+
+  if (ImGui::BeginTable("DeckTable", 5, flags)) {
+    ImGui::TableSetupColumn(u8"スロット");
+    ImGui::TableSetupColumn(u8"ID");
+    ImGui::TableSetupColumn(u8"コスト");
+    ImGui::TableSetupColumn(u8"クールダウン");
+    ImGui::TableSetupColumn(u8"ステータス");
+    ImGui::TableHeadersRow();
+
+    for (int i = 0; i < static_cast<int>(deck_.size()); ++i) {
+      const auto &slot = deck_[i];
+      const auto *def = definitions_.GetEntity(slot.entity_id);
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::Text("%d%s", i + 1, (i == selected_slot_) ? "*" : "");
+
+      ImGui::TableSetColumnIndex(1);
+      ImGui::TextUnformatted(slot.entity_id.empty() ? "-" : slot.entity_id.c_str());
+
+      ImGui::TableSetColumnIndex(2);
+      ImGui::Text("%d", slot.cost);
+
+      ImGui::TableSetColumnIndex(3);
+      if (slot.cooldown > 0.0f) {
+        ImGui::Text("%.2f / %.2f", slot.cooldown_remaining, slot.cooldown);
+      } else {
+        ImGui::TextUnformatted("-");
+      }
+
+      ImGui::TableSetColumnIndex(4);
+      if (def) {
+        ImGui::Text("HP:%d  ATK:%d  SPD:%.1f", def->stats.hp, def->stats.attack,
+                    def->stats.move_speed);
+      } else {
+        ImGui::TextUnformatted("-");
+      }
+    }
+    ImGui::EndTable();
+  }
+}
+
+void TDGameScene::DrawEntitiesDebugTab() {
+  auto view =
+      registry_.view<Components::Transform, Components::Stats, Components::Team>();
+
+  constexpr ImGuiTableFlags flags =
+      ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable;
+
+  if (ImGui::BeginTable("EntityTable", 6, flags)) {
+    ImGui::TableSetupColumn(u8"チーム");
+    ImGui::TableSetupColumn(u8"ID");
+    ImGui::TableSetupColumn(u8"HP");
+    ImGui::TableSetupColumn(u8"攻撃");
+    ImGui::TableSetupColumn(u8"位置");
+    ImGui::TableSetupColumn(u8"選択");
+    ImGui::TableHeadersRow();
+
+    for (auto entity : view) {
+      if (registry_.any_of<Components::BaseMarker>(entity)) {
+        continue; // 拠点は別タブで扱う
+      }
+
+      const auto &tr = view.get<Components::Transform>(entity);
+      const auto &st = view.get<Components::Stats>(entity);
+      const auto &team = view.get<Components::Team>(entity);
+      const auto *id = registry_.try_get<Components::EntityDefId>(entity);
+      bool selected = (debug_selected_entity_ == entity);
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      const char *team_label =
+          (team.type == Components::Team::Type::Player) ? u8"味方" : u8"敵";
+      ImGui::TextUnformatted(team_label);
+
+      ImGui::TableSetColumnIndex(1);
+      ImGui::TextUnformatted(id ? id->id.c_str() : "-");
+
+      ImGui::TableSetColumnIndex(2);
+      ImGui::Text("%d / %d", st.current_hp, st.max_hp);
+
+      ImGui::TableSetColumnIndex(3);
+      ImGui::Text("%d", st.attack);
+
+      ImGui::TableSetColumnIndex(4);
+      ImGui::Text("(%.1f, %.1f)", tr.x, tr.y);
+
+      ImGui::TableSetColumnIndex(5);
+      if (ImGui::Selectable("選択", selected)) {
+        debug_selected_entity_ = entity;
+      }
+    }
+    ImGui::EndTable();
+  }
+
+  if (debug_selected_entity_ != entt::null &&
+      registry_.valid(debug_selected_entity_) &&
+      registry_.all_of<Components::Stats, Components::Team>(debug_selected_entity_)) {
+    auto &stats = registry_.get<Components::Stats>(debug_selected_entity_);
+    ImGui::SeparatorText(u8"選択中エンティティ");
+
+    int hp = stats.current_hp;
+    int max_hp = stats.max_hp;
+    int attack = stats.attack;
+    float move_speed = stats.move_speed;
+
+    ImGui::InputInt(u8"現在HP", &hp);
+    ImGui::InputInt(u8"最大HP", &max_hp);
+    ImGui::InputInt(u8"攻撃力", &attack);
+    ImGui::InputFloat(u8"移動速度", &move_speed, 1.0f, 5.0f, "%.1f");
+
+    max_hp = std::max(1, max_hp);
+    hp = std::clamp(hp, 0, max_hp);
+    attack = std::max(0, attack);
+    move_speed = std::max(0.0f, move_speed);
+
+    stats.max_hp = max_hp;
+    stats.current_hp = hp;
+    stats.attack = attack;
+    stats.move_speed = move_speed;
+  } else {
+    ImGui::SeparatorText(u8"選択中エンティティ");
+    ImGui::TextUnformatted(u8"なし");
+  }
+}
+
+void TDGameScene::DrawBaseDebugTab() {
+  ImGui::SeparatorText(u8"拠点ステータス");
+
+  auto draw_base = [&](const char *label, Components::Stats *st) {
+    if (!st) {
+      ImGui::Text("%s: -", label);
+      return;
+    }
+    int hp = st->current_hp;
+    int max_hp = st->max_hp;
+    ImGui::TextUnformatted(label);
+    ImGui::InputInt("HP", &hp);
+    ImGui::InputInt("Max HP", &max_hp);
+
+    max_hp = std::max(1, max_hp);
+    hp = std::clamp(hp, 0, max_hp);
+    st->max_hp = max_hp;
+    st->current_hp = hp;
+  };
+
+  draw_base(u8"敵拠点", GetBaseStats(Components::Team::Type::Enemy));
+  draw_base(u8"味方拠点", GetBaseStats(Components::Team::Type::Player));
 }
 
 } // namespace Game::Scenes

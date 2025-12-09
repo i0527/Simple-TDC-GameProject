@@ -5,12 +5,14 @@
 #include <raylib.h>
 #include <string>
 #include <vector>
+#include <imgui.h>
 
 #include "Core/SettingsManager.h"
 #include "Data/DefinitionRegistry.h"
 #include "Game/Scenes/IScene.h"
+#include "Game/Managers/FormationManager.h"
 #include "Game/Systems/RenderingSystem.h"
-
+#include "Game/UI/SettingsPanel.h"
 
 namespace Game::Scenes {
 
@@ -20,7 +22,8 @@ public:
               Game::Systems::RenderingSystem &renderer,
               Shared::Data::DefinitionRegistry &definitions,
               Shared::Core::SettingsManager &settings, const Font &font,
-              const std::string &stage_id);
+              const std::string &stage_id,
+              Game::Managers::FormationManager *formation_manager);
 
   void Update(float delta_time) override;
   void Draw() override;
@@ -88,11 +91,16 @@ private:
   void HandleCastleDamage();
   void SpawnBases();
   Components::Stats *GetBaseStats(Components::Team::Type team) const;
+  void DrawDebugWindow();
+  void DrawDeckDebugTab();
+  void DrawEntitiesDebugTab();
+  void DrawBaseDebugTab();
 
   entt::registry &registry_;
   Game::Systems::RenderingSystem &renderer_;
   Shared::Data::DefinitionRegistry &definitions_;
   Shared::Core::SettingsManager &settings_;
+  Game::Managers::FormationManager *formation_manager_;
   Font font_;
   std::string current_stage_id_;
   const Shared::Data::StageDef *current_stage_ = nullptr;
@@ -144,9 +152,13 @@ private:
   int speed_index_ = 0; // 0:x1,1:x2,2:x4
   std::array<float, 3> speed_options_{1.0f, 2.0f, 4.0f};
 
-  bool settings_panel_open_ = false;
-  Shared::Core::SettingsData settings_draft_{};
+  Game::UI::SettingsPanel settings_panel_;
   std::string settings_path_ = "saves/settings.json";
+
+  // Debug overlay
+  bool debug_window_open_ = false;
+  bool debug_ui_wants_input_ = false;
+  entt::entity debug_selected_entity_{entt::null};
 };
 
 } // namespace Game::Scenes

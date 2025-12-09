@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "Core/SettingsManager.h"
+
 namespace Shared::Data {
 
 struct CharacterSave {
@@ -15,6 +17,7 @@ struct CharacterSave {
 
 struct StageProgress {
   std::vector<std::string> cleared_stage_ids;
+  std::string current_stage_id;
 };
 
 struct TowerSave {
@@ -31,8 +34,11 @@ struct SaveData {
   std::string saved_at; // ISO8601 string
   StageProgress stage_progress;
   std::vector<CharacterSave> characters;
+  std::vector<std::string> formation_slots;
+  std::vector<std::string> formation_unlocked_ids;
   int gold = 0;
   TowerSave tower;
+  Shared::Core::SettingsData settings;
   SaveMeta meta;
 };
 
