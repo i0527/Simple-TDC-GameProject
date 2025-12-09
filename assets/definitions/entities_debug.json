@@ -2,16 +2,24 @@
   {
     "id": "enemy_slime_debug",
     "name": "Slime Debug",
-    "health": 40
+    "health": 40,
+    "is_enemy": true
   },
   {
     "id": "enemy_ogre_debug",
     "name": "Ogre Debug",
-    "health": 120
+    "health": 120,
+    "is_enemy": true
   },
   {
-    "name": "NoIdEnemy",
-    "health": 50
-  },
-  "invalid_entry"
+    "id": "enemy_procedural_debug",
+    "name": "Procedural Debug",
+    "health": 50,
+    "is_enemy": true,
+    "tags": [
+      "debug",
+      "procedural",
+      "placeholder"
+    ]
+  }
 ]

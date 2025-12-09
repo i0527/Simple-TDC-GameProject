@@ -2,10 +2,10 @@
   {
     "id": "fireball_debug",
     "name": "Fireball Debug",
-    "description": 123,
-    "cost": -5,
-    "cooldown": -1.0,
-    "type": 999,
+    "description": "debug fireball",
+    "cost": 5,
+    "cooldown": 1.0,
+    "type": "stat_boost",
     "element": "fire",
     "power": -20,
     "target": "enemy"
@@ -25,9 +25,18 @@
     "modifiers": []
   },
   {
-    "name": "NoIdAbility",
-    "cost": "ten",
-    "cooldown": "fast"
-  },
-  "invalid_entry"
+    "id": "ability_procedural_debug",
+    "name": "Procedural Ability",
+    "description": "placeholder ability",
+    "type": "stat_boost",
+    "effect": {
+      "stat_type": "hp",
+      "value": 0.0,
+      "is_percentage": false
+    },
+    "tags": [
+      "debug",
+      "procedural"
+    ]
+  }
 ]
