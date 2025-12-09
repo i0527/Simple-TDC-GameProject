@@ -1,0 +1,60 @@
+[
+  {
+    "id": "stage_horde_1",
+    "name": "Horde Test 1",
+    "description": "大量スライムのラッシュにオーガが追随するデバッグ用ステージ",
+    "domain": "WorldHorde",
+    "subdomain": 1,
+    "difficulty": 2,
+    "environment": {
+      "background_image": "",
+      "bgm_id": "",
+      "scroll_speed": 0.0
+    },
+    "castle_hp": {
+      "player_castle_hp": 1000,
+      "enemy_castle_hp": 9000
+    },
+    "wave_ids": [
+      "wave_horde_a"
+    ],
+    "rewards": {
+      "gold": 150,
+      "exp": 80
+    },
+    "tags": [
+      "horde",
+      "debug"
+    ]
+  },
+  {
+    "id": "stage_horde_2",
+    "name": "Horde Test 2",
+    "description": "ラッシュ2フェーズ構成。スライムとオーガ混成の長時間ウェーブ",
+    "domain": "WorldHorde",
+    "subdomain": 2,
+    "difficulty": 3,
+    "environment": {
+      "background_image": "",
+      "bgm_id": "",
+      "scroll_speed": 0.0
+    },
+    "castle_hp": {
+      "player_castle_hp": 1000,
+      "enemy_castle_hp": 11000
+    },
+    "wave_ids": [
+      "wave_horde_a",
+      "wave_horde_b"
+    ],
+    "rewards": {
+      "gold": 200,
+      "exp": 120
+    },
+    "tags": [
+      "horde",
+      "debug",
+      "phase2"
+    ]
+  }
+]

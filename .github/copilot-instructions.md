@@ -9,6 +9,9 @@ Simple-TDC-GameProjectは、ECSアーキテクチャを採用したC++ゲーム�
 - **ECS**: EnTT
 - **JSON**: nlohmann/json
 - **レンダリング/入力**: Raylib
+- **UI**: ImGui（エディタ）
+- **解像度**: 1920x1080（FHD固定）
+- **フォント**: NotoSansJP-Medium.ttf（日本語全対応）
 
 ## コーディング規約
 
@@ -70,6 +73,36 @@ try {
 ### メモリ管理
 - 可能な限りスマートポインタ（`std::unique_ptr`, `std::shared_ptr`）を使用
 - RAIIパターンに従う
+
+### UI/フォント
+- 解像度は1920x1080（FHD）固定
+- フォントは`assets/fonts/NotoSansJP-Medium.ttf`を使用
+- ロード対象文字範囲:
+  - ひらがな（U+3040-U+309F）
+  - カタカナ（U+30A0-U+30FF）
+  - ASCII（U+0020-U+007E）
+  - JIS第一水準（U+4E00-U+9FFF）
+  - JIS第二水準（追加漢字）
+- RaylibとImGuiの両方でデフォルトフォントとして設定
+- 全てのUI表記は日本語で実装
+- 例:
+```cpp
+// Raylibでのフォントロード
+Font font = LoadFontEx("assets/fonts/NotoSansJP-Medium.ttf", 32, nullptr, 0);
+SetTextureFilter(font.texture, TEXTURE_FILTER_BILINEAR);
+
+// ImGuiでのフォントロード
+ImGuiIO& io = ImGui::GetIO();
+ImFontConfig config;
+config.OversampleH = 2;
+config.OversampleV = 2;
+ImFont* font = io.Fonts->AddFontFromFileTTF(
+    "assets/fonts/NotoSansJP-Medium.ttf",
+    18.0f,
+    &config,
+    io.Fonts->GetGlyphRangesJapanese()
+);
+```
 
 ### コメント
 - 複雑なロジックには説明コメントを追加
