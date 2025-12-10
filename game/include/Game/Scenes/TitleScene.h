@@ -5,15 +5,20 @@
 #include <string>
 #include <vector>
 
+#include "Core/SettingsManager.h"
+#include "Data/UserDataManager.h"
 #include "Game/Scenes/IScene.h"
+#include "Game/UI/SettingsPanel.h"
 
 namespace Game::Scenes {
 
 class TitleScene : public IScene {
 public:
-  enum class MenuAction { None, NewGame, ContinueGame, Settings, Exit };
+  enum class MenuAction { None, NewGame, ContinueGame, Load, Save, Settings, Exit };
 
-  TitleScene(Font font, int screen_width, int screen_height);
+  TitleScene(Font font, int screen_width, int screen_height,
+             Shared::Core::SettingsManager *settings = nullptr,
+             Shared::Data::UserDataManager *user_data = nullptr);
   ~TitleScene() override;
   void Update(float delta_time) override;
   void Draw() override;
@@ -35,6 +40,9 @@ public:
     exit_requested_ = false;
     return v;
   }
+  int ConsumeRequestedSaveSlot();
+  int ConsumeRequestedLoadSlot();
+  void SetInfoMessage(const std::string &msg, float duration);
 
 private:
   struct MenuItem {
@@ -44,6 +52,8 @@ private:
 
   void TriggerAction(MenuAction action);
   void ToggleMute();
+  void DrawSaveLoadPanel(bool saving);
+  void RefreshSlots();
 
   Font font_;
   int screen_width_;
@@ -65,6 +75,24 @@ private:
   float info_message_timer_ = 0.0f;
   std::string info_message_;
   Rectangle bgm_toggle_rect_{};
+
+  Game::UI::SettingsPanel settings_panel_;
+  Shared::Core::SettingsManager *settings_manager_ = nullptr;
+  std::string settings_path_ = "saves/settings.json";
+  Shared::Data::UserDataManager *user_data_manager_ = nullptr;
+
+  struct SlotMeta {
+    int slot = -1;
+    bool exists = false;
+    std::string saved_at;
+    std::string stage;
+    int gold = 0;
+  };
+  std::vector<SlotMeta> slot_meta_;
+  bool show_save_menu_ = false;
+  bool show_load_menu_ = false;
+  int requested_save_slot_ = -1;
+  int requested_load_slot_ = -1;
 };
 
 } // namespace Game::Scenes
