@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "Game/Components/CoreComponents.h"
+#include "Data/Loaders/SpriteSheetLoader.h"
 
 namespace Game::Systems {
 
@@ -17,11 +18,15 @@ public:
 
 private:
   Texture2D *LoadTextureIfNeeded(Components::Sprite &sprite) const;
+  const Shared::Data::SpriteSheetAtlas *
+  EnsureAtlas(Components::Animation &anim,
+              Components::Sprite &sprite) const;
   void DrawEntities(entt::registry &registry) const;
   void DrawDamagePopups(entt::registry &registry) const;
   void DrawHud(const Font &font) const;
 
   mutable std::unordered_map<std::string, Texture2D> texture_cache_;
+  mutable Shared::Data::SpriteAtlasCache atlas_cache_;
 };
 
 } // namespace Game::Systems

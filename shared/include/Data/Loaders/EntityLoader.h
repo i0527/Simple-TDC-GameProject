@@ -14,6 +14,16 @@ public:
     /// @return 成功時 true
     static bool LoadFromJson(const std::string& json_path, DefinitionRegistry& registry);
 
+    /// @brief ディレクトリ配下の character.json（または *.character.json）を読み込む
+    /// @param dir_path キャラフォルダの親ディレクトリ
+    /// @param registry 登録先のRegistry
+    /// @param allow_glob "*.character.json" を許容する場合 true
+    /// @return 1件でもロードできたら true
+    static bool LoadFromDirectory(const std::string& dir_path, DefinitionRegistry& registry, bool allow_glob = false);
+
+    /// @brief 単一キャラクターJSONを読み込む（Aseprite相対パスを解決）
+    static bool LoadSingleCharacter(const std::string& json_path, DefinitionRegistry& registry);
+
     /// @brief RegistryのEntity定義をJSONファイルへ書き込み
     /// @param json_path 書き込み先JSONファイルパス
     /// @param registry 対象のRegistry

@@ -12,6 +12,7 @@
 #include "Core/SettingsManager.h"
 #include "Data/DefinitionRegistry.h"
 #include "Data/UserDataManager.h"
+#include "Game/Audio/BgmService.h"
 #include "Game/Managers/EntityManager.h"
 #include "Game/Managers/FormationManager.h"
 #include "Game/Managers/SkillManager.h"
@@ -48,6 +49,7 @@ private:
   std::unique_ptr<Game::Managers::FormationManager> formation_manager_;
   std::unique_ptr<Game::Managers::SkillManager> skill_manager_;
   std::unique_ptr<Game::Managers::StageManager> stage_manager_;
+  std::unique_ptr<Game::Audio::BgmService> bgm_service_;
 
   // ECS Registry
   entt::registry registry_;

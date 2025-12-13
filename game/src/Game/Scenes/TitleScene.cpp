@@ -17,15 +17,15 @@ namespace Game::Scenes {
 
 TitleScene::TitleScene(Font font, int screen_width, int screen_height,
                        Shared::Core::SettingsManager *settings,
-                       Shared::Data::UserDataManager *user_data)
+                       Shared::Data::UserDataManager *user_data,
+                       Game::Audio::BgmService *bgm)
     : font_(font), screen_width_(screen_width), screen_height_(screen_height),
-      settings_manager_(settings), user_data_manager_(user_data) {
+      settings_manager_(settings), user_data_manager_(user_data),
+      bgm_service_(bgm) {
   menu_items_.push_back(
       {u8"\u65b0\u898f\u30b2\u30fc\u30e0", MenuAction::NewGame});
   menu_items_.push_back(
       {u8"\u7d9a\u304d\u304b\u3089", MenuAction::ContinueGame});
-  menu_items_.push_back({u8"\u30ed\u30fc\u30c9", MenuAction::Load});
-  menu_items_.push_back({u8"\u30bb\u30fc\u30d6", MenuAction::Save});
   menu_items_.push_back({u8"\u8a2d\u5b9a", MenuAction::Settings});
   menu_items_.push_back({u8"\u7d42\u4e86", MenuAction::Exit});
 
@@ -33,25 +33,18 @@ TitleScene::TitleScene(Font font, int screen_width, int screen_height,
   for (int i = 0; i < 5; ++i) {
     slot_meta_[i].slot = i;
   }
+  RefreshSlots();
+  EnsureSelectable();
 
-  const std::string music_path = "assets/music/title.ogg";
-  if (std::filesystem::exists(music_path)) {
-    music_ = LoadMusicStream(music_path.c_str());
-    if (music_.ctxData) {
-      music_loaded_ = true;
-      PlayMusicStream(music_);
-      SetMusicVolume(music_, 1.0f);
-    } else {
-      music_missing_ = true;
-      std::cerr << "[TitleScene] Failed to load title.ogg" << std::endl;
-    }
-  } else {
-    music_missing_ = true;
-    std::cerr << "[TitleScene] Missing assets/music/title.ogg" << std::endl;
+  if (bgm_service_) {
+    bgm_service_->Load("assets/music/mattari_room.mp3");
+    music_muted_ = bgm_service_->IsManuallyMuted();
   }
 }
 
 void TitleScene::Update(float delta_time) {
+  RefreshSlots();
+  EnsureSelectable();
   blink_timer_ += delta_time;
   if (blink_timer_ >= 0.5f) {
     blink_timer_ = 0.0f;
@@ -62,24 +55,37 @@ void TitleScene::Update(float delta_time) {
     info_message_timer_ = std::max(0.0f, info_message_timer_ - delta_time);
   }
 
-  if ((show_save_menu_ || show_load_menu_) && IsKeyPressed(KEY_ESCAPE)) {
-    show_save_menu_ = false;
+  if (show_load_menu_ && IsKeyPressed(KEY_ESCAPE)) {
     show_load_menu_ = false;
   }
 
   // Keyboard navigation
   if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
-    selected_index_ =
-        (selected_index_ - 1 + static_cast<int>(menu_items_.size())) %
-        static_cast<int>(menu_items_.size());
+    int next = selected_index_;
+    int count = static_cast<int>(menu_items_.size());
+    for (int i = 0; i < count; ++i) {
+      next = (next - 1 + count) % count;
+      if (menu_items_[next].enabled) {
+        break;
+      }
+    }
+    selected_index_ = next;
   }
   if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
-    selected_index_ =
-        (selected_index_ + 1) % static_cast<int>(menu_items_.size());
+    int next = selected_index_;
+    int count = static_cast<int>(menu_items_.size());
+    for (int i = 0; i < count; ++i) {
+      next = (next + 1) % count;
+      if (menu_items_[next].enabled) {
+        break;
+      }
+    }
+    selected_index_ = next;
   }
 
   if (!settings_panel_.IsOpen()) {
-    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_ENTER)) {
+    if ((IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_ENTER)) &&
+        menu_items_[selected_index_].enabled) {
       TriggerAction(menu_items_[selected_index_].action);
     }
     if (IsKeyPressed(KEY_ESCAPE)) {
@@ -96,8 +102,10 @@ void TitleScene::Update(float delta_time) {
       Rectangle rect{(screen_width_ - BUTTON_WIDTH) * 0.5f, y, BUTTON_WIDTH,
                      BUTTON_HEIGHT};
       if (CheckCollisionPointRec(mouse, rect)) {
-        selected_index_ = i;
-        if (mouse_clicked) {
+        if (menu_items_[i].enabled) {
+          selected_index_ = i;
+        }
+        if (mouse_clicked && menu_items_[i].enabled) {
           TriggerAction(menu_items_[i].action);
         }
       }
@@ -112,20 +120,28 @@ void TitleScene::Update(float delta_time) {
     ToggleMute();
   }
 
-  if (music_loaded_) {
-    UpdateMusicStream(music_);
-    SetMusicVolume(music_, music_muted_ ? 0.0f : 1.0f);
+  if (bgm_service_) {
+    const Shared::Core::SettingsData *override_settings =
+        settings_panel_.IsOpen() ? &settings_panel_.Draft() : nullptr;
+    bgm_service_->SetManualMute(music_muted_, override_settings);
+    bgm_service_->Update(override_settings);
   }
 
   // 設定パネル更新（デフォルトデータで開くのみ、適用動作は別途）
   if (settings_panel_.IsOpen()) {
-    Rectangle panel{(screen_width_ - 520.0f) * 0.5f,
-                    (screen_height_ - 440.0f) * 0.5f, 520.0f, 440.0f};
+    float panel_w =
+        std::min(1080.0f, static_cast<float>(screen_width_) * 0.9f);
+    float panel_h = 520.0f;
+    Rectangle panel{(screen_width_ - panel_w) * 0.5f,
+                    (screen_height_ - panel_h) * 0.5f, panel_w, panel_h};
     auto act = settings_panel_.Update(panel);
     if (act == Game::UI::SettingsPanel::Action::Apply) {
       if (settings_manager_) {
         settings_manager_->Data() = settings_panel_.Draft();
         settings_manager_->Save(settings_path_);
+      }
+      if (bgm_service_) {
+        bgm_service_->SyncSettings();
       }
       settings_panel_.Close();
     } else if (act == Game::UI::SettingsPanel::Action::Cancel) {
@@ -150,18 +166,24 @@ void TitleScene::Draw() {
                    BUTTON_HEIGHT};
     bool hovered = CheckCollisionPointRec(GetMousePosition(), rect);
     bool selected = (i == selected_index_);
-    Color fill =
-        hovered || selected ? Color{70, 120, 200, 255} : Color{40, 60, 90, 220};
+    bool enabled = menu_items_[i].enabled;
+    Color fill = enabled
+                     ? (hovered || selected ? Color{70, 120, 200, 255}
+                                            : Color{40, 60, 90, 220})
+                     : Color{60, 60, 60, 180};
+    Color border = enabled ? Color{160, 200, 255, 255}
+                           : Color{110, 130, 160, 200};
     DrawRectangleRounded(rect, 0.12f, 8, fill);
-    DrawRectangleLinesEx(rect, 2.0f, Color{160, 200, 255, 255});
+    DrawRectangleLinesEx(rect, 2.0f, border);
 
     const float label_size = 28.0f;
     Vector2 text_size =
         MeasureTextEx(font_, menu_items_[i].label.c_str(), label_size, 2.0f);
     Vector2 text_pos{rect.x + (rect.width - text_size.x) * 0.5f,
                      rect.y + (rect.height - text_size.y) * 0.5f};
+    Color text_color = enabled ? RAYWHITE : Color{180, 180, 180, 220};
     DrawTextEx(font_, menu_items_[i].label.c_str(), text_pos, label_size, 2.0f,
-               RAYWHITE);
+               text_color);
   }
 
   if (show_prompt_) {
@@ -178,8 +200,10 @@ void TitleScene::Draw() {
   // BGM indicator / toggle
   const float bgm_font_size = 18.0f;
   std::string bgm_label;
-  if (music_missing_) {
-    bgm_label = "BGM: missing (muted)";
+  bool bgm_missing = bgm_service_ ? bgm_service_->IsMissing() : true;
+  bool bgm_loaded = bgm_service_ ? bgm_service_->IsLoaded() : false;
+  if (!bgm_loaded) {
+    bgm_label = bgm_missing ? "BGM: missing (muted)" : "BGM: not ready";
   } else {
     bgm_label =
         music_muted_ ? "BGM: OFF (M to toggle)" : "BGM: ON (M to toggle)";
@@ -205,17 +229,18 @@ void TitleScene::Draw() {
   // 設定パネル描画
   if (settings_panel_.IsOpen()) {
     DrawRectangle(0, 0, screen_width_, screen_height_, Color{0, 0, 0, 160});
-    Rectangle panel{(screen_width_ - 520.0f) * 0.5f,
-                    (screen_height_ - 440.0f) * 0.5f, 520.0f, 440.0f};
-    DrawRectangleRounded(panel, 0.12f, 6, Color{40, 60, 90, 230});
+    float panel_w =
+        std::min(1080.0f, static_cast<float>(screen_width_) * 0.9f);
+    float panel_h = 520.0f;
+    Rectangle panel{(screen_width_ - panel_w) * 0.5f,
+                    (screen_height_ - panel_h) * 0.5f, panel_w, panel_h};
+    DrawRectangleRounded(panel, 0.08f, 6, Color{20, 30, 50, 230});
     DrawRectangleLinesEx(panel, 2.0f, Color{180, 210, 255, 240});
     settings_panel_.Draw(panel, font_);
   }
 
-  if (show_save_menu_) {
-    DrawSaveLoadPanel(true);
-  } else if (show_load_menu_) {
-    DrawSaveLoadPanel(false);
+  if (show_load_menu_) {
+    DrawLoadPanel();
   }
 }
 
@@ -223,21 +248,24 @@ void TitleScene::TriggerAction(MenuAction action) {
   pending_action_ = action;
   switch (action) {
   case MenuAction::NewGame:
-  case MenuAction::ContinueGame:
     start_requested_ = true;
     break;
-  case MenuAction::Load:
-    show_load_menu_ = true;
-    show_save_menu_ = false;
-    RefreshSlots();
-    break;
-  case MenuAction::Save:
-    show_save_menu_ = true;
-    show_load_menu_ = false;
-    RefreshSlots();
+  case MenuAction::ContinueGame:
+    if (continue_available_) {
+      show_load_menu_ = true;
+    } else {
+      info_message_ = "\u30bb\u30fc\u30d6\u30c7\u30fc\u30bf\u304c\u3042\u308a\u307e\u305b\u3093";
+      info_message_timer_ = MESSAGE_DURATION;
+    }
+    pending_action_ = MenuAction::None;
     break;
   case MenuAction::Settings:
-    settings_panel_.OpenDefault();
+    if (settings_manager_) {
+      settings_panel_.Open(settings_manager_->Data());
+    } else {
+      settings_panel_.OpenDefault();
+    }
+    pending_action_ = MenuAction::None;
     break;
   case MenuAction::Exit:
     exit_requested_ = true;
@@ -249,18 +277,14 @@ void TitleScene::TriggerAction(MenuAction action) {
 }
 
 void TitleScene::ToggleMute() {
-  if (!music_loaded_) {
-    info_message_ = music_missing_ ? "title.ogg not found" : "BGM not ready";
+  if (!bgm_service_ || !bgm_service_->IsLoaded()) {
+    bool missing = bgm_service_ ? bgm_service_->IsMissing() : true;
+    info_message_ = missing ? "BGM file not found" : "BGM not ready";
     info_message_timer_ = MESSAGE_DURATION;
     return;
   }
   music_muted_ = !music_muted_;
-}
-
-int TitleScene::ConsumeRequestedSaveSlot() {
-  int v = requested_save_slot_;
-  requested_save_slot_ = -1;
-  return v;
+  bgm_service_->SetManualMute(music_muted_);
 }
 
 int TitleScene::ConsumeRequestedLoadSlot() {
@@ -282,6 +306,12 @@ void TitleScene::RefreshSlots() {
       s.stage.clear();
       s.gold = 0;
     }
+    continue_available_ = false;
+    for (auto &item : menu_items_) {
+      if (item.action == MenuAction::ContinueGame) {
+        item.enabled = false;
+      }
+    }
     return;
   }
   for (auto &s : slot_meta_) {
@@ -297,9 +327,15 @@ void TitleScene::RefreshSlots() {
       s.gold = 0;
     }
   }
+  continue_available_ = HasAnySave();
+  for (auto &item : menu_items_) {
+    if (item.action == MenuAction::ContinueGame) {
+      item.enabled = continue_available_;
+    }
+  }
 }
 
-void TitleScene::DrawSaveLoadPanel(bool saving) {
+void TitleScene::DrawLoadPanel() {
   DrawRectangle(0, 0, screen_width_, screen_height_, Color{0, 0, 0, 160});
   const float panel_w = 720.0f;
   const float panel_h = 420.0f;
@@ -308,7 +344,7 @@ void TitleScene::DrawSaveLoadPanel(bool saving) {
   DrawRectangleRounded(panel, 0.12f, 8, Color{30, 40, 60, 240});
   DrawRectangleLinesEx(panel, 2.0f, Color{170, 200, 255, 230});
 
-  std::string title = saving ? "セーブ先スロットを選択" : "ロードするスロットを選択";
+  std::string title = "\u30ed\u30fc\u30c9\u3059\u308b\u30b9\u30ed\u30c3\u30c8\u3092\u9078\u629e";
   Vector2 ts = MeasureTextEx(font_, title.c_str(), 26.0f, 2.0f);
   DrawTextEx(font_, title.c_str(),
              {panel.x + (panel.width - ts.x) * 0.5f, panel.y + 18.0f}, 26.0f,
@@ -324,7 +360,7 @@ void TitleScene::DrawSaveLoadPanel(bool saving) {
     Rectangle rect{panel.x + 30.0f, y, panel.width - 60.0f, slot_h};
     bool hover = CheckCollisionPointRec(mouse, rect);
     Color fill = hover ? Color{70, 110, 170, 255} : Color{50, 70, 110, 230};
-    if (!slot.exists && !saving) {
+    if (!slot.exists) {
       fill = Color{60, 60, 60, 200};
     }
     DrawRectangleRounded(rect, 0.1f, 6, fill);
@@ -350,24 +386,43 @@ void TitleScene::DrawSaveLoadPanel(bool saving) {
                {rect.x + 12.0f, rect.y + slot_h - ss.y - 8.0f}, 18.0f, 2.0f,
                Color{220, 230, 255, 230});
 
-    if (click && hover) {
-      if (saving) {
-        requested_save_slot_ = slot.slot;
-        show_save_menu_ = false;
-      } else if (slot.exists) {
-        requested_load_slot_ = slot.slot;
-        show_load_menu_ = false;
-      }
+    if (click && hover && slot.exists) {
+      requested_load_slot_ = slot.slot;
+      show_load_menu_ = false;
     }
     y += slot_h + slot_gap;
   }
 }
 
-TitleScene::~TitleScene() {
-  if (music_loaded_) {
-    StopMusicStream(music_);
-    UnloadMusicStream(music_);
+void TitleScene::EnsureSelectable() {
+  if (menu_items_.empty()) {
+    selected_index_ = 0;
+    return;
   }
+  int count = static_cast<int>(menu_items_.size());
+  selected_index_ = std::clamp(selected_index_, 0, count - 1);
+  if (menu_items_[selected_index_].enabled) {
+    return;
+  }
+  for (int i = 0; i < count; ++i) {
+    int idx = (selected_index_ + i + 1) % count;
+    if (menu_items_[idx].enabled) {
+      selected_index_ = idx;
+      return;
+    }
+  }
+}
+
+bool TitleScene::HasAnySave() const {
+  for (const auto &s : slot_meta_) {
+    if (s.exists) {
+      return true;
+    }
+  }
+  return false;
+}
+
+TitleScene::~TitleScene() {
 }
 
 } // namespace Game::Scenes

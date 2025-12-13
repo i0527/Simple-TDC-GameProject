@@ -79,8 +79,13 @@ bool UserDataManager::SaveSlot(const SaveData &data) const {
   j["gold"] = data.gold;
   j["tower"]["hp_level"] = data.tower.hp_level;
   j["settings"]["masterVolume"] = data.settings.masterVolume;
+  j["settings"]["bgmVolume"] = data.settings.bgmVolume;
+  j["settings"]["sfxVolume"] = data.settings.sfxVolume;
+  j["settings"]["masterMuted"] = data.settings.masterMuted;
   j["settings"]["bgmMuted"] = data.settings.bgmMuted;
   j["settings"]["sfxMuted"] = data.settings.sfxMuted;
+  j["settings"]["showInputGuide"] = data.settings.showInputGuide;
+  j["settings"]["speedMultiplier"] = data.settings.speedMultiplier;
   j["settings"]["language"] = data.settings.language;
   j["settings"]["quality"] = data.settings.quality;
   j["settings"]["windowMode"] = data.settings.windowMode;
@@ -166,8 +171,15 @@ bool UserDataManager::LoadSlot(int slot_id, SaveData &out_data) const {
       const auto &st = j.at("settings");
       d.settings.masterVolume =
           ValueOrDefault<float>(st, "masterVolume", 1.0f);
+      d.settings.bgmVolume = ValueOrDefault<float>(st, "bgmVolume", 1.0f);
+      d.settings.sfxVolume = ValueOrDefault<float>(st, "sfxVolume", 1.0f);
+      d.settings.masterMuted = ValueOrDefault<bool>(st, "masterMuted", false);
       d.settings.bgmMuted = ValueOrDefault<bool>(st, "bgmMuted", false);
       d.settings.sfxMuted = ValueOrDefault<bool>(st, "sfxMuted", false);
+      d.settings.showInputGuide =
+          ValueOrDefault<bool>(st, "showInputGuide", true);
+      d.settings.speedMultiplier =
+          ValueOrDefault<float>(st, "speedMultiplier", 1.0f);
       d.settings.language =
           ValueOrDefault<std::string>(st, "language", "ja");
       d.settings.quality = ValueOrDefault<std::string>(st, "quality", "high");

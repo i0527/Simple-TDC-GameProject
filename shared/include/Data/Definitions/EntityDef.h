@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace Shared::Data {
@@ -34,6 +35,9 @@ struct EntityDef {
         std::string walk_animation;
         std::string attack_animation;
         std::string death_animation;
+        std::string atlas_texture; // Aseprite画像パス
+        std::unordered_map<std::string, std::string> sprite_actions; // action -> aseprite json path
+        std::string icon; // UI用アイコンパス
     } display;
 
     std::vector<std::string> skill_ids;

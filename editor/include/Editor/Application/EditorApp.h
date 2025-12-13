@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <imgui.h>
 #include <raylib.h>
@@ -8,6 +9,7 @@
 #include "Core/FontManager.h"
 #include "Core/GameContext.h"
 #include "Data/DefinitionRegistry.h"
+#include "Editor/Windows/IEditorWindow.h"
 
 namespace Editor::Application {
 
@@ -30,6 +32,9 @@ private:
   std::unique_ptr<Shared::Core::FontManager> fontManager_;
   ImFont *defaultFont_ = nullptr;
 
+  // ウィンドウ
+  std::vector<std::unique_ptr<Editor::Windows::IEditorWindow>> windows_;
+
   // ゲーム状態
   bool is_running_;
   float delta_time_;
@@ -38,6 +43,9 @@ private:
   void Update(float delta_time);
   void Render();
   void RenderUI();
+  void InitializeEditorWindows();
+  void UpdateEditorWindows(float delta_time);
+  void RenderEditorWindows();
   void HandleResize();
   void LoadDefinitions();
 };

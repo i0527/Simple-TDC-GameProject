@@ -7,6 +7,7 @@
 
 #include "Core/SettingsManager.h"
 #include "Data/UserDataManager.h"
+#include "Game/Audio/BgmService.h"
 #include "Game/Scenes/IScene.h"
 #include "Game/UI/SettingsPanel.h"
 
@@ -14,11 +15,12 @@ namespace Game::Scenes {
 
 class TitleScene : public IScene {
 public:
-  enum class MenuAction { None, NewGame, ContinueGame, Load, Save, Settings, Exit };
+  enum class MenuAction { None, NewGame, ContinueGame, Settings, Exit };
 
   TitleScene(Font font, int screen_width, int screen_height,
              Shared::Core::SettingsManager *settings = nullptr,
-             Shared::Data::UserDataManager *user_data = nullptr);
+             Shared::Data::UserDataManager *user_data = nullptr,
+             Game::Audio::BgmService *bgm = nullptr);
   ~TitleScene() override;
   void Update(float delta_time) override;
   void Draw() override;
@@ -48,12 +50,15 @@ private:
   struct MenuItem {
     std::string label;
     MenuAction action = MenuAction::None;
+    bool enabled = true;
   };
 
   void TriggerAction(MenuAction action);
   void ToggleMute();
-  void DrawSaveLoadPanel(bool saving);
+  void DrawLoadPanel();
   void RefreshSlots();
+  void EnsureSelectable();
+  bool HasAnySave() const;
 
   Font font_;
   int screen_width_;
@@ -67,9 +72,7 @@ private:
   std::vector<MenuItem> menu_items_;
   int selected_index_ = 0;
 
-  Music music_{};
-  bool music_loaded_ = false;
-  bool music_missing_ = false;
+  Game::Audio::BgmService *bgm_service_ = nullptr;
   bool music_muted_ = false;
 
   float info_message_timer_ = 0.0f;
@@ -89,10 +92,9 @@ private:
     int gold = 0;
   };
   std::vector<SlotMeta> slot_meta_;
-  bool show_save_menu_ = false;
   bool show_load_menu_ = false;
-  int requested_save_slot_ = -1;
   int requested_load_slot_ = -1;
+  bool continue_available_ = false;
 };
 
 } // namespace Game::Scenes
