@@ -23,6 +23,10 @@ bool GameContext::Initialize(const std::string &config_path) {
     // パス設定を読み込み
     data_path_ = config.value("data_path", "assets/definitions");
     assets_path_ = config.value("assets_path", "assets");
+    main_characters_path_ =
+        config.value("main_characters_path", "assets/mainCharacters");
+    sub_characters_path_ =
+        config.value("sub_characters_path", "assets/subCharacters");
 
     // サブシステムを初期化
     event_system_ = std::make_unique<EventSystem>();

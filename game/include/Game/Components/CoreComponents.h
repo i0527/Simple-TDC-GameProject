@@ -3,7 +3,12 @@
 #include <entt/entt.hpp>
 #include <raylib.h>
 #include <string>
+#include <unordered_map>
 #include <vector>
+
+namespace Shared::Data {
+struct SpriteSheetAtlas;
+}
 
 namespace Game::Components {
 
@@ -65,6 +70,8 @@ struct SkillCooldown {
 /// @brief スプライト情報（テクスチャは遅延ロード、失敗時はプレースホルダー）
 struct Sprite {
   std::string texturePath;
+  std::string atlasJsonPath;
+  const Shared::Data::SpriteSheetAtlas *atlas = nullptr;
   Texture2D texture{};
   bool loaded = false;
   bool failed = false;
@@ -80,6 +87,15 @@ struct Animation {
   float frame_timer = 0.0f;
   float frame_duration = 0.15f;
   bool playing = true;
+
+  // Atlas-driven (Aseprite)
+  bool useAtlas = false;
+  std::string currentAction = "idle";
+  int atlasFrameIndex = 0;
+  float atlasFrameTimer = 0.0f;
+  float atlasDefaultFps = 10.0f;
+  bool atlasLoop = true;
+  std::unordered_map<std::string, std::string> actionToJson;
 };
 
 struct HitEffect {

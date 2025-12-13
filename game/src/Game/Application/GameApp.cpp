@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <chrono>
 #include <ctime>
+#include <imgui.h>
 #include <iomanip>
 #include <iostream>
 #include <raylib.h>
 #include <rlImGui.h>
-#include <imgui.h>
 #include <sstream>
 
 #include "Data/Loaders/AbilityLoader.h"
@@ -71,6 +71,7 @@ bool GameApp::Initialize() {
   } else {
     audio_initialized_ = true;
   }
+  bgm_service_ = std::make_unique<Game::Audio::BgmService>(&Settings());
 
   // フォント読み込み（日本語対応）
   font_manager_ = std::make_unique<Shared::Core::FontManager>();
@@ -78,9 +79,8 @@ bool GameApp::Initialize() {
       font_manager_->LoadJapaneseFont("assets/fonts/NotoSansJP-Medium.ttf", 32);
   owns_font_ = default_font_.texture.id != GetFontDefault().texture.id;
   ImGuiIO &io = ImGui::GetIO();
-  imgui_font_ =
-      font_manager_->LoadImGuiJapaneseFont("assets/fonts/NotoSansJP-Medium.ttf",
-                                           18.0f);
+  imgui_font_ = font_manager_->LoadImGuiJapaneseFont(
+      "assets/fonts/NotoSansJP-Medium.ttf", 18.0f);
   if (imgui_font_ != nullptr) {
     io.FontDefault = imgui_font_;
   }
@@ -134,6 +134,9 @@ void GameApp::Shutdown() {
   registry_.clear();
 
   context_->Shutdown();
+  if (bgm_service_) {
+    bgm_service_->Stop();
+  }
 
   if (owns_font_ && default_font_.texture.id != 0) {
     UnloadFont(default_font_);
@@ -166,7 +169,7 @@ void GameApp::Update(float delta_time) {
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
                   default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
-                  user_data_manager_.get()),
+                  user_data_manager_.get(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::FADE);
           return;
         }
@@ -193,11 +196,14 @@ void GameApp::Update(float delta_time) {
           is_running_ = false;
           return;
         case Game::Scenes::TitleScene::MenuAction::NewGame:
-        case Game::Scenes::TitleScene::MenuAction::ContinueGame:
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, user_data_manager_.get()),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
+                  user_data_manager_.get(), &Settings(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::FADE);
+          break;
+        case Game::Scenes::TitleScene::MenuAction::ContinueGame:
+          // スロット選択パネルでロード処理を行うためここでは遷移しない
           break;
         case Game::Scenes::TitleScene::MenuAction::Settings:
         case Game::Scenes::TitleScene::MenuAction::None:
@@ -205,12 +211,6 @@ void GameApp::Update(float delta_time) {
           break;
         }
 
-        int save_slot = title->ConsumeRequestedSaveSlot();
-        if (save_slot >= 0) {
-          bool ok = SaveToSlot(save_slot);
-          title->SetInfoMessage(ok ? "保存しました" : "保存に失敗しました",
-                                2.0f);
-        }
         int load_slot = title->ConsumeRequestedLoadSlot();
         if (load_slot >= 0) {
           bool ok = LoadFromSlot(load_slot);
@@ -220,7 +220,7 @@ void GameApp::Update(float delta_time) {
             scene_manager_->ReplaceScene(
                 std::make_unique<Game::Scenes::HomeScene>(
                     default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
-                    user_data_manager_.get()),
+                    user_data_manager_.get(), &Settings(), bgm_service_.get()),
                 Game::Scenes::SceneManager::TransitionType::FADE);
             return;
           }
@@ -229,13 +229,6 @@ void GameApp::Update(float delta_time) {
         if (title->ConsumeExit()) {
           is_running_ = false;
           return;
-        }
-        if (title->ConsumeStart() &&
-            action == Game::Scenes::TitleScene::MenuAction::None) {
-          scene_manager_->ReplaceScene(
-              std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, user_data_manager_.get()),
-              Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
         }
       } else if (auto *home = dynamic_cast<Game::Scenes::HomeScene *>(scene)) {
         auto action = home->ConsumeAction();
@@ -260,7 +253,7 @@ void GameApp::Update(float delta_time) {
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
                   default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
-                  user_data_manager_.get()),
+                  user_data_manager_.get(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         case Game::Scenes::HomeScene::Action::SaveAndExit:
@@ -273,10 +266,11 @@ void GameApp::Update(float delta_time) {
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
                   default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
-                  user_data_manager_.get()),
+                  user_data_manager_.get(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         case Game::Scenes::HomeScene::Action::None:
+        case Game::Scenes::HomeScene::Action::Settings:
         default:
           break;
         }
@@ -298,7 +292,8 @@ void GameApp::Update(float delta_time) {
           registry_.clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, user_data_manager_.get()),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
+                  user_data_manager_.get(), &Settings(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         }
@@ -322,7 +317,8 @@ void GameApp::Update(float delta_time) {
         if (formation->ConsumeReturnHome()) {
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, user_data_manager_.get()),
+                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
+                  user_data_manager_.get(), &Settings(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         }
@@ -333,7 +329,7 @@ void GameApp::Update(float delta_time) {
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
                   default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
-                  user_data_manager_.get()),
+                  user_data_manager_.get(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
         }
@@ -450,10 +446,16 @@ Shared::Data::SaveData GameApp::BuildSaveData(int slot_id) const {
 
   auto now = std::chrono::system_clock::now();
   std::time_t t = std::chrono::system_clock::to_time_t(now);
-  std::tm *utc = std::gmtime(&t);
-  if (utc) {
+  std::tm utc{};
+  bool has_utc = false;
+#if defined(_WIN32)
+  has_utc = gmtime_s(&utc, &t) == 0;
+#else
+  has_utc = gmtime_r(&t, &utc) != nullptr;
+#endif
+  if (has_utc) {
     std::stringstream ss;
-    ss << std::put_time(utc, "%FT%TZ");
+    ss << std::put_time(&utc, "%FT%TZ");
     data.saved_at = ss.str();
   } else {
     data.saved_at = "";
@@ -486,15 +488,12 @@ void GameApp::ApplyLoadedSave(const Shared::Data::SaveData &data) {
 bool GameApp::LoadDefinitions() {
   std::cout << "Loading definitions..." << std::endl;
 
-  // Entity定義
-  std::string entity_path = context_->GetDataPath("entities_debug.json");
-  if (!Shared::Data::EntityLoader::LoadFromJson(entity_path, *definitions_)) {
-    return false;
-  }
-  // 編成デバッグ用の味方キャラ定義
-  std::string formation_entity_path =
-      context_->GetDataPath("entities_formation_debug.json");
-  Shared::Data::EntityLoader::LoadFromJson(formation_entity_path, *definitions_);
+  // main/sub キャラディレクトリを追加読み込み（Aseprite相対パスを解決）
+  const auto &main_chars = context_->GetMainCharactersPath();
+  const auto &sub_chars = context_->GetSubCharactersPath();
+  Shared::Data::EntityLoader::LoadFromDirectory(main_chars, *definitions_,
+                                                true);
+  Shared::Data::EntityLoader::LoadFromDirectory(sub_chars, *definitions_, true);
 
   // Skill定義（abilities_debug.jsonから）
   std::string ability_path = context_->GetDataPath("abilities_debug.json");

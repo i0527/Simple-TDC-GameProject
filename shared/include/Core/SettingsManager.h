@@ -5,12 +5,17 @@
 namespace Shared::Core {
 
 struct SettingsData {
-  float masterVolume = 1.0f; // 0.0 - 1.0
+  float masterVolume = 1.0f;   // 0.0 - 1.0
+  float bgmVolume = 1.0f;      // 0.0 - 1.0
+  float sfxVolume = 1.0f;      // 0.0 - 1.0
+  bool masterMuted = false;
   bool bgmMuted = false;
   bool sfxMuted = false;
-  std::string language = "ja";
-  std::string quality = "high";
-  std::string windowMode = "window"; // "window" / "fullscreen"
+  bool showInputGuide = true;
+  float speedMultiplier = 1.0f;          // 1.0 / 2.0 / 4.0
+  std::string windowMode = "window";     // "window" / "fullscreen"
+  std::string language = "ja";           // 互換用（UI未使用）
+  std::string quality = "high";          // 互換用（UI未使用）
 };
 
 class SettingsManager {

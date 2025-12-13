@@ -1,5 +1,5 @@
 {
-  "max_slots": 8,
+  "max_slots": 10,
   "slots": [
     "ally_knight",
     "ally_archer",
@@ -8,7 +8,9 @@
     "ally_rogue",
     "ally_lancer",
     "ally_guardian",
-    "ally_engineer"
+    "ally_engineer",
+    "",
+    ""
   ],
   "candidates": [
     "ally_knight",

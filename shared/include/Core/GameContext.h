@@ -33,6 +33,12 @@ public:
   /// @param relative_path 相対パス（例: "fonts/mplus.ttf"）
   /// @return 絶対パス
   std::string GetAssetsPath(const std::string &relative_path) const;
+  const std::string &GetMainCharactersPath() const {
+    return main_characters_path_;
+  }
+  const std::string &GetSubCharactersPath() const {
+    return sub_characters_path_;
+  }
 
   // マネージャーアクセス
   EventSystem &GetEventSystem();
@@ -47,6 +53,8 @@ public:
 private:
   std::string data_path_;
   std::string assets_path_;
+  std::string main_characters_path_;
+  std::string sub_characters_path_;
 
   std::unique_ptr<EventSystem> event_system_;
   std::unique_ptr<FileWatcher> file_watcher_;

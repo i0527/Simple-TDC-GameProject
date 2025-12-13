@@ -35,7 +35,7 @@ private:
   Shared::Core::GameContext &context_;
   Shared::Data::DefinitionRegistry &definitions_;
 
-  int max_slots_ = 8;
+  int max_slots_ = 10;
   std::vector<std::string> slots_;
   std::vector<std::string> unlocked_ids_;
 

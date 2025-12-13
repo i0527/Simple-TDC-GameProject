@@ -10,6 +10,23 @@ namespace {
 constexpr float ENTITY_SIZE = 40.0f;
 constexpr float HUD_FONT_SIZE = 18.0f;
 constexpr float SPRITE_DRAW_SCALE = 1.0f;
+struct ActionPlayback {
+  bool loop;
+  float frameDuration;
+};
+
+ActionPlayback DefaultPlayback(const std::string &action) {
+  if (action == "walk") {
+    return {true, 1.0f / 12.0f};
+  }
+  if (action == "attack") {
+    return {false, 1.0f / 10.0f};
+  }
+  if (action == "death") {
+    return {false, 1.0f / 8.0f};
+  }
+  return {true, 1.0f / 8.0f}; // idleその他
+}
 } // namespace
 
 namespace Game::Systems {
@@ -17,8 +34,9 @@ namespace Game::Systems {
 void RenderingSystem::UpdateAnimations(entt::registry &registry,
                                        float delta_time) {
   auto anim_view = registry.view<Components::Animation>();
-  anim_view.each([delta_time](auto entity, Components::Animation &anim) {
-    if (!anim.playing) {
+  anim_view.each([delta_time]([[maybe_unused]] entt::entity entity,
+                              Components::Animation &anim) {
+    if (!anim.playing || anim.useAtlas) {
       return;
     }
     anim.frame_timer += delta_time;
@@ -26,6 +44,58 @@ void RenderingSystem::UpdateAnimations(entt::registry &registry,
       anim.frame_timer = 0.0f;
       anim.current_frame =
           (anim.current_frame + 1) % std::max(1, anim.frames_per_state);
+    }
+  });
+
+  auto atlas_view = registry.view<Components::Animation, Components::Sprite>();
+  atlas_view.each([this, delta_time](entt::entity /*entity*/,
+                                     Components::Animation &anim,
+                                     Components::Sprite &sprite) {
+    if (!anim.playing || !anim.useAtlas) {
+      return;
+    }
+
+    const auto *atlas = EnsureAtlas(anim, sprite);
+    if (!atlas) {
+      return;
+    }
+
+    const auto clip_it = atlas->tags.find(anim.currentAction);
+    const auto default_it = atlas->tags.find("default");
+    const auto *clip =
+        (clip_it != atlas->tags.end()) ? &clip_it->second
+                                       : (default_it != atlas->tags.end()
+                                              ? &default_it->second
+                                              : nullptr);
+    if (!clip || clip->frameIndices.empty()) {
+      return;
+    }
+
+    const auto playback = DefaultPlayback(anim.currentAction);
+    const int clip_index =
+        std::min(static_cast<int>(clip->frameIndices.size() - 1),
+                 std::max(0, anim.atlasFrameIndex));
+    const int frame_id = clip->frameIndices[clip_index];
+    float duration_sec = playback.frameDuration;
+    if (frame_id >= 0 &&
+        frame_id < static_cast<int>(atlas->frames.size())) {
+      int dur_ms = atlas->frames[frame_id].durationMs;
+      if (dur_ms > 0) {
+        duration_sec = static_cast<float>(dur_ms) / 1000.0f;
+      }
+    }
+
+    anim.atlasFrameTimer += delta_time;
+    if (anim.atlasFrameTimer >= duration_sec) {
+      anim.atlasFrameTimer = 0.0f;
+      anim.atlasFrameIndex += 1;
+      if (anim.atlasFrameIndex >=
+          static_cast<int>(clip->frameIndices.size())) {
+        const bool loop = playback.loop && clip->loop;
+        anim.atlasFrameIndex = loop
+                                   ? 0
+                                   : static_cast<int>(clip->frameIndices.size()) - 1;
+      }
     }
   });
 
@@ -65,7 +135,8 @@ void RenderingSystem::Draw(entt::registry &registry, const Font &font) const {
 
 void RenderingSystem::Shutdown(entt::registry &registry) {
   // Unload textures held by sprites
-  registry.view<Components::Sprite>().each([](auto entity, auto &sprite) {
+  registry.view<Components::Sprite>().each(
+      [](entt::entity /*entity*/, auto &sprite) {
     if (sprite.loaded && sprite.texture.id != 0) {
       UnloadTexture(sprite.texture);
       sprite.texture = Texture2D{};
@@ -89,6 +160,13 @@ RenderingSystem::LoadTextureIfNeeded(Components::Sprite &sprite) const {
 
   if (sprite.loaded) {
     return &sprite.texture;
+  }
+
+  if (sprite.texturePath.empty() && sprite.atlas &&
+      !sprite.atlas->imagePath.empty()) {
+    sprite.texturePath = sprite.atlas->imagePath;
+    sprite.loaded = false;
+    sprite.failed = false;
   }
 
   if (sprite.texturePath.empty()) {
@@ -123,6 +201,38 @@ RenderingSystem::LoadTextureIfNeeded(Components::Sprite &sprite) const {
   return &sprite.texture;
 }
 
+const Shared::Data::SpriteSheetAtlas *
+RenderingSystem::EnsureAtlas(Components::Animation &anim,
+                             Components::Sprite &sprite) const {
+  if (!anim.useAtlas || anim.actionToJson.empty()) {
+    return nullptr;
+  }
+
+  auto action_it = anim.actionToJson.find(anim.currentAction);
+  if (action_it == anim.actionToJson.end()) {
+    anim.currentAction = anim.actionToJson.begin()->first;
+    action_it = anim.actionToJson.begin();
+  }
+
+  const std::string &json_path = action_it->second;
+  if (sprite.atlasJsonPath != json_path || sprite.atlas == nullptr) {
+    sprite.atlasJsonPath = json_path;
+    sprite.atlas = atlas_cache_.GetOrLoad(json_path);
+    if (!sprite.atlas) {
+      std::cerr << "[RenderingSystem] Failed to load atlas: " << json_path
+                << std::endl;
+      return nullptr;
+    }
+    if (sprite.texturePath.empty() && !sprite.atlas->imagePath.empty()) {
+      sprite.texturePath = sprite.atlas->imagePath;
+      sprite.loaded = false;
+      sprite.failed = false;
+    }
+  }
+
+  return sprite.atlas;
+}
+
 void RenderingSystem::DrawEntities(entt::registry &registry) const {
   auto view =
       registry
@@ -143,11 +253,51 @@ void RenderingSystem::DrawEntities(entt::registry &registry) const {
     bool drew_sprite = false;
 
     if (auto *sprite = registry.try_get<Components::Sprite>(entity)) {
-      if (auto *tex = LoadTextureIfNeeded(*sprite)) {
+      Components::Animation *anim = registry.try_get<Components::Animation>(entity);
+      if (anim && anim->useAtlas) {
+        const auto *atlas = EnsureAtlas(*anim, *sprite);
+        if (atlas && !atlas->frames.empty()) {
+          const auto clip_it = atlas->tags.find(anim->currentAction);
+          const auto default_it = atlas->tags.find("default");
+          const auto *clip =
+              (clip_it != atlas->tags.end()) ? &clip_it->second
+                                             : (default_it != atlas->tags.end()
+                                                    ? &default_it->second
+                                                    : nullptr);
+          if (clip && !clip->frameIndices.empty()) {
+            int clip_index =
+                std::min(static_cast<int>(clip->frameIndices.size() - 1),
+                         std::max(0, anim->atlasFrameIndex));
+            int frame_id = clip->frameIndices[clip_index];
+            if (frame_id >= 0 &&
+                frame_id < static_cast<int>(atlas->frames.size())) {
+              const auto &fr = atlas->frames[frame_id];
+              if (auto *tex = LoadTextureIfNeeded(*sprite)) {
+                if (tex->id != 0) {
+                  Rectangle src{static_cast<float>(fr.x),
+                                static_cast<float>(fr.y),
+                                static_cast<float>(fr.w),
+                                static_cast<float>(fr.h)};
+                  Rectangle dst{
+                      transform.x + static_cast<float>(fr.sourceX),
+                      transform.y + static_cast<float>(fr.sourceY),
+                      std::abs(src.width) * SPRITE_DRAW_SCALE,
+                      std::abs(src.height) * SPRITE_DRAW_SCALE};
+                  Vector2 origin{0.0f, 0.0f};
+                  DrawTexturePro(*tex, src, dst, origin, transform.rotation,
+                                 RAYWHITE);
+                  bounds = dst;
+                  drew_sprite = true;
+                }
+              }
+            }
+          }
+        }
+      } else if (auto *tex = LoadTextureIfNeeded(*sprite)) {
         if (tex->id != 0) {
           Rectangle src{0.0f, 0.0f, static_cast<float>(tex->width),
                         static_cast<float>(tex->height)};
-          if (auto *anim = registry.try_get<Components::Animation>(entity)) {
+          if (anim) {
             int cols = std::max(1, anim->columns);
             int rows = std::max(1, anim->rows);
             int frame_w = tex->width / cols;

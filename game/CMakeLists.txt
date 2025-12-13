@@ -71,10 +71,12 @@ set(GAME_SOURCES
     src/Game/Scenes/StageSelectScene.cpp
     src/Game/Scenes/TDGameScene.cpp
     src/Game/UI/SettingsPanel.cpp
+    src/Game/UI/UiComponents.cpp
     src/Game/Managers/EntityManager.cpp
     src/Game/Managers/SkillManager.cpp
     src/Game/Managers/StageManager.cpp
     src/Game/Managers/FormationManager.cpp
+    src/Game/Audio/BgmService.cpp
 )
 
 # 実行ファイルを作成

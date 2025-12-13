@@ -1,6 +1,7 @@
 #include "Game/Scenes/HomeScene.h"
 
 #include <algorithm>
+#include <iostream>
 
 namespace {
 constexpr float ITEM_HEIGHT = 60.0f;
@@ -12,11 +13,15 @@ constexpr float LIST_MARGIN_X = 520.0f;
 namespace Game::Scenes {
 
 HomeScene::HomeScene(Font font, int screen_width, int screen_height,
-                     Shared::Data::UserDataManager *user_data)
+                     Shared::Data::UserDataManager *user_data,
+                     Shared::Core::SettingsManager *settings,
+                     Game::Audio::BgmService *bgm)
     : font_(font), screen_width_(screen_width), screen_height_(screen_height),
-      user_data_manager_(user_data) {
+      user_data_manager_(user_data), settings_manager_(settings),
+      bgm_service_(bgm) {
   menu_items_.push_back({"Stage Select", Action::StageSelect});
   menu_items_.push_back({"Formation", Action::Formation});
+  menu_items_.push_back({"Settings", Action::Settings});
   menu_items_.push_back({"Save", Action::SaveMenu});
   menu_items_.push_back({"Load", Action::LoadMenu});
   menu_items_.push_back({"Save & Title", Action::SaveAndTitle});
@@ -27,6 +32,13 @@ HomeScene::HomeScene(Font font, int screen_width, int screen_height,
   for (int i = 0; i < 5; ++i) {
     slot_meta_[i].slot = i;
   }
+
+  if (bgm_service_) {
+    bgm_service_->Load("assets/music/mattari_room.mp3");
+  }
+}
+
+HomeScene::~HomeScene() {
 }
 
 void HomeScene::Trigger(Action action) {
@@ -39,6 +51,12 @@ void HomeScene::Trigger(Action action) {
     show_load_menu_ = true;
     show_save_menu_ = false;
     RefreshSlots();
+  } else if (action == Action::Settings) {
+    if (settings_manager_) {
+      settings_panel_.Open(settings_manager_->Data());
+    } else {
+      info_message_ = "Settings not available";
+    }
   }
 }
 
@@ -49,6 +67,10 @@ HomeScene::Action HomeScene::ConsumeAction() {
 }
 
 void HomeScene::HandleInput() {
+  if (settings_panel_.IsOpen()) {
+    return;
+  }
+
   if ((show_save_menu_ || show_load_menu_) && IsKeyPressed(KEY_ESCAPE)) {
     show_save_menu_ = false;
     show_load_menu_ = false;
@@ -65,6 +87,15 @@ void HomeScene::HandleInput() {
   }
 
   if (menu_items_.empty()) {
+    return;
+  }
+
+  if (IsKeyPressed(KEY_F10) || IsKeyPressed(KEY_S)) {
+    if (settings_manager_) {
+      settings_panel_.Open(settings_manager_->Data());
+    } else {
+      info_message_ = "Settings not available";
+    }
     return;
   }
 
@@ -102,10 +133,60 @@ void HomeScene::HandleInput() {
   }
 }
 
-void HomeScene::Update(float) { HandleInput(); }
+void HomeScene::Update(float delta_time) {
+  UpdateMusic();
+
+  if (UpdateSettingsPanel(delta_time)) {
+    return; // 設定パネルで入力を消費したら他入力をスキップ
+  }
+  HandleInput();
+}
+bool HomeScene::UpdateSettingsPanel(float) {
+  if (!settings_panel_.IsOpen()) {
+    return false;
+  }
+  float panel_w = std::min(1080.0f, static_cast<float>(screen_width_) * 0.9f);
+  float panel_h = 520.0f;
+  Rectangle panel{(screen_width_ - panel_w) * 0.5f,
+                  (screen_height_ - panel_h) * 0.5f, panel_w, panel_h};
+  Vector2 mouse = GetMousePosition();
+  auto act = settings_panel_.Update(panel, mouse);
+  if (IsKeyPressed(KEY_ESCAPE)) {
+    settings_panel_.Close();
+    return true;
+  }
+  if (act == Game::UI::SettingsPanel::Action::Apply) {
+    if (settings_manager_) {
+      settings_manager_->Data() = settings_panel_.Draft();
+      settings_manager_->Save(settings_path_);
+    }
+    if (bgm_service_) {
+      bgm_service_->SyncSettings();
+    }
+    settings_panel_.Close();
+    return true;
+  } else if (act == Game::UI::SettingsPanel::Action::Cancel) {
+    settings_panel_.Close();
+    return true;
+  }
+  return true; // 開いている間は他入力をブロック
+}
+
+void HomeScene::UpdateMusic() {
+  if (bgm_service_) {
+    const Shared::Core::SettingsData *override_settings =
+        settings_panel_.IsOpen() ? &settings_panel_.Draft() : nullptr;
+    bgm_service_->Update(override_settings);
+  }
+}
 
 void HomeScene::Draw() {
   ClearBackground(Color{12, 18, 26, 255});
+
+  if (settings_panel_.IsOpen()) {
+    DrawSettingsPanel();
+    return;
+  }
 
   const float title_size = 46.0f;
   const char *title = "Home";
@@ -141,7 +222,8 @@ void HomeScene::Draw() {
     y += ITEM_HEIGHT + ITEM_GAP;
   }
 
-  const char *helper = "[Enter/Space] Confirm   [Up/Down] Move   [Esc] Quit";
+  const char *helper =
+      "[Enter/Space] Confirm   [Up/Down] Move   [S/F10] Settings   [Esc] Quit";
   Vector2 vs = MeasureTextEx(font_, helper, 18.0f, 2.0f);
   DrawTextEx(font_, helper,
              {(static_cast<float>(screen_width_) - vs.x) * 0.5f,
@@ -264,6 +346,17 @@ void HomeScene::DrawSaveLoadPanel(bool saving) {
     }
     y += slot_h + slot_gap;
   }
+}
+
+void HomeScene::DrawSettingsPanel() const {
+  DrawRectangle(0, 0, screen_width_, screen_height_, Color{0, 0, 0, 160});
+  float panel_w = std::min(1080.0f, static_cast<float>(screen_width_) * 0.9f);
+  float panel_h = 520.0f;
+  Rectangle panel{(screen_width_ - panel_w) * 0.5f,
+                  (screen_height_ - panel_h) * 0.5f, panel_w, panel_h};
+  DrawRectangleRounded(panel, 0.08f, 6, Color{20, 30, 50, 230});
+  DrawRectangleLinesEx(panel, 2.0f, Color{180, 210, 255, 240});
+  settings_panel_.Draw(panel, font_);
 }
 
 } // namespace Game::Scenes

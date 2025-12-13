@@ -8,6 +8,60 @@ constexpr float BASE_HEIGHT = 160.0f;
 constexpr float BASE_MARGIN = 10.0f;
 constexpr float UNIT_HEIGHT = 40.0f;
 constexpr float BETWEEN_WAVE_MESSAGE_Y = 120.0f;
+
+struct TopUiLayout {
+  Rectangle pause_btn{};
+  Rectangle speed_btn{};
+};
+
+struct PauseUiLayout {
+  Rectangle panel{};
+  Rectangle resume_btn{};
+  Rectangle retry_btn{};
+  Rectangle select_btn{};
+  Rectangle settings_btn{};
+  Rectangle settings_panel{};
+};
+
+TopUiLayout BuildTopUiLayout() {
+  TopUiLayout l{};
+  const float padding = 14.0f;
+  const float btn_w = 60.0f;
+  const float btn_h = 36.0f;
+  float x = static_cast<float>(GetScreenWidth()) - btn_w - padding;
+  float y = padding;
+  l.pause_btn = {x, y, btn_w, btn_h};
+  l.speed_btn = {x - btn_w - 10.0f, y, btn_w, btn_h};
+  return l;
+}
+
+PauseUiLayout BuildPauseUiLayout(bool settings_open) {
+  PauseUiLayout l{};
+  float sw = static_cast<float>(GetScreenWidth());
+  float sh = static_cast<float>(GetScreenHeight());
+
+  const float panel_w = settings_open ? std::min(1080.0f, sw * 0.9f) : 520.0f;
+  const float panel_h = settings_open ? 520.0f : 440.0f;
+  l.panel = {(sw - panel_w) * 0.5f, (sh - panel_h) * 0.5f, panel_w, panel_h};
+
+  if (!settings_open) {
+    const float btn_w = 220.0f;
+    const float btn_h = 56.0f;
+    const float gap = 14.0f;
+    float cx = l.panel.x + l.panel.width * 0.5f;
+    float start_y = l.panel.y + 96.0f;
+    l.resume_btn = {cx - btn_w * 0.5f, start_y, btn_w, btn_h};
+    l.retry_btn = {cx - btn_w * 0.5f, start_y + (btn_h + gap), btn_w, btn_h};
+    l.select_btn = {cx - btn_w * 0.5f, start_y + 2 * (btn_h + gap), btn_w,
+                    btn_h};
+    l.settings_btn = {cx - btn_w * 0.5f, start_y + 3 * (btn_h + gap), btn_w,
+                      btn_h};
+  } else {
+    l.settings_panel = l.panel;
+  }
+
+  return l;
+}
 } // namespace
 
 namespace Game::Scenes {
@@ -72,6 +126,8 @@ void TDGameScene::Update(float delta_time) {
 
   float speed = CurrentSpeedMultiplier();
   float dt = pause_overlay_open_ ? 0.0f : delta_time * speed;
+
+  bool settings_ui_open = pause_overlay_open_ && settings_panel_.IsOpen();
 
   if (auto *player_base = GetBaseStats(Components::Team::Type::Player)) {
     if (player_base->current_hp <= 0) {
@@ -142,7 +198,7 @@ void TDGameScene::Update(float delta_time) {
   UpdateDeckCooldowns(dt);
 
   // Input: deck selection & spawn
-  if (!input_blocked) {
+  if (!input_blocked && !settings_ui_open) {
     for (int i = 0; i < static_cast<int>(deck_.size()) && i < 9; ++i) {
       if (IsKeyPressed(KEY_ONE + i)) {
         selected_slot_ = i;
@@ -172,7 +228,7 @@ void TDGameScene::Update(float delta_time) {
   float start_y =
       static_cast<float>(GetScreenHeight()) - deck_height - margin_bottom;
 
-  if (!input_blocked) {
+  if (!input_blocked && !settings_ui_open) {
     for (int i = 0; i < static_cast<int>(deck_.size()); ++i) {
       int row = i / cols;
       int col = i % cols;
@@ -375,20 +431,34 @@ void TDGameScene::SpawnEntity(const Vector2 &pos, Components::Team::Type team,
   }
   const Shared::Data::EntityDef *def =
       entity_id.empty() ? nullptr : definitions_.GetEntity(entity_id);
-  if (def && !def->display.sprite_sheet.empty()) {
+  if (def) {
     Components::Sprite sprite{};
-    sprite.texturePath = def->display.sprite_sheet;
-    registry_.emplace_or_replace<Components::Sprite>(e, sprite);
-
     Components::Animation anim{};
-    anim.columns = 4;
-    anim.rows = (!def->display.walk_animation.empty() ||
-                 !def->display.attack_animation.empty() ||
-                 !def->display.death_animation.empty())
-                    ? 4
-                    : 1;
-    anim.frames_per_state = 4;
-    registry_.emplace_or_replace<Components::Animation>(e, anim);
+    if (!def->display.sprite_actions.empty()) {
+      anim.useAtlas = true;
+      anim.actionToJson = def->display.sprite_actions;
+      if (def->display.sprite_actions.count("idle") > 0) {
+        anim.currentAction = "idle";
+      } else {
+        anim.currentAction = def->display.sprite_actions.begin()->first;
+      }
+      sprite.atlasJsonPath = anim.actionToJson[anim.currentAction];
+      sprite.texturePath = def->display.atlas_texture;
+    } else if (!def->display.sprite_sheet.empty()) {
+      sprite.texturePath = def->display.sprite_sheet;
+      anim.columns = 4;
+      anim.rows = (!def->display.walk_animation.empty() ||
+                   !def->display.attack_animation.empty() ||
+                   !def->display.death_animation.empty())
+                      ? 4
+                      : 1;
+      anim.frames_per_state = 4;
+    }
+
+    if (!sprite.texturePath.empty() || !sprite.atlasJsonPath.empty()) {
+      registry_.emplace_or_replace<Components::Sprite>(e, sprite);
+      registry_.emplace_or_replace<Components::Animation>(e, anim);
+    }
   }
 
   // ダメージポップ初期値（不要なら未付与）
@@ -648,19 +718,32 @@ void TDGameScene::BuildDeckFromDefinitions() {
 
   // 編成マネージャー優先
   if (formation_manager_ != nullptr) {
+    bool has_entry = false;
     const auto &slots = formation_manager_->GetSlots();
-    for (const auto &id : slots) {
-      if (id.empty())
-        continue;
-      const auto *ent = definitions_.GetEntity(id);
-      if (ent == nullptr || ent->is_enemy) {
-        continue;
-      }
+    const int max_slots_raw = formation_manager_->GetMaxSlots();
+    const size_t max_slots =
+        max_slots_raw > 0 ? static_cast<size_t>(max_slots_raw) : slots.size();
+    const size_t deck_size = std::max(max_slots, slots.size());
+    deck_.resize(deck_size);
+    for (size_t i = 0; i < deck_.size(); ++i) {
+      const std::string id = (i < slots.size()) ? slots[i] : "";
       DeckSlot slot;
-      slot.entity_id = ent->id;
-      slot.cost = ent->cost;
-      slot.cooldown = ent->cooldown;
-      deck_.push_back(slot);
+      if (!id.empty()) {
+        const auto *ent = definitions_.GetEntity(id);
+        if (ent != nullptr && !ent->is_enemy) {
+          slot.entity_id = ent->id;
+          slot.cost = ent->cost;
+          slot.cooldown = ent->cooldown;
+          has_entry = true;
+        }
+      }
+      deck_[i] = slot;
+    }
+
+    // 全て空だった場合のみフォールバックを利用
+    if (has_entry) {
+      selected_slot_ = 0;
+      return;
     }
   }
 
@@ -758,11 +841,16 @@ float TDGameScene::GetSpeedMultiplier() const {
 static float Clamp01(float v) { return std::max(0.0f, std::min(1.0f, v)); }
 
 void TDGameScene::ApplySettings(const Shared::Core::SettingsData &data) {
-  float effective = Clamp01(data.masterVolume);
-  if (data.bgmMuted && data.sfxMuted) {
-    effective = 0.0f;
-  }
+  float effective = data.masterMuted ? 0.0f : Clamp01(data.masterVolume);
   SetMasterVolume(effective);
+
+  if (data.speedMultiplier == 2.0f) {
+    speed_index_ = 1;
+  } else if (data.speedMultiplier == 4.0f) {
+    speed_index_ = 2;
+  } else {
+    speed_index_ = 0;
+  }
 }
 
 void TDGameScene::DrawDeckHud() const {
@@ -985,14 +1073,7 @@ void TDGameScene::DrawResultOverlay() const {
 }
 
 void TDGameScene::DrawTopUI() const {
-  const float padding = 14.0f;
-  const float btn_w = 60.0f;
-  const float btn_h = 36.0f;
-  float x = static_cast<float>(GetScreenWidth()) - btn_w - padding;
-  float y = padding;
-
-  Rectangle pause_btn{x, y, btn_w, btn_h};
-  Rectangle speed_btn{x - btn_w - 10.0f, y, btn_w, btn_h};
+  TopUiLayout ui = BuildTopUiLayout();
 
   auto draw_btn = [&](const Rectangle &r, const char *label, bool active) {
     Vector2 mouse = GetMousePosition();
@@ -1013,39 +1094,35 @@ void TDGameScene::DrawTopUI() const {
 
   std::string speed_label =
       "x" + std::to_string(static_cast<int>(CurrentSpeedMultiplier()));
-  draw_btn(speed_btn, speed_label.c_str(), false);
-  draw_btn(pause_btn, pause_overlay_open_ ? "再開" : "ポーズ",
+  draw_btn(ui.speed_btn, speed_label.c_str(), false);
+  draw_btn(ui.pause_btn, pause_overlay_open_ ? "再開" : "ポーズ",
            pause_overlay_open_);
 }
 
 void TDGameScene::DrawPauseOverlay() const {
-  DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Color{0, 0, 0, 160});
+  float sw = static_cast<float>(GetScreenWidth());
+  float sh = static_cast<float>(GetScreenHeight());
 
-  const float panel_w = 520.0f;
-  const float panel_h = 440.0f;
-  Rectangle panel{(GetScreenWidth() - panel_w) * 0.5f,
-                  (GetScreenHeight() - panel_h) * 0.5f, panel_w, panel_h};
-  DrawRectangleRounded(panel, 0.12f, 6, Color{40, 60, 90, 230});
-  DrawRectangleLinesEx(panel, 2.0f, Color{180, 210, 255, 240});
+  DrawRectangle(0, 0, static_cast<int>(sw), static_cast<int>(sh),
+                Color{0, 0, 0, 160});
+
+  PauseUiLayout ui = BuildPauseUiLayout(settings_panel_.IsOpen());
+
+  if (settings_panel_.IsOpen()) {
+    DrawRectangleRounded(ui.settings_panel, 0.08f, 6, Color{20, 30, 50, 230});
+    DrawRectangleLinesEx(ui.settings_panel, 2.0f, Color{180, 210, 255, 240});
+    settings_panel_.Draw(ui.settings_panel, font_);
+    return;
+  }
+
+  DrawRectangleRounded(ui.panel, 0.12f, 6, Color{40, 60, 90, 230});
+  DrawRectangleLinesEx(ui.panel, 2.0f, Color{180, 210, 255, 240});
 
   const char *title = "一時停止中";
   Vector2 ts = MeasureTextEx(font_, title, 36.0f, 2.0f);
   DrawTextEx(font_, title,
-             {panel.x + (panel.width - ts.x) * 0.5f, panel.y + 28.0f}, 36.0f,
-             2.0f, RAYWHITE);
-
-  const float btn_w = 220.0f;
-  const float btn_h = 56.0f;
-  const float gap = 14.0f;
-  float cx = panel.x + panel.width * 0.5f;
-  float start_y = panel.y + 96.0f;
-
-  Rectangle resume_btn{cx - btn_w * 0.5f, start_y, btn_w, btn_h};
-  Rectangle retry_btn{cx - btn_w * 0.5f, start_y + (btn_h + gap), btn_w, btn_h};
-  Rectangle select_btn{cx - btn_w * 0.5f, start_y + 2 * (btn_h + gap), btn_w,
-                       btn_h};
-  Rectangle settings_btn{cx - btn_w * 0.5f, start_y + 3 * (btn_h + gap), btn_w,
-                         btn_h};
+             {ui.panel.x + (ui.panel.width - ts.x) * 0.5f, ui.panel.y + 28.0f},
+             36.0f, 2.0f, RAYWHITE);
 
   auto draw_btn = [&](const Rectangle &r, const std::string &label,
                       bool disabled = false) {
@@ -1062,40 +1139,58 @@ void TDGameScene::DrawPauseOverlay() const {
                22.0f, 2.0f, RAYWHITE);
   };
 
-  draw_btn(resume_btn, "再開");
-  draw_btn(retry_btn, "リトライ");
-  draw_btn(select_btn, "ステージ選択へ戻る");
-  draw_btn(settings_btn, settings_panel_.IsOpen() ? "設定を閉じる" : "設定",
-           false);
-
-  if (settings_panel_.IsOpen()) {
-    settings_panel_.Draw(panel, font_);
-  }
+  draw_btn(ui.resume_btn, "再開");
+  draw_btn(ui.retry_btn, "リトライ");
+  draw_btn(ui.select_btn, "ステージ選択へ戻る");
+  draw_btn(ui.settings_btn,
+           settings_panel_.IsOpen() ? "設定を閉じる" : "設定", false);
 }
 
 void TDGameScene::HandleTopUI(float) {
   // 戦闘結果表示中はポーズを閉じて入力を無効化
   if (victory_ || defeat_) {
     pause_overlay_open_ = false;
+    settings_panel_.Close();
     return;
   }
 
-  const float padding = 14.0f;
-  const float btn_w = 60.0f;
-  const float btn_h = 36.0f;
-  float x = static_cast<float>(GetScreenWidth()) - btn_w - padding;
-  float y = padding;
-
-  Rectangle pause_btn{x, y, btn_w, btn_h};
-  Rectangle speed_btn{x - btn_w - 10.0f, y, btn_w, btn_h};
+  TopUiLayout top = BuildTopUiLayout();
 
   Vector2 mouse = GetMousePosition();
   bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
+  bool settings_open = settings_panel_.IsOpen();
+
+  // 設定パネル表示中は他のUI操作をブロックし、設定のみ処理
+  if (pause_overlay_open_ && settings_open) {
+    float sw = static_cast<float>(GetScreenWidth());
+    float sh = static_cast<float>(GetScreenHeight());
+    const float panel_w = std::min(1080.0f, sw * 0.9f);
+    const float panel_h = 520.0f;
+    Rectangle panel{(sw - panel_w) * 0.5f, (sh - panel_h) * 0.5f, panel_w,
+                    panel_h};
+    Game::UI::SettingsPanel::Action act = settings_panel_.Update(panel, mouse);
+    if (IsKeyPressed(KEY_ESCAPE)) {
+      settings_panel_.Close();
+      return;
+    }
+    if (act == Game::UI::SettingsPanel::Action::Apply) {
+      settings_.Data() = settings_panel_.Draft();
+      settings_.Save(settings_path_);
+      ApplySettings(settings_.Data());
+      settings_panel_.Close();
+    } else if (act == Game::UI::SettingsPanel::Action::Cancel) {
+      settings_panel_.Close();
+    }
+    return;
+  }
 
   if (click) {
-    if (CheckCollisionPointRec(mouse, pause_btn)) {
+    if (CheckCollisionPointRec(mouse, top.pause_btn)) {
       pause_overlay_open_ = !pause_overlay_open_;
-    } else if (CheckCollisionPointRec(mouse, speed_btn)) {
+      if (!pause_overlay_open_) {
+        settings_panel_.Close();
+      }
+    } else if (CheckCollisionPointRec(mouse, top.speed_btn)) {
       speed_index_ =
           (speed_index_ + 1) % static_cast<int>(speed_options_.size());
     }
@@ -1104,46 +1199,35 @@ void TDGameScene::HandleTopUI(float) {
   // キー操作でもポーズ切替
   if (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_PAUSE)) {
     pause_overlay_open_ = !pause_overlay_open_;
+    if (!pause_overlay_open_) {
+      settings_panel_.Close();
+    }
   }
 
   if (!pause_overlay_open_) {
+    settings_panel_.Close();
     return;
   }
 
   // オーバーレイ内ボタン
-  const float panel_w = 520.0f;
-  const float panel_h = 360.0f;
-  Rectangle panel{(GetScreenWidth() - panel_w) * 0.5f,
-                  (GetScreenHeight() - panel_h) * 0.5f, panel_w, panel_h};
-  const float btn_overlay_w = 220.0f;
-  const float btn_overlay_h = 56.0f;
-  const float gap = 14.0f;
-  float cx = panel.x + panel.width * 0.5f;
-  float start_y = panel.y + 96.0f;
-
-  Rectangle resume_btn{cx - btn_overlay_w * 0.5f, start_y, btn_overlay_w,
-                       btn_overlay_h};
-  Rectangle retry_btn{cx - btn_overlay_w * 0.5f,
-                      start_y + (btn_overlay_h + gap), btn_overlay_w,
-                      btn_overlay_h};
-  Rectangle select_btn{cx - btn_overlay_w * 0.5f,
-                       start_y + 2 * (btn_overlay_h + gap), btn_overlay_w,
-                       btn_overlay_h};
-  Rectangle settings_btn{cx - btn_overlay_w * 0.5f,
-                         start_y + 3 * (btn_overlay_h + gap), btn_overlay_w,
-                         btn_overlay_h};
+  PauseUiLayout ui = BuildPauseUiLayout(settings_open);
+  Rectangle panel = settings_open ? ui.settings_panel : ui.panel;
 
   if (click) {
-    if (CheckCollisionPointRec(mouse, resume_btn)) {
+    if (!settings_open && CheckCollisionPointRec(mouse, ui.resume_btn)) {
       pause_overlay_open_ = false;
-    } else if (CheckCollisionPointRec(mouse, retry_btn)) {
+      settings_panel_.Close();
+    } else if (!settings_open && CheckCollisionPointRec(mouse, ui.retry_btn)) {
       pause_overlay_open_ = false;
       retry_requested_ = true;
-    } else if (CheckCollisionPointRec(mouse, select_btn)) {
+      settings_panel_.Close();
+    } else if (!settings_open && CheckCollisionPointRec(mouse, ui.select_btn)) {
       pause_overlay_open_ = false;
       return_stage_select_requested_ = true;
-    } else if (CheckCollisionPointRec(mouse, settings_btn)) {
-      if (settings_panel_.IsOpen()) {
+      settings_panel_.Close();
+    } else if (!settings_open &&
+               CheckCollisionPointRec(mouse, ui.settings_btn)) {
+      if (settings_open) {
         settings_panel_.Close();
       } else {
         settings_panel_.Open(settings_.Data());
@@ -1152,13 +1236,14 @@ void TDGameScene::HandleTopUI(float) {
   }
 
   if (settings_panel_.IsOpen()) {
-    Game::UI::SettingsPanel::Action act = settings_panel_.Update(panel);
+    Game::UI::SettingsPanel::Action act = settings_panel_.Update(panel, mouse);
     if (act == Game::UI::SettingsPanel::Action::Apply) {
       settings_.Data() = settings_panel_.Draft();
       settings_.Save(settings_path_);
       ApplySettings(settings_.Data());
+      settings_panel_.Close();
     } else if (act == Game::UI::SettingsPanel::Action::Cancel) {
-      // Closeのみ（draftを元に戻す必要なし、閉じるだけ）
+      settings_panel_.Close();
     }
   }
 }

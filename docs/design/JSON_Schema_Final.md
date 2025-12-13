@@ -139,6 +139,39 @@
 | `evolution` | object | 進化条件・進化先 |
 | `tags` | array | 敵タグ（例：`["boss"]`, `["air"]`） |
 
+#### Asepriteスプライト指定（新）
+
+- `display.sprite_actions`: `action -> Aseprite JSONパス` を記述。JSON側の `meta.frameTags` 名とアクション名（例: `"idle"`, `"walk"`, `"attack"`, `"death"`) を一致させておくと自動でタグを拾う。  
+- `display.atlas_texture`: 画像パス（任意）。空の場合はAseprite JSONの `meta.image` を使用して読み込む。  
+- 再生速度・ループ可否はゲーム内デフォルト（例: idle 8fps ループ、walk 12fps ループ、attack/death 非ループ）を適用。`frames[*].duration` があればそれを優先。`frameTags` が無い場合は全フレームを単一クリップとしてWARNしつつ再生。
+- `display.icon`: 編成UIなどで使うアイコン画像（任意）。空の場合は `icon.png` などを同フォルダから自動検出。  
+
+サンプル:
+
+```json
+"display": {
+  "atlas_texture": "assets/sprites/hero.png",
+  "sprite_actions": {
+    "idle": "assets/sprites/hero_idle.json",
+    "walk": "assets/sprites/hero_walk.json",
+    "attack": "assets/sprites/hero_attack.json",
+    "death": "assets/sprites/hero_death.json"
+  },
+  "icon": "assets/sprites/hero_icon.png"
+}
+```
+
+### ディレクトリ運用（mainCharacters / subCharacters）
+
+- キャラ定義をスプライトと同じディレクトリに配置：  
+  `assets/mainCharacters/<charId>/character.json`（または `*.character.json`）  
+  `assets/mainCharacters/<charId>/sheet.png`  
+  `assets/mainCharacters/<charId>/idle.json` / `walk.json` / `attack.json` ...  
+- サブキャラも同様に `assets/subCharacters/<charId>/...`。分類は便宜上で、ロード動作は同一。  
+- `character.json` 内の `display.sprite_actions` や `atlas_texture` は **フォルダ相対パス** で記述し、ローダーが親ディレクトリで解決する。  
+- Aseprite JSONの `meta.image` が相対パスの場合も同一ディレクトリで解決。  
+- 既存の `assets/definitions/entities_*.json` も従来どおり読み込まれる（後方互換）。ID衝突時は後勝ちでWARNを出す運用を推奨。
+
 ### アニメーション定義
 
 #### パーツアニメーション型（推奨）

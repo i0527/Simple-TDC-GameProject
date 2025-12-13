@@ -10,11 +10,13 @@ namespace Game::Managers {
 
 namespace {
 constexpr const char *DEFAULT_FORMATION_PATH = "formation_debug.json";
+constexpr int DEFAULT_MAX_SLOTS = 10; // 2 x 5 固定
 }
 
 FormationManager::FormationManager(Shared::Core::GameContext &context,
                                    Shared::Data::DefinitionRegistry &definitions)
     : context_(context), definitions_(definitions) {
+  max_slots_ = DEFAULT_MAX_SLOTS;
   ResetToDefaults();
   LoadFromFile(DEFAULT_FORMATION_PATH);
 }
@@ -33,7 +35,7 @@ bool FormationManager::LoadFromFile(const std::string &relative_path) {
 
     nlohmann::json j = nlohmann::json::parse(file);
 
-    max_slots_ = j.value("max_slots", max_slots_);
+    max_slots_ = DEFAULT_MAX_SLOTS;
 
     if (j.contains("candidates") && j["candidates"].is_array()) {
       std::vector<std::string> ids;
@@ -72,6 +74,7 @@ bool FormationManager::LoadFromFile(const std::string &relative_path) {
 void FormationManager::ResetToDefaults() {
   unlocked_ids_.clear();
   slots_.clear();
+  max_slots_ = DEFAULT_MAX_SLOTS;
   BuildDefaultCandidates();
   EnsureSlotSize();
 }

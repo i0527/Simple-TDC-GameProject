@@ -22,6 +22,7 @@ set(SHARED_SOURCES
     src/Data/Loaders/StageLoader.cpp
     src/Data/Loaders/WaveLoader.cpp
     src/Data/Loaders/AbilityLoader.cpp
+    src/Data/Loaders/SpriteSheetLoader.cpp
     src/Data/UserDataManager.cpp
     src/Data/Validators/DataValidator.cpp
 )
