@@ -1,15 +1,23 @@
 # キャラクター描画システム設計書
 
-**バージョン**: 2.0  
+**バージョン**: 3.0（段階移行対応・最適化版）  
 **最終更新**: 2025-12-18  
-**対象**: Simple TDC Game Project
+**対象**: Simple TDC Game Project  
+**状態**: 🟡 実装中（GridSheetProvider → AsepriteJsonAtlasProvider → TexturePackerAtlasProvider への移行対応）
 
 ---
 
 ## 概要
 
-本ドキュメントは、キャラクター描画システムの統一設計を定義します。  
-従来のメインキャラクター（セルアニメ形式）とサブキャラクター（スプライトシート形式）の二重管理を廃止し、すべてのキャラクターをスプライトシート形式で統一します。
+本ドキュメントは、raylib上の2Dスプライトアニメーション管理の統一設計を定義します。
+
+**設計方針**:
+
+- **制作初期** → 「均一グリッド（JSON無し・256固定セル）」で最短実装
+- **最適化段階** → 「Packed（trim + JSON）」「統合アトラス」へ段階移行
+- **重要**: ゲームロジック側のコードは**変わらない**（Provider抽象化による吸収）
+
+すべてのキャラクターをスプライトシート形式で統一し、**段階的な最適化を可能にします**。
 
 ---
 
@@ -17,628 +25,508 @@
 
 ### 1.1 統一描画フォーマット
 
-| 項目 | 旧設計 | 新設計 |
-|------|--------|--------|
-| **メインキャラクター** | セルアニメ形式（個別PNG） | 256×256 スプライトシート |
-| **サブキャラクター** | スプライトシート（可変サイズ） | 128×128以下 スプライトシート |
-| **描画パイプライン** | 形式ごとに分岐 | 統一パイプライン |
-| **アニメーション管理** | 形式依存 | アトラスベース統一 |
+| 項目 | 仕様 |
+|------|------|
+| **メインキャラクター** | 256×256 スプライトシート（グリッド → Packed → 統合アトラス） |
+| **サブキャラクター** | 128×128以下 スプライトシート（同様） |
+| **描画基準** | DrawTexturePro 統一（origin 基準点） |
+| **アニメーション管理** | FrameRef + IFrameProvider 抽象化 |
+| **足元揃え** | offset + origin 補正による安定化 |
 
-### 1.2 描画サイズ仕様
-
-```
-┌─────────────────────────────────────────────────┐
-│ メインキャラクター: 256×256px                    │
-│  - プレイヤーユニット                            │
-│  - ボスキャラクター                              │
-│  - 重要敵キャラクター                            │
-│  - 高品質アニメーション（多フレーム）             │
-└─────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────┐
-│ サブキャラクター: 128×128px以下                  │
-│  - 雑魚敵                                        │
-│  - サポートキャラクター                          │
-│  - エフェクトオブジェクト                        │
-│  - シンプルアニメーション（少フレーム）           │
-└─────────────────────────────────────────────────┘
-```
-
-### 1.3 レイヤー分離アーキテクチャ
+### 1.2 段階移行プラン
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                  上位レイヤー (High-Level)                │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │ CharacterDefinition (JSON定義)                     │  │
-│  │  - アニメーションタグ                               │  │
-│  │  - キャラクター属性                                 │  │
-│  │  - スプライトパス                                   │  │
-│  └────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │ EntityFactory                                      │  │
-│  │  - エンティティ生成                                 │  │
-│  │  - コンポーネント初期化                             │  │
-│  └────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────────┐
-│                  中間レイヤー (Middle-Level)              │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │ SpriteSheetAtlas (アトラスデータ)                   │  │
-│  │  - フレーム位置・サイズ                             │  │
-│  │  - アニメーションクリップ                           │  │
-│  │  - メタデータ                                       │  │
-│  └────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │ ECS Components                                     │  │
-│  │  - Sprite (テクスチャ参照)                          │  │
-│  │  - Animation (実行時状態)                           │  │
-│  │  - Transform (座標・スケール)                       │  │
-│  └────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────────┐
-│                  下位レイヤー (Low-Level)                 │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │ RenderingSystem                                    │  │
-│  │  - テクスチャキャッシュ                             │  │
-│  │  - アトラスキャッシュ                               │  │
-│  │  - 描画プリミティブ                                 │  │
-│  └────────────────────────────────────────────────────┘  │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │ Raylib Graphics API                                │  │
-│  │  - LoadTexture()                                   │  │
-│  │  - DrawTexturePro()                                │  │
-│  └────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────┘
+Phase 1: GridSheetProvider（最短実装）
+├─ 256固定セル、JSON無し
+├─ 自前の clips.json 定義（start/length/fps）
+├─ 足元揃え = 画像レイアウトルール
+└─ 期間: 〜1週間
+
+     ↓ テクスチャサイズ最適化の要求
+
+Phase 2: AsepriteJsonAtlasProvider（Packed対応）
+├─ Asepriteアトラス形式（json-array）
+├─ trim/offset補正で位置ズレ解決
+├─ 足元揃え = offset + origin調整
+└─ 期間: 〜2週間
+
+     ↓ 大量エフェクト・共存化
+
+Phase 3: TexturePackerAtlasProvider（統合アトラス）
+├─ 複数キャラを1テクスチャに統合
+├─ テクスチャ切替削減 → 描画効率向上
+└─ ゲームロジック不変（Provider差し替えのみ）
 ```
 
 ---
 
-## 2. スプライトシート仕様
+## 2. データモデル（中核）
 
-### 2.1 メインキャラクター（256×256）
+### 2.1 FrameRef（描画の最小単位）
 
-**ファイル命名規則**:
-
-```
-assets/mainCharacters/{character_name}/{character_name}.png
-assets/mainCharacters/{character_name}/{character_name}.json
-```
-
-**Aseprite エクスポート設定**:
-
-```
-サイズ: 256×256px (各フレーム)
-形式: Array (横並び)
-Padding: 0px
-JSON形式: Array (with frames & tags)
+```cpp
+// shared/include/Data/Graphics/FrameRef.h
+struct FrameRef {
+    Texture2D* tex;              // 使用するテクスチャ（raylib型）
+    Rectangle src;               // テクスチャから切り出す矩形（sourceRect）
+    Vector2 origin;              // DrawTexturePro の基準点（回転・足元基準）
+    Vector2 offset;              // Packed/trim時の描画位置補正
+    float durationSec;           // フレーム表示時間（秒）
+    bool valid;                  // 有効フラグ
+};
 ```
 
-**アニメーション推奨構成**:
+**設計の要点**:
+
+- `tex` は `DrawTexturePro(*tex, src, dest, origin, rotation, tint)` へ直接投入可能
+- `offset/origin` は「Grid期は(0,0)でOKだが、Packed移行で必須」の設計
+- `durationSec` は各フレームの個別タイミング対応（Asepriteの個別duration対応）
+
+### 2.2 AnimClip（アニメーション1本）
+
+```cpp
+struct AnimClip {
+    std::string name;                        // "idle", "walk", "attack", "death"
+    std::vector<FrameRef> frames;            // フレーム列
+    bool loop;                               // ループフラグ
+    float defaultFps;                        // デフォルトFPS
+};
+```
+
+### 2.3 SpriteSet（1キャラ or 1アトラス単位）
+
+```cpp
+struct SpriteSet {
+    std::unordered_map<std::string, AnimClip> clips;  // "idle" → AnimClip
+    std::string debugName;                            // デバッグ用キャラ名
+};
+```
+
+---
+
+## 3. 抽象化レイヤ（IFrameProvider）
+
+### 3.1 IFrameProvider インターフェース
+
+```cpp
+class IFrameProvider {
+public:
+    virtual ~IFrameProvider() = default;
+    
+    // クリップ存在確認
+    virtual bool HasClip(const std::string& clipName) const = 0;
+    
+    // クリップのフレーム数
+    virtual int GetFrameCount(const std::string& clipName) const = 0;
+    
+    // 指定クリップ・フレームインデックスからFrameRef取得
+    virtual FrameRef GetFrame(const std::string& clipName, int frameIndex) const = 0;
+    
+    // クリップのデフォルトFPS
+    virtual float GetClipFps(const std::string& clipName) const = 0;
+    
+    // クリップのループフラグ
+    virtual bool IsLooping(const std::string& clipName) const = 0;
+};
+```
+
+**利点**:
+
+- ゲームコードは「state=walk、frameIndex=...」を渡すだけ
+- 下位が「グリッド計算」「JSON参照」「Packed補正」を吸収
+- Provider実装を差し替えるだけで段階移行可能
+- **ゲームロジック変更なし**
+
+---
+
+## 4. Provider実装（段階移行対応）
+
+### 4.1 GridSheetProvider（Phase 1: 最短実装）
+
+```cpp
+class GridSheetProvider : public IFrameProvider {
+public:
+    struct Config {
+        int cellWidth;               // 例: 256
+        int cellHeight;              // 例: 256
+        int framesPerRow;            // 例: 16
+    };
+    
+    GridSheetProvider(Texture2D texture, const Config& config);
+    
+    void RegisterClip(const std::string& name, int startIndex, int length, 
+                     bool loop, float fps);
+    
+    bool HasClip(const std::string& clipName) const override;
+    int GetFrameCount(const std::string& clipName) const override;
+    FrameRef GetFrame(const std::string& clipName, int frameIndex) const override;
+    float GetClipFps(const std::string& clipName) const override;
+    bool IsLooping(const std::string& clipName) const override;
+
+private:
+    Texture2D texture_;
+    Config config_;
+    
+    struct ClipDef {
+        int startIndex;
+        int length;
+        bool loop;
+        float fps;
+    };
+    std::unordered_map<std::string, ClipDef> clips_;
+    
+    Vector2 GetFootOrigin() const;  // 足元基準点計算
+};
+```
+
+**使用例**:
+
+```cpp
+GridSheetProvider::Config cfg{256, 256, 16};  // 256セル、1行16フレーム
+Texture2D tex = LoadTexture("assets/mainCharacters/Warrior/warrior.png");
+GridSheetProvider provider(tex, cfg);
+
+provider.RegisterClip("idle",   0,  8, true,  12.0f);
+provider.RegisterClip("walk",   8,  8, true,  12.0f);
+provider.RegisterClip("attack", 16, 12, false, 15.0f);
+provider.RegisterClip("death",  28, 8, false,  10.0f);
+```
+
+**メリット**:
+
+- 実装が単純、JSON依存なし
+- 動作確認が容易
+- テクスチャサイズ計算が明確
+
+---
+
+### 4.2 AsepriteJsonAtlasProvider（Phase 2: Packed対応）
+
+```cpp
+class AsepriteJsonAtlasProvider : public IFrameProvider {
+public:
+    AsepriteJsonAtlasProvider(Texture2D texture, const nlohmann::json& atlasJson);
+    
+    bool HasClip(const std::string& clipName) const override;
+    int GetFrameCount(const std::string& clipName) const override;
+    FrameRef GetFrame(const std::string& clipName, int frameIndex) const override;
+    float GetClipFps(const std::string& clipName) const override;
+    bool IsLooping(const std::string& clipName) const override;
+
+private:
+    Texture2D texture_;
+    SpriteSet spriteSet_;
+    float footOffsetY_;    // 足元オフセット
+    
+    Vector2 GetFootOrigin(const SpriteFrame& frame) const;
+    Vector2 GetTrimOffset(const SpriteFrame& frame) const;
+};
+```
+
+**入力（Aseprite JSON Array形式）**:
 
 ```json
 {
   "frames": [
     {
-      "filename": "hero_idle_0",
+      "filename": "idle_0",
       "frame": { "x": 0, "y": 0, "w": 256, "h": 256 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 20 },
+      "sourceSize": { "w": 256, "h": 256 },
       "duration": 100
-    },
-    // ... 省略
+    }
   ],
   "meta": {
+    "image": "character.png",
     "frameTags": [
-      {
-        "name": "idle",
-        "from": 0,
-        "to": 7,
-        "direction": "forward"
-      },
-      {
-        "name": "walk",
-        "from": 8,
-        "to": 15,
-        "direction": "forward"
-      },
-      {
-        "name": "attack",
-        "from": 16,
-        "to": 23,
-        "direction": "forward"
-      },
-      {
-        "name": "death",
-        "from": 24,
-        "to": 31,
-        "direction": "forward"
-      }
+      { "name": "idle", "from": 0, "to": 7, "direction": "forward" },
+      { "name": "walk", "from": 8, "to": 15, "direction": "forward" }
     ]
   }
 }
 ```
 
-**推奨フレーム数**:
+**メリット**:
 
-- `idle`: 8フレーム
-- `walk`: 8フレーム
-- `attack`: 8-12フレーム
-- `death`: 8-16フレーム
-
-### 2.2 サブキャラクター（128×128以下）
-
-**ファイル命名規則**:
-
-```
-assets/subCharacters/{character_name}/{character_name}.png
-assets/subCharacters/{character_name}/{character_name}.json
-```
-
-**Aseprite エクスポート設定**:
-
-```
-サイズ: 64×64px, 96×96px, 128×128px (キャラに応じて)
-形式: Array (横並び)
-Padding: 0px
-JSON形式: Array (with frames & tags)
-```
-
-**推奨フレーム数**:
-
-- `idle`: 4フレーム
-- `walk`: 4-6フレーム
-- `attack`: 4-6フレーム
-- `death`: 4-6フレーム
+- Asepriteの標準JSON形式に対応
+- trim補正により、Packed化後も足元揃い安定
+- frameTags で複数アニメ管理可能
 
 ---
 
-## 3. データ構造定義
-
-### 3.1 SpriteSheetAtlas（共通）
+### 4.3 TexturePackerAtlasProvider（Phase 3: 統合アトラス）
 
 ```cpp
-// shared/include/Data/Loaders/SpriteSheetLoader.h
-
-struct SpriteFrame {
-    int x, y, w, h;                // テクスチャ上の位置・サイズ
-    int sourceX, sourceY;          // 描画オフセット（トリミング用）
-    int sourceW, sourceH;          // 元のキャンバスサイズ
-    int durationMs;                // フレーム持続時間（ミリ秒）
-    bool rotated;                  // 回転フラグ
-    bool trimmed;                  // トリミングフラグ
-};
-
-struct SpriteAnimationClip {
-    std::vector<int> frameIndices;  // フレームインデックス列
-    bool loop;                      // ループフラグ
-    std::string direction;          // "forward", "reverse", "pingpong"
-    int fps;                        // フレームレート（デフォルト: 12）
-};
-
-struct SpriteSheetAtlas {
-    std::string imagePath;                                   // テクスチャパス
-    std::vector<SpriteFrame> frames;                         // 全フレーム
-    std::unordered_map<std::string, SpriteAnimationClip> tags;  // アニメーションタグ
-};
-```
-
-### 3.2 ECS Components（統一）
-
-```cpp
-// game/include/Game/Components/CoreComponents.h
-
-struct Sprite {
-    std::string texturePath;          // テクスチャファイルパス
-    std::string atlasJsonPath;        // アトラスJSONパス
-    const SpriteSheetAtlas* atlas;    // ロード済みアトラス参照
-    Texture2D texture;                // Raylibテクスチャ
-    bool loaded;                      // ロード済みフラグ
-    bool failed;                      // ロード失敗フラグ
-};
-
-struct Animation {
-    std::string currentAction;                               // 現在のアクション名（"idle", "walk"等）
-    int atlasFrameIndex;                                     // 現在のフレームインデックス
-    float atlasFrameTimer;                                   // フレームタイマー
-    std::unordered_map<std::string, std::string> actionToJson;  // action → json path
-    bool useAtlas;                                           // アトラス使用フラグ（常にtrue）
-};
-
-struct Transform {
-    float x, y;                       // 座標
-    float scaleX, scaleY;             // スケール
-    float rotation;                   // 回転（度数法）
-    bool flipH, flipV;                // 反転フラグ
-};
-```
-
-### 3.3 EntityDefinition（JSON定義）
-
-```cpp
-// shared/include/Data/Definitions/EntityDef.h
-
-struct EntityDef {
-    std::string id;
-    std::string name;
-    std::string draw_type;  // 常に "sprite_sheet"
+class TexturePackerAtlasProvider : public IFrameProvider {
+public:
+    TexturePackerAtlasProvider(Texture2D atlasTexture, 
+                              const nlohmann::json& packJson);
     
-    struct Display {
-        std::string atlas_texture;      // スプライトシートPNGパス
-        std::unordered_map<std::string, std::string> sprite_actions;
-        // 例: { "idle": "path/to/idle.json", "walk": "path/to/walk.json" }
-        std::string icon;               // アイコン画像（UI用）
-    } display;
+    bool HasClip(const std::string& clipName) const override;
+    int GetFrameCount(const std::string& clipName) const override;
+    FrameRef GetFrame(const std::string& clipName, int frameIndex) const override;
+    // ... 他のメソッド同様
     
-    // ステータス、戦闘パラメータ等は省略
+private:
+    Texture2D atlasTexture_;
+    std::unordered_map<std::string, SpriteSet> spriteSets_;
+    std::unordered_map<std::string, std::string> clipToSetName_;
 };
 ```
 
-**JSON例**:
+**メリット**:
 
-```json
-{
-  "id": "hero_warrior",
-  "name": "戦士",
-  "draw_type": "sprite_sheet",
-  "display": {
-    "atlas_texture": "assets/mainCharacters/Warrior/warrior.png",
-    "sprite_actions": {
-      "idle": "assets/mainCharacters/Warrior/warrior_idle.json",
-      "walk": "assets/mainCharacters/Warrior/warrior_walk.json",
-      "attack": "assets/mainCharacters/Warrior/warrior_attack.json",
-      "death": "assets/mainCharacters/Warrior/warrior_death.json"
-    },
-    "icon": "assets/mainCharacters/Warrior/icon.png"
-  }
+- 小型キャラ200体 + エフェクト大量を1-2テクスチャに統合
+- DrawTexturePro呼び出しのテクスチャ変更が大幅削減
+- ゲームロジック不変（Provider差し替えのみ）
+
+---
+
+## 5. 描画層（Renderer）
+
+### 5.1 統一描画関数
+
+```cpp
+class SpriteRenderer {
+public:
+    static void DrawSprite(
+        const IFrameProvider& provider,
+        const std::string& clipName,
+        int frameIndex,
+        const Vector2& worldPos,           // 足元座標
+        const Vector2& scale = {1.0f, 1.0f},
+        float rotation = 0.0f,
+        Color tint = RAYWHITE
+    );
+};
+```
+
+**実装**:
+
+```cpp
+void SpriteRenderer::DrawSprite(
+    const IFrameProvider& provider,
+    const std::string& clipName,
+    int frameIndex,
+    const Vector2& worldPos,
+    const Vector2& scale,
+    float rotation,
+    Color tint) {
+    
+    FrameRef ref = provider.GetFrame(clipName, frameIndex);
+    if (!ref.valid) return;
+    
+    Rectangle dest = {
+        worldPos.x + ref.offset.x * scale.x,
+        worldPos.y + ref.offset.y * scale.y,
+        ref.src.width * scale.x,
+        ref.src.height * scale.y
+    };
+    
+    DrawTexturePro(*ref.tex, ref.src, dest, ref.origin, rotation, tint);
 }
 ```
 
 ---
 
-## 4. 描画パイプライン
+## 6. ECS コンポーネント（リファクタリング）
 
-### 4.1 統一描画フロー
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ 1. エンティティ生成（EntityFactory）                     │
-│    ├─ JSON定義ロード                                     │
-│    ├─ Sprite コンポーネント作成                          │
-│    │   ├─ texturePath = display.atlas_texture           │
-│    │   └─ atlasJsonPath = sprite_actions["idle"]        │
-│    ├─ Animation コンポーネント作成                       │
-│    │   ├─ useAtlas = true                               │
-│    │   ├─ currentAction = "idle"                        │
-│    │   └─ actionToJson = sprite_actions                 │
-│    └─ Transform コンポーネント作成                       │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│ 2. リソースロード（RenderingSystem::LoadTextureIfNeeded)│
-│    ├─ テクスチャキャッシュチェック                       │
-│    ├─ LoadTexture() (Raylib)                           │
-│    ├─ アトラスJSONロード                                 │
-│    └─ キャッシュに保存                                   │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│ 3. アニメーション更新（RenderingSystem::UpdateAnimation)│
-│    ├─ 現在のアクション取得（anim.currentAction）         │
-│    ├─ アトラスからクリップ取得（atlas->tags[action]）   │
-│    ├─ フレーム進行（frameTimer += deltaTime）           │
-│    ├─ フレームインデックス更新                           │
-│    └─ ループ/終了処理                                    │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│ 4. 描画（RenderingSystem::DrawEntities）                │
-│    ├─ アトラスから現在フレーム取得                       │
-│    │   frame = atlas->frames[frameIndices[frameIndex]]  │
-│    ├─ ソース矩形作成                                     │
-│    │   sourceRect = {frame.x, frame.y, frame.w, frame.h}│
-│    ├─ 描画先矩形作成                                     │
-│    │   destRect = {x + offsetX, y + offsetY, w, h}      │
-│    └─ DrawTexturePro(texture, source, dest, origin, 0.0f)│
-└─────────────────────────────────────────────────────────┘
-```
-
-### 4.2 描画システム実装例
+### 6.1 Animation コンポーネント（新版）
 
 ```cpp
-// game/src/Game/Systems/RenderingSystem.cpp
+struct Animation {
+    std::string currentClip = "idle";   // 現在のクリップ名
+    int frameIndex = 0;                 // 現在のフレームインデックス
+    float elapsedTime = 0.0f;           // 経過時間（秒）
+    bool isPlaying = true;
+};
 
-void RenderingSystem::UpdateAnimation(
-    entt::registry& registry,
-    float deltaTime
-) {
+struct Transform {
+    float x = 0.0f, y = 0.0f;           // ワールド座標（足元基準）
+    float scaleX = 1.0f;
+    float scaleY = 1.0f;
+    float rotation = 0.0f;
+    bool flipH = false;
+    bool flipV = false;
+};
+
+struct Sprite {
+    IFrameProvider* provider = nullptr;  // FrameRef参照提供
+};
+```
+
+---
+
+## 7. システム実装（統一化）
+
+### 7.1 AnimationSystem
+
+```cpp
+void AnimationSystem::Update(entt::registry& registry, float deltaTime) {
     auto view = registry.view<Animation, Sprite>();
     
     for (auto entity : view) {
         auto& anim = view.get<Animation>(entity);
         auto& sprite = view.get<Sprite>(entity);
         
-        if (!sprite.atlas || !anim.useAtlas) continue;
+        if (!anim.isPlaying || !sprite.provider) continue;
         
-        // 現在のアクションに対応するクリップを取得
-        auto it = sprite.atlas->tags.find(anim.currentAction);
-        if (it == sprite.atlas->tags.end()) continue;
+        anim.elapsedTime += deltaTime;
         
-        const auto& clip = it->second;
+        float fps = sprite.provider->GetClipFps(anim.currentClip);
+        float frameDuration = 1.0f / fps;
+        int nextFrameIndex = (int)(anim.elapsedTime / frameDuration);
+        int frameCount = sprite.provider->GetFrameCount(anim.currentClip);
         
-        // フレームタイマー更新
-        const auto& frame = sprite.atlas->frames[
-            clip.frameIndices[anim.atlasFrameIndex]
-        ];
-        anim.atlasFrameTimer += deltaTime * 1000.0f;
-        
-        // フレーム切り替え判定
-        if (anim.atlasFrameTimer >= frame.durationMs) {
-            anim.atlasFrameTimer = 0.0f;
-            anim.atlasFrameIndex++;
-            
-            // ループ処理
-            if (anim.atlasFrameIndex >= clip.frameIndices.size()) {
-                if (clip.loop) {
-                    anim.atlasFrameIndex = 0;
-                } else {
-                    anim.atlasFrameIndex = clip.frameIndices.size() - 1;
-                }
+        if (nextFrameIndex >= frameCount) {
+            if (sprite.provider->IsLooping(anim.currentClip)) {
+                anim.elapsedTime = 0.0f;
+                anim.frameIndex = 0;
+            } else {
+                anim.isPlaying = false;
+                anim.frameIndex = frameCount - 1;
             }
+        } else {
+            anim.frameIndex = nextFrameIndex;
         }
     }
 }
+```
 
+### 7.2 RenderingSystem
+
+```cpp
 void RenderingSystem::DrawEntities(
     entt::registry& registry,
-    const Font& font
-) {
-    auto view = registry.view<Transform, Team, Stats, Sprite>();
+    const IFrameProvider& provider) {
+    
+    auto view = registry.view<Transform, Animation, Team>();
     
     for (auto entity : view) {
         auto& transform = view.get<Transform>(entity);
-        auto& sprite = view.get<Sprite>(entity);
+        auto& anim = view.get<Animation>(entity);
+        auto& team = view.get<Team>(entity);
         
-        // テクスチャロード
-        Texture2D* tex = LoadTextureIfNeeded(sprite);
-        if (!tex) {
-            // フォールバック: プレースホルダー矩形
-            DrawFallbackRect(transform, view.get<Team>(entity));
-            continue;
-        }
+        Color tint = (team.team == Team::Type::Player) ? BLUE : RED;
         
-        // アトラス描画
-        if (sprite.atlas && registry.all_of<Animation>(entity)) {
-            auto& anim = registry.get<Animation>(entity);
-            DrawAtlasFrame(transform, sprite, anim, *tex);
-        }
-    }
-}
-
-void RenderingSystem::DrawAtlasFrame(
-    const Transform& transform,
-    const Sprite& sprite,
-    const Animation& anim,
-    Texture2D texture
-) {
-    auto it = sprite.atlas->tags.find(anim.currentAction);
-    if (it == sprite.atlas->tags.end()) return;
-    
-    const auto& clip = it->second;
-    const auto& frame = sprite.atlas->frames[
-        clip.frameIndices[anim.atlasFrameIndex]
-    ];
-    
-    // ソース矩形
-    Rectangle source = {
-        (float)frame.x,
-        (float)frame.y,
-        (float)frame.w,
-        (float)frame.h
-    };
-    
-    // 描画先矩形（スケール適用）
-    Rectangle dest = {
-        transform.x + frame.sourceX * transform.scaleX,
-        transform.y + frame.sourceY * transform.scaleY,
-        frame.w * transform.scaleX,
-        frame.h * transform.scaleY
-    };
-    
-    Vector2 origin = { 0, 0 };
-    
-    DrawTexturePro(texture, source, dest, origin, 0.0f, WHITE);
-}
-```
-
----
-
-## 5. 柔軟性の確保
-
-### 5.1 上位レイヤーでの変更容易性
-
-**アニメーション切り替え**:
-
-```cpp
-// ゲームロジック層で簡単にアニメーション変更可能
-void ChangeAnimation(entt::registry& registry, entt::entity entity, const std::string& action) {
-    auto& anim = registry.get<Animation>(entity);
-    if (anim.currentAction != action) {
-        anim.currentAction = action;
-        anim.atlasFrameIndex = 0;
-        anim.atlasFrameTimer = 0.0f;
+        SpriteRenderer::DrawSprite(
+            provider,
+            anim.currentClip,
+            anim.frameIndex,
+            Vector2{transform.x, transform.y},
+            Vector2{transform.scaleX, transform.scaleY},
+            transform.rotation,
+            tint
+        );
     }
 }
 ```
 
-**スケール変更**:
+---
 
-```cpp
-// サブキャラを大きく見せたい場合
-auto& transform = registry.get<Transform>(entity);
-transform.scaleX = 1.5f;
-transform.scaleY = 1.5f;
-```
+## 8. 段階移行チェックリスト
 
-### 5.2 下位レイヤーの不変性
+### Grid → Packed への移行
 
-- **RenderingSystem**: 変更不要（常にアトラスベース描画）
-- **テクスチャキャッシュ**: パス基準で動作（サイズ非依存）
-- **アトラスローダー**: JSON形式さえ守れば動作
+- [ ] GridSheetProvider 実装・テスト
+- [ ] AsepriteJsonAtlasProvider 実装
+- [ ] Aseprite CLI json-array 出力フロー確立
+- [ ] footOffsetY をドキュメント化
+- [ ] trim フレームの offset/origin 補正確認
+- [ ] Provider差し替えテスト（ゲームロジック不変確認）
 
-### 5.3 中間レイヤーの拡張性
+### Packed → 統合アトラス への移行
 
-**カスタムアニメーション再生**:
-
-```cpp
-struct CustomPlayback {
-    int startFrame;
-    int endFrame;
-    int currentFrame;
-    bool pingPong;
-};
-
-// ECSコンポーネントとして追加可能
-```
-
-**レイヤー合成**:
-
-```cpp
-struct LayeredSprite {
-    std::vector<Sprite> layers;  // 複数レイヤー対応
-    // 例: ボディ + 武器 + エフェクトを別々に管理
-};
-```
+- [ ] TexturePackerAtlasProvider 実装
+- [ ] 複数キャラ統合定義（JSON）
+- [ ] バッチング戦略立案
+- [ ] パフォーマンステスト
 
 ---
 
-## 6. 移行計画
+## 9. アセット命名・管理規約
 
-### 6.1 既存アセットの変換
+### Phase 1: Grid期
 
-**ステップ1: メインキャラクター変換**
-
-```bash
-# Asepriteスクリプトで一括エクスポート
-aseprite --batch assets/mainCharacters/**/*.aseprite \
-  --sheet {fullname}.png \
-  --data {fullname}.json \
-  --format json-array \
-  --list-tags
+```
+assets/mainCharacters/{name}/
+├── {name}.png              # 256x256グリッド
+└── clips.json              # クリップ定義
 ```
 
-**ステップ2: サブキャラクター変換**
+**clips.json**:
 
-```bash
-# サイズを128×128以下に調整
-aseprite --batch assets/subCharacters/**/*.aseprite \
-  --sheet {fullname}.png \
-  --data {fullname}.json \
-  --format json-array \
-  --list-tags
-```
-
-### 6.2 コード変更
-
-1. **Animation コンポーネントの簡略化**
-   - 旧形式フィールド削除（`columns`, `rows`, `frames_per_state`）
-   - `useAtlas` を常にtrueに固定
-
-2. **EntityFactory の更新**
-   - グリッド形式の分岐削除
-   - すべてアトラス形式で初期化
-
-3. **RenderingSystem の簡略化**
-   - グリッド描画コードの削除
-   - アトラス描画に一本化
-
-### 6.3 検証
-
-```cpp
-// テストケース
-TEST_CASE("Unified Sprite Rendering") {
-    // メインキャラクター（256×256）が正しく描画される
-    auto mainChar = CreateEntity("hero_warrior");
-    REQUIRE(mainChar.sprite.texture.width == 256);
-    
-    // サブキャラクター（128×128）が正しく描画される
-    auto subChar = CreateEntity("slime_enemy");
-    REQUIRE(subChar.sprite.texture.width == 128);
-    
-    // 両方とも同じ描画パイプラインを使用
-    REQUIRE(mainChar.animation.useAtlas == true);
-    REQUIRE(subChar.animation.useAtlas == true);
+```json
+{
+  "config": {
+    "cellWidth": 256,
+    "cellHeight": 256,
+    "framesPerRow": 16
+  },
+  "clips": [
+    { "name": "idle", "startIndex": 0, "length": 8, "loop": true, "fps": 12 }
+  ]
 }
 ```
 
----
-
-## 7. パフォーマンス考慮事項
-
-### 7.1 テクスチャメモリ
-
-**最大同時表示想定**:
+### Phase 2: Packed期
 
 ```
-メインキャラ: 10体 × (256×256×4) = 2.5MB
-サブキャラ: 50体 × (128×128×4) = 3.2MB
-合計: 約6MB（GPU VRAM）
+assets/mainCharacters/{name}/
+├── {name}.png              # Packedアトラス
+└── {name}.json             # Aseprite JSON Array
 ```
 
-**最適化手法**:
+### Phase 3: 統合アトラス期
 
-- テクスチャアトラス化（複数キャラを1枚に結合）
-- 画面外カリング（描画スキップ）
-- LOD（距離に応じてサブキャラをさらに縮小）
-
-### 7.2 描画コール削減
-
-**バッチング**:
-
-```cpp
-// 同じテクスチャを使用するエンティティをまとめて描画
-std::map<Texture2D*, std::vector<entt::entity>> batches;
-for (auto entity : view) {
-    auto& sprite = view.get<Sprite>(entity);
-    batches[&sprite.texture].push_back(entity);
-}
-
-for (auto& [texture, entities] : batches) {
-    BeginTextureMode(*texture);
-    for (auto entity : entities) {
-        DrawEntity(entity);
-    }
-    EndTextureMode();
-}
+```
+assets/atlases/
+├── characters_main.png     # 統合テクスチャ
+└── characters_main.json    # Texture Packer JSON
 ```
 
 ---
 
-## 8. まとめ
+## 10. 実装ロードマップ
 
-### 8.1 利点
+### Week 1: GridSheetProvider + 基本描画
 
-| 項目 | 効果 |
-|------|------|
-| **コード簡略化** | グリッド/アトラス分岐削除で保守性向上 |
-| **アセット統一** | すべてAsepriteで管理可能 |
-| **パイプライン安定** | 下位レイヤー変更不要 |
-| **拡張性** | 上位レイヤーで柔軟なカスタマイズ |
+- [ ] FrameRef/AnimClip/SpriteSet 定義
+- [ ] IFrameProvider インターフェース
+- [ ] GridSheetProvider 実装
+- [ ] Animation/Transform/Sprite コンポーネント更新
+- [ ] SpriteRenderer 実装
+- [ ] AnimationSystem/RenderingSystem リファクタ
+- [ ] グリッド形式アセットでテスト
 
-### 8.2 今後の拡張
+### Week 2: AsepriteJsonAtlasProvider
 
-- **パーツアニメーション**: レイヤー合成で装備変更対応
-- **シェーダー対応**: カラー変更、アウトライン、発光効果
-- **3Dスプライト**: Z軸回転、深度ソート
-- **エフェクト統合**: アタックエフェクトもスプライトシートで管理
+- [ ] SpriteSheetLoader を FrameRef出力に更新
+- [ ] AsepriteJsonAtlasProvider 実装
+- [ ] offset/origin 補正ロジック
+- [ ] Packed形式アセットでテスト
+- [ ] Provider差し替えテスト
+
+### Week 3-4: TexturePackerAtlasProvider + 最適化
+
+- [ ] TexturePackerAtlasProvider 実装
+- [ ] 複数キャラ統合
+- [ ] バッチング戦略
+- [ ] パフォーマンステスト
 
 ---
 
-**文責**: GitHub Copilot  
-**承認**: プロジェクトリード  
-**次回更新予定**: 実装完了後（フィードバック反映）
+## 11. まとめ
+
+### 設計のポイント
+
+✅ **段階移行対応**: Grid → Packed → 統合アトラス に移行してもゲームロジック**不変**  
+✅ **Provider抽象化**: 描画仕様の詳細を隠蔽  
+✅ **足元揃え安定**: offset + origin 補正  
+✅ **raylib統一**: DrawTexturePro に統一
+
+---
+
+**文責**: GitHub Copilot + ユーザー設計  
+**次回更新**: GridSheetProvider 実装完了後

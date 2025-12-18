@@ -10,7 +10,9 @@ Simple TDC Game Project の設計・実装ドキュメント集です。
 
 | ドキュメント | 説明 | 最終更新 |
 |------------|------|----------|
-| [CHARACTER_RENDERING_DESIGN.md](CHARACTER_RENDERING_DESIGN.md) | **キャラクター描画システム設計** - スプライトシート統一仕様 | 2025-12-18 |
+| [CHARACTER_RENDERING_DESIGN.md](CHARACTER_RENDERING_DESIGN.md) | **キャラクター描画システム設計** - Provider パターン・段階移行対応 | 2025-12-18 |
+| [MIGRATION_GUIDE_RENDERING.md](MIGRATION_GUIDE_RENDERING.md) | 描画システム移行ガイド - 段階実装手順 | 2025-12-18 |
+| [PHASE1_IMPLEMENTATION_REPORT.md](PHASE1_IMPLEMENTATION_REPORT.md) | Phase 1 実装完了レポート - GridSheetProvider + 基本描画 | 2025-12-18 |
 | [IMPLEMENTATION_ROADMAP.md](IMPLEMENTATION_ROADMAP.md) | 実装ロードマップ - フェーズ別タスク管理 | 2025-12-08 |
 | [TECHNICAL_REQUIREMENTS.md](TECHNICAL_REQUIREMENTS.md) | 技術要件仕様書 | - |
 | [USER_DATA_SAVE_AND_LOADING.md](USER_DATA_SAVE_AND_LOADING.md) | ユーザーデータ保存・ロード仕様 | - |
@@ -51,22 +53,32 @@ Simple TDC Game Project の設計・実装ドキュメント集です。
 
 ### キャラクター実装
 
-1. **描画設計**: [CHARACTER_RENDERING_DESIGN.md](CHARACTER_RENDERING_DESIGN.md)
-   - メインキャラ: 256×256 スプライトシート（Aseprite形式）
-   - サブキャラ: 128×128以下 スプライトシート
-   - 統一描画パイプライン（レイヤー分離）
+1. **描画設計**: [CHARACTER_RENDERING_DESIGN.md](CHARACTER_RENDERING_DESIGN.md) (v3.0)
+   - **新設計**: Provider抽象化・段階移行対応
+   - **Phase 1**: GridSheetProvider（グリッド形式）
+   - **Phase 2**: AsepriteJsonAtlasProvider（Packed形式）
+   - **Phase 3**: TexturePackerAtlasProvider（統合アトラス）
 
-2. **アセット配置**:
+2. **実装状況**: [PHASE1_IMPLEMENTATION_REPORT.md](PHASE1_IMPLEMENTATION_REPORT.md)
+   - ✅ Phase 1 コード実装完了
+   - 次: ビルド・テスト・統合
+
+3. **移行ガイド**: [MIGRATION_GUIDE_RENDERING.md](MIGRATION_GUIDE_RENDERING.md)
+   - 段階的なリファクタリング手順
+   - 既存コード破壊を回避しながら段階実装
+
+4. **アセット配置**:
 
    ```
    assets/
-   ├── mainCharacters/{name}/{name}.png, {name}.json
-   └── subCharacters/{name}/{name}.png, {name}.json
+   ├── mainCharacters/{name}/{name}.png, clips.json
+   └── subCharacters/{name}/{name}.png, clips.json
    ```
 
-3. **JSON定義**:
+5. **JSON定義**:
    - EntityDef: `assets/definitions/entities_*.json`
-   - アトラス: Aseprite JSON Array形式（frames + meta.frameTags）
+   - GridSheet clips: JSON形式（start/count/loop/fps）
+   - Aseprite: JSON Array形式（Phase 2以降）
 
 ### データ管理
 
@@ -77,21 +89,43 @@ Simple TDC Game Project の設計・実装ドキュメント集です。
 
 ## 🔄 設計変更履歴
 
-### 2025-12-18: キャラクター描画システム統一
+### 2025-12-18: Provider パターン導入 + 段階移行対応（v2.0 → v3.0）
 
 **変更内容**:
 
-- メインキャラクター: セルアニメ形式 → 256×256 スプライトシート
-- サブキャラクター: 可変スプライトシート → 128×128以下 スプライトシート統一
-- 描画パイプライン: 形式分岐 → 統一パイプライン（レイヤー分離）
+- **アーキテクチャ**: Grid/Aseprite/TexturePacker の 2分岐 → Provider 抽象化で一本化
+- **段階移行**: Grid → Packed → 統合アトラス への移行を容易に
+- **コンポーネント**: Animation/Transform/Sprite を新設計に更新
+- **システム**: RenderingSystem の 2分岐ロジック廃止、統一描画化
+
+**実装成果物**:
+
+- ✅ FrameRef, AnimClip, SpriteSet データ構造
+- ✅ IFrameProvider インターフェース（5メソッド）
+- ✅ GridSheetProvider Phase 1 実装（GridSheetProvider.h/.cpp）
+- ✅ SpriteRenderer 統一描画（SpriteRenderer.h/.cpp）
+- ✅ AnimationSystem 新実装（AnimationSystem.h/.cpp）
+- ✅ NewRenderingSystem 統一描画（NewRenderingSystem.h/.cpp）
+- ✅ NewCoreComponents 更新コンポーネント（NewCoreComponents.h）
+- ✅ 移行ガイド（MIGRATION_GUIDE_RENDERING.md）
+- ✅ Phase 1 実装レポート（PHASE1_IMPLEMENTATION_REPORT.md）
 
 **影響範囲**:
 
-- `game/src/Game/Systems/RenderingSystem.cpp` - 統一描画実装
-- `game/include/Game/Components/CoreComponents.h` - Animation構造簡略化
-- アセット作成ワークフロー - Aseprite統一エクスポート
+- `shared/include/Data/Graphics/` - 新FrameRef/AnimClip/IFrameProvider
+- `game/include/Game/Graphics/` - GridSheetProvider, SpriteRenderer
+- `game/include/Game/Components/` - NewCoreComponents
+- `game/include/Game/Systems/` - AnimationSystem, NewRenderingSystem
+- `game/src/Game/Graphics/` - 実装ファイル
+- `game/src/Game/Systems/` - 実装ファイル
 
-**詳細**: [CHARACTER_RENDERING_DESIGN.md](CHARACTER_RENDERING_DESIGN.md)
+**詳細**:
+
+- [CHARACTER_RENDERING_DESIGN.md](CHARACTER_RENDERING_DESIGN.md) (v3.0)
+- [MIGRATION_GUIDE_RENDERING.md](MIGRATION_GUIDE_RENDERING.md)
+- [PHASE1_IMPLEMENTATION_REPORT.md](PHASE1_IMPLEMENTATION_REPORT.md)
+
+**前の設計（v2.0 - アーカイブ）**: [old/CHARACTER_SYSTEM_DESIGN.md](old/CHARACTER_SYSTEM_DESIGN.md)
 
 ---
 
