@@ -66,16 +66,29 @@ PauseUiLayout BuildPauseUiLayout(bool settings_open) {
 
 namespace Game::Scenes {
 
-TDGameScene::TDGameScene(entt::registry &registry,
+TDGameScene::TDGameScene(Shared::Simulation::SimulationContext &simulation,
                          Game::Systems::RenderingSystem &renderer,
+                         Game::Systems::NewRenderingSystem &new_renderer,
                          Shared::Data::DefinitionRegistry &definitions,
                          Shared::Core::SettingsManager &settings,
                          const Font &font, const std::string &stage_id,
                          Game::Managers::FormationManager *formation_manager)
-    : registry_(registry), renderer_(renderer), definitions_(definitions),
-      settings_(settings), formation_manager_(formation_manager), font_(font),
+    : simulation_(simulation), registry_(simulation.GetRegistry()), renderer_(renderer), new_renderer_(new_renderer),
+      definitions_(definitions), settings_(settings),
+      formation_manager_(formation_manager), font_(font),
       current_stage_id_(stage_id) {
   ApplySettings(settings_.Data());
+  entity_reload_handle_ = definitions_.OnEntityDefinitionReloaded.Connect(
+      [this](const std::string &id) {
+        simulation_.ReloadAllInstances(id, Shared::Simulation::SimulationContext::ReloadPolicy::PreserveState);
+      });
+}
+
+TDGameScene::~TDGameScene() {
+  if (entity_reload_handle_ != 0) {
+    definitions_.OnEntityDefinitionReloaded.Disconnect(entity_reload_handle_);
+    entity_reload_handle_ = 0;
+  }
 }
 
 bool TDGameScene::ConsumeRetryRequest() {
@@ -194,6 +207,7 @@ void TDGameScene::Update(float delta_time) {
     return;
   }
 
+  simulation_.Update(dt);
   UpdateResource(dt);
   UpdateDeckCooldowns(dt);
 
@@ -297,6 +311,9 @@ void TDGameScene::Draw() {
   DrawRectangleLinesEx(base_player, 2.0f, Color{160, 200, 255, 200});
 
   renderer_.Draw(registry_, font_);
+
+  // Phase 2: 新しいアニメーションシステムでの描画
+  new_renderer_.DrawEntities(registry_);
   DrawDeckHud();
   DrawTopUI();
 
@@ -418,48 +435,35 @@ void TDGameScene::SpawnEntity(const Vector2 &pos, Components::Team::Type team,
                               const Components::Stats &stats,
                               const Components::Velocity &vel,
                               const std::string &entity_id) {
-  auto e = registry_.create();
-  registry_.emplace<Components::Transform>(e, pos.x, pos.y, 0.0f);
-  registry_.emplace<Components::Velocity>(e, vel.x, vel.y);
-  registry_.emplace<Components::Stats>(e, stats);
-  registry_.emplace<Components::Team>(e, team);
-  registry_.emplace<Components::AttackCooldown>(e);
-  registry_.emplace<Components::SkillHolder>(e);
-  registry_.emplace<Components::SkillCooldown>(e);
-  if (!entity_id.empty()) {
-    registry_.emplace<Components::EntityDefId>(e, entity_id);
-  }
-  const Shared::Data::EntityDef *def =
-      entity_id.empty() ? nullptr : definitions_.GetEntity(entity_id);
-  if (def) {
-    Components::Sprite sprite{};
-    Components::Animation anim{};
-    if (!def->display.sprite_actions.empty()) {
-      anim.useAtlas = true;
-      anim.actionToJson = def->display.sprite_actions;
-      if (def->display.sprite_actions.count("idle") > 0) {
-        anim.currentAction = "idle";
-      } else {
-        anim.currentAction = def->display.sprite_actions.begin()->first;
-      }
-      sprite.atlasJsonPath = anim.actionToJson[anim.currentAction];
-      sprite.texturePath = def->display.atlas_texture;
-    } else if (!def->display.sprite_sheet.empty()) {
-      sprite.texturePath = def->display.sprite_sheet;
-      anim.columns = 4;
-      anim.rows = (!def->display.walk_animation.empty() ||
-                   !def->display.attack_animation.empty() ||
-                   !def->display.death_animation.empty())
-                      ? 4
-                      : 1;
-      anim.frames_per_state = 4;
-    }
+  entt::entity e = entt::null;
 
-    if (!sprite.texturePath.empty() || !sprite.atlasJsonPath.empty()) {
-      registry_.emplace_or_replace<Components::Sprite>(e, sprite);
-      registry_.emplace_or_replace<Components::Animation>(e, anim);
+  if (!entity_id.empty()) {
+    e = simulation_.SpawnEntity(entity_id, pos, team);
+  }
+
+  if (e == entt::null) {
+    e = registry_.create();
+    registry_.emplace<Components::Transform>(e, pos.x, pos.y, 1.0f, 1.0f, 0.0f, false, false);
+    registry_.emplace<Components::Team>(e, team);
+    registry_.emplace<Components::AttackCooldown>(e);
+    registry_.emplace<Components::SkillHolder>(e);
+    registry_.emplace<Components::SkillCooldown>(e);
+    if (!entity_id.empty()) {
+      registry_.emplace<Components::EntityDefId>(e, entity_id);
     }
   }
+
+  // 上書きパラメータ
+  if (registry_.all_of<Components::Transform>(e)) {
+    auto &tf = registry_.get<Components::Transform>(e);
+    tf.x = pos.x;
+    tf.y = pos.y;
+  } else {
+    registry_.emplace<Components::Transform>(e, pos.x, pos.y, 1.0f, 1.0f, 0.0f, false, false);
+  }
+  registry_.emplace_or_replace<Components::Velocity>(e, vel.x, vel.y);
+  registry_.emplace_or_replace<Components::Stats>(e, stats);
+  registry_.emplace_or_replace<Components::Team>(e, team);
 
   // ダメージポップ初期値（不要なら未付与）
   // ※初期付与をやめ、ダメージ適用時のみ付与
@@ -571,7 +575,7 @@ void TDGameScene::SpawnBases() {
   // 敵ベース（左）
   enemy_base_entity_ = registry_.create();
   registry_.emplace<Components::Transform>(enemy_base_entity_, enemy_base_x_,
-                                           lane_y_ - UNIT_HEIGHT, 0.0f);
+                                           lane_y_ - UNIT_HEIGHT, 1.0f, 1.0f, 0.0f, false, false);
   registry_.emplace<Components::Team>(enemy_base_entity_,
                                       Components::Team::Type::Enemy);
   registry_.emplace<Components::BaseMarker>(enemy_base_entity_);
@@ -584,7 +588,7 @@ void TDGameScene::SpawnBases() {
   // 味方ベース（右）
   player_base_entity_ = registry_.create();
   registry_.emplace<Components::Transform>(player_base_entity_, player_base_x_,
-                                           lane_y_ - UNIT_HEIGHT, 0.0f);
+                                           lane_y_ - UNIT_HEIGHT, 1.0f, 1.0f, 0.0f, false, false);
   registry_.emplace<Components::Team>(player_base_entity_,
                                       Components::Team::Type::Player);
   registry_.emplace<Components::BaseMarker>(player_base_entity_);

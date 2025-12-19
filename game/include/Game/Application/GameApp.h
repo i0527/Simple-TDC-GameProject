@@ -21,8 +21,10 @@
 #include "Game/Scenes/SceneManager.h"
 #include "Game/Scenes/TDGameScene.h"
 #include "Game/Scenes/TitleScene.h"
+#include "Game/Systems/AnimationSystem.h"
 #include "Game/Systems/AttackSystem.h"
 #include "Game/Systems/MovementSystem.h"
+#include "Game/Systems/NewRenderingSystem.h"
 #include "Game/Systems/RenderingSystem.h"
 #include "Game/Systems/SkillSystem.h"
 
@@ -52,11 +54,13 @@ private:
   std::unique_ptr<Game::Audio::BgmService> bgm_service_;
 
   // ECS Registry
-  entt::registry registry_;
+  entt::registry *registry_ = nullptr;
   Game::Systems::MovementSystem movement_system_;
   Game::Systems::AttackSystem attack_system_;
   Game::Systems::SkillSystem skill_system_;
+  Game::Systems::AnimationSystem animation_system_;
   Game::Systems::RenderingSystem rendering_system_;
+  Game::Systems::NewRenderingSystem new_rendering_system_;
 
   // Scene
   std::unique_ptr<Game::Scenes::SceneManager> scene_manager_;

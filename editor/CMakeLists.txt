@@ -10,6 +10,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(EDITOR_SOURCES
     src/main_editor.cpp
     src/Editor/Application/EditorApp.cpp
+    src/Editor/Windows/PreviewWindow.cpp
+    src/Editor/Windows/PropertyPanel.cpp
+    # CharacterFactoryが依存するGraphics実装
+    ${CMAKE_SOURCE_DIR}/game/src/Game/Graphics/GridSheetProvider.cpp
+    ${CMAKE_SOURCE_DIR}/game/src/Game/Graphics/AsepriteJsonAtlasProvider.cpp
 )
 
 # 実行ファイルを作成

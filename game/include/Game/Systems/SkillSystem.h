@@ -2,7 +2,7 @@
 
 #include <entt/entt.hpp>
 
-#include "Game/Components/CoreComponents.h"
+#include "Game/Components/NewCoreComponents.h"
 
 namespace Game::Systems {
 

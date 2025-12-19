@@ -9,8 +9,11 @@
 
 #include "Core/SettingsManager.h"
 #include "Data/DefinitionRegistry.h"
+#include "Game/Components/NewCoreComponents.h"
 #include "Game/Scenes/IScene.h"
+#include "Shared/Simulation/SimulationContext.h"
 #include "Game/Managers/FormationManager.h"
+#include "Game/Systems/NewRenderingSystem.h"
 #include "Game/Systems/RenderingSystem.h"
 #include "Game/UI/SettingsPanel.h"
 
@@ -18,12 +21,14 @@ namespace Game::Scenes {
 
 class TDGameScene : public IScene {
 public:
-  TDGameScene(entt::registry &registry,
+  TDGameScene(Shared::Simulation::SimulationContext &simulation,
               Game::Systems::RenderingSystem &renderer,
+              Game::Systems::NewRenderingSystem &new_renderer,
               Shared::Data::DefinitionRegistry &definitions,
               Shared::Core::SettingsManager &settings, const Font &font,
               const std::string &stage_id,
               Game::Managers::FormationManager *formation_manager);
+  ~TDGameScene() override;
 
   void Update(float delta_time) override;
   void Draw() override;
@@ -96,8 +101,10 @@ private:
   void DrawEntitiesDebugTab();
   void DrawBaseDebugTab();
 
+  Shared::Simulation::SimulationContext &simulation_;
   entt::registry &registry_;
   Game::Systems::RenderingSystem &renderer_;
+  Game::Systems::NewRenderingSystem &new_renderer_;
   Shared::Data::DefinitionRegistry &definitions_;
   Shared::Core::SettingsManager &settings_;
   Game::Managers::FormationManager *formation_manager_;
@@ -159,6 +166,7 @@ private:
   bool debug_window_open_ = false;
   bool debug_ui_wants_input_ = false;
   entt::entity debug_selected_entity_{entt::null};
+  int entity_reload_handle_ = 0;
 };
 
 } // namespace Game::Scenes

@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "Game/Components/CoreComponents.h"
+#include "Game/Components/NewCoreComponents.h"
 #include "Data/Loaders/SpriteSheetLoader.h"
 
 namespace Game::Systems {

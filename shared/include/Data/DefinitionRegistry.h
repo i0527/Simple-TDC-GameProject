@@ -5,6 +5,7 @@
 #include "Data/Definitions/StageDef.h"
 #include "Data/Definitions/WaveDef.h"
 #include "Data/Definitions/AbilityDef.h"
+#include "Core/Signal.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -56,6 +57,12 @@ public:
 
     // クリア
     void Clear();
+
+    // HotReload
+    Shared::Core::Signal<const std::string&> OnEntityDefinitionReloaded;
+    Shared::Core::Signal<const std::string&> OnSkillDefinitionReloaded;
+    Shared::Core::Signal<const std::string&> OnAbilityDefinitionReloaded;
+    void OnFileChanged(const std::string& file_path);
 
 private:
     std::unordered_map<std::string, EntityDef> entities_;
