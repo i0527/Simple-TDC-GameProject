@@ -8,6 +8,9 @@
 #include <unordered_map>
 #include <vector>
 
+using Shared::Data::Graphics::IFrameProvider;
+using Shared::Data::Graphics::FrameRef;
+
 /**
  * @brief グリッド形式スプライトシート Provider
  * 

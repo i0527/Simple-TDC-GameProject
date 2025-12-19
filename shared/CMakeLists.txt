@@ -25,6 +25,9 @@ set(SHARED_SOURCES
     src/Data/Loaders/SpriteSheetLoader.cpp
     src/Data/UserDataManager.cpp
     src/Data/Validators/DataValidator.cpp
+    # Simulation
+    src/Shared/Simulation/SimulationContext.cpp
+    src/Shared/Simulation/Factories/CharacterFactory.cpp
 )
 
 # 静的ライブラリを作成
@@ -34,6 +37,7 @@ add_library(SimpleTDC_Shared STATIC ${SHARED_SOURCES})
 target_include_directories(SimpleTDC_Shared
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/game/include
 )
 
 # nlohmann/json とグラフィックス依存関係
@@ -44,6 +48,14 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG v3.11.3
 )
+
+# EnTT (ECS ライブラリ)
+FetchContent_Declare(
+    entt
+    GIT_REPOSITORY https://github.com/skypjack/entt.git
+    GIT_TAG v3.12.2
+)
+FetchContent_MakeAvailable(entt)
 
 if(NOT TARGET raylib)
     FetchContent_Declare(
@@ -79,6 +91,7 @@ FetchContent_MakeAvailable(json)
 target_link_libraries(SimpleTDC_Shared
     PUBLIC
         nlohmann_json::nlohmann_json
+        EnTT::EnTT
         raylib
         imgui_lib
 )

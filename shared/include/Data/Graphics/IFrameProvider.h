@@ -5,6 +5,8 @@
 #include <string>
 #include <memory>
 
+namespace Shared::Data::Graphics {
+
 /**
  * @brief スプライトシート形式を抽象化するインターフェース
  * 
@@ -63,5 +65,7 @@ public:
 // ===== スマートポインタ型定義 =====
 using FrameProviderPtr = std::unique_ptr<IFrameProvider>;
 using FrameProviderSharedPtr = std::shared_ptr<IFrameProvider>;
+
+} // namespace Shared::Data::Graphics
 
 #endif // GRAPHICS_IFRAMPROVIDER_H

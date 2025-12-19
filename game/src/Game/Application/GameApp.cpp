@@ -49,6 +49,8 @@ bool GameApp::Initialize() {
 
   // DefinitionRegistryはローディングシーン内でロード
   definitions_ = std::make_unique<Shared::Data::DefinitionRegistry>();
+  context_->BindDefinitions(definitions_.get());
+  registry_ = &context_->GetSimulation().GetRegistry();
   user_data_manager_ = std::make_unique<Shared::Data::UserDataManager>();
   if (!user_data_manager_->Initialize("saves")) {
     std::cerr << "[GameApp] Failed to initialize save directory" << std::endl;
@@ -130,8 +132,8 @@ void GameApp::Shutdown() {
   skill_manager_->Shutdown();
   stage_manager_->Shutdown();
 
-  rendering_system_.Shutdown(registry_);
-  registry_.clear();
+  rendering_system_.Shutdown(*registry_);
+  registry_->clear();
 
   context_->Shutdown();
   if (bgm_service_) {
@@ -184,10 +186,11 @@ void GameApp::Update(float delta_time) {
         bool paused = td_scene->IsPaused();
         effective_dt = paused ? 0.0f : delta_time * speed;
       }
-      movement_system_.Update(registry_, effective_dt);
-      attack_system_.Update(registry_, effective_dt);
-      skill_system_.Update(registry_, effective_dt);
-      rendering_system_.UpdateAnimations(registry_, effective_dt);
+      movement_system_.Update(*registry_, effective_dt);
+      attack_system_.Update(*registry_, effective_dt);
+      skill_system_.Update(*registry_, effective_dt);
+      animation_system_.Update(*registry_, effective_dt);
+      rendering_system_.UpdateAnimations(*registry_, effective_dt);
 
       if (auto *title = dynamic_cast<Game::Scenes::TitleScene *>(scene)) {
         auto action = title->ConsumeAction();
@@ -248,8 +251,8 @@ void GameApp::Update(float delta_time) {
           return;
         case Game::Scenes::HomeScene::Action::SaveAndTitle:
           SaveToSlot(0);
-          rendering_system_.Shutdown(registry_);
-          registry_.clear();
+          rendering_system_.Shutdown(*registry_);
+          registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
                   default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
@@ -261,8 +264,8 @@ void GameApp::Update(float delta_time) {
           is_running_ = false;
           return;
         case Game::Scenes::HomeScene::Action::QuitWithoutSave:
-          rendering_system_.Shutdown(registry_);
-          registry_.clear();
+          rendering_system_.Shutdown(*registry_);
+          registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
                   default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
@@ -288,8 +291,8 @@ void GameApp::Update(float delta_time) {
       } else if (auto *select =
                      dynamic_cast<Game::Scenes::StageSelectScene *>(scene)) {
         if (select->ConsumeQuitRequest()) {
-          rendering_system_.Shutdown(registry_);
-          registry_.clear();
+          rendering_system_.Shutdown(*registry_);
+          registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
                   default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
@@ -302,12 +305,13 @@ void GameApp::Update(float delta_time) {
           std::string stage_id = select->ConsumeSelectedStage();
           if (!stage_id.empty()) {
             current_stage_id_ = stage_id;
-            rendering_system_.Shutdown(registry_);
-            registry_.clear();
+            rendering_system_.Shutdown(*registry_);
+            registry_->clear();
             scene_manager_->ReplaceScene(
                 std::make_unique<Game::Scenes::TDGameScene>(
-                    registry_, rendering_system_, *definitions_, Settings(),
-                    default_font_, stage_id, formation_manager_.get()),
+                    context_->GetSimulation(), rendering_system_, new_rendering_system_,
+                    *definitions_, Settings(), default_font_, stage_id,
+                    formation_manager_.get()),
                 Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
             return;
           }
@@ -324,8 +328,8 @@ void GameApp::Update(float delta_time) {
         }
       } else if (auto *td = dynamic_cast<Game::Scenes::TDGameScene *>(scene)) {
         if (td->ConsumeReturnToTitleRequest()) {
-          rendering_system_.Shutdown(registry_);
-          registry_.clear();
+          rendering_system_.Shutdown(*registry_);
+          registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
                   default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
@@ -334,32 +338,33 @@ void GameApp::Update(float delta_time) {
           return;
         }
         if (td->ConsumeRetryRequest()) {
-          rendering_system_.Shutdown(registry_);
-          registry_.clear();
+          rendering_system_.Shutdown(*registry_);
+          registry_->clear();
           current_stage_id_ = td->GetCurrentStageId();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TDGameScene>(
-                  registry_, rendering_system_, *definitions_, Settings(),
-                  default_font_, td->GetCurrentStageId(),
+                  context_->GetSimulation(), rendering_system_, new_rendering_system_,
+                  *definitions_, Settings(), default_font_, td->GetCurrentStageId(),
                   formation_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
           return;
         }
         std::string next_stage = td->ConsumeNextStageId();
         if (!next_stage.empty()) {
-          rendering_system_.Shutdown(registry_);
-          registry_.clear();
+          rendering_system_.Shutdown(*registry_);
+          registry_->clear();
           current_stage_id_ = next_stage;
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TDGameScene>(
-                  registry_, rendering_system_, *definitions_, Settings(),
-                  default_font_, next_stage, formation_manager_.get()),
+                  context_->GetSimulation(), rendering_system_, new_rendering_system_,
+                  *definitions_, Settings(), default_font_, next_stage,
+                  formation_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
           return;
         }
         if (td->ConsumeReturnToStageSelectRequest()) {
-          rendering_system_.Shutdown(registry_);
-          registry_.clear();
+          rendering_system_.Shutdown(*registry_);
+          registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::StageSelectScene>(*definitions_,
                                                                default_font_),

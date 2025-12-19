@@ -3,8 +3,13 @@
 #include "Core/EventSystem.h"
 #include "Core/FileWatcher.h"
 #include "Core/SettingsManager.h"
+#include "Shared/Simulation/SimulationContext.h"
 #include <memory>
 #include <string>
+
+namespace Shared::Data {
+class DefinitionRegistry;
+}
 
 namespace Shared::Core {
 
@@ -50,6 +55,13 @@ public:
   SettingsManager &GetSettingsManager();
   const SettingsManager &GetSettingsManager() const;
 
+  // Simulation
+  Shared::Simulation::SimulationContext &GetSimulation() { return simulation_; }
+  const Shared::Simulation::SimulationContext &GetSimulation() const { return simulation_; }
+
+  /// @brief DefinitionRegistry をバインド（SimulationContext用）
+  void BindDefinitions(Shared::Data::DefinitionRegistry *definitions);
+
 private:
   std::string data_path_;
   std::string assets_path_;
@@ -59,6 +71,7 @@ private:
   std::unique_ptr<EventSystem> event_system_;
   std::unique_ptr<FileWatcher> file_watcher_;
   std::unique_ptr<SettingsManager> settings_manager_;
+  Shared::Simulation::SimulationContext simulation_;
 };
 
 } // namespace Shared::Core

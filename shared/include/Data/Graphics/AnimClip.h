@@ -6,6 +6,8 @@
 #include <vector>
 #include <unordered_map>
 
+namespace Shared::Data::Graphics {
+
 /**
  * @brief アニメーション1本分の定義
  * 
@@ -68,5 +70,7 @@ struct SpriteSet {
         return (it != clips.end()) ? &it->second : nullptr;
     }
 };
+
+} // namespace Shared::Data::Graphics
 
 #endif // GRAPHICS_ANIM_CLIP_H

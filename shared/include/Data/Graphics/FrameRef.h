@@ -4,6 +4,8 @@
 #include <raylib.h>
 #include <string>
 
+namespace Shared::Data::Graphics {
+
 /**
  * @brief 描画の最小単位
  * 
@@ -14,7 +16,7 @@ struct FrameRef {
     // ===== 描画に必要な情報 =====
     
     /// テクスチャポインタ（DrawTexturePro で使用）
-    Texture2D* texture = nullptr;
+    const Texture2D* texture = nullptr;
     
     /// テクスチャ内の切り出し矩形（ソース）
     Rectangle src = {0, 0, 0, 0};
@@ -49,5 +51,7 @@ struct FrameRef {
         return src.height + offset.y;
     }
 };
+
+} // namespace Shared::Data::Graphics
 
 #endif // GRAPHICS_FRAME_REF_H

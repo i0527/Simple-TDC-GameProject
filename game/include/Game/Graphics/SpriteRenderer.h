@@ -1,7 +1,7 @@
 #ifndef GAME_GRAPHICS_SPRITERENDERER_H
 #define GAME_GRAPHICS_SPRITERENDERER_H
 
-#include <Data/Graphics/IFrameProvider.h>
+#include "Data/Graphics/IFrameProvider.h"
 #include <raylib.h>
 #include <string>
 
@@ -29,7 +29,7 @@ public:
      * @param tint 色合い（例: RAYWHITE, GetTeamTint(team)）
      */
     static void DrawSprite(
-        IFrameProvider& provider,
+        Shared::Data::Graphics::IFrameProvider& provider,
         const std::string& clipName,
         int frameIndex,
         Vector2 position,
@@ -51,7 +51,7 @@ public:
      * @param outlineColor 枠線色
      */
     static void DrawSpriteDebug(
-        IFrameProvider& provider,
+        Shared::Data::Graphics::IFrameProvider& provider,
         const std::string& clipName,
         int frameIndex,
         Vector2 position,

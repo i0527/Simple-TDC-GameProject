@@ -2,7 +2,7 @@
 #include <raymath.h>
 
 void SpriteRenderer::DrawSprite(
-    IFrameProvider& provider,
+    Shared::Data::Graphics::IFrameProvider& provider,
     const std::string& clipName,
     int frameIndex,
     Vector2 position,
@@ -47,7 +47,7 @@ void SpriteRenderer::DrawSprite(
 }
 
 void SpriteRenderer::DrawSpriteDebug(
-    IFrameProvider& provider,
+    Shared::Data::Graphics::IFrameProvider& provider,
     const std::string& clipName,
     int frameIndex,
     Vector2 position,

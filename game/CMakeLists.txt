@@ -63,6 +63,11 @@ set(GAME_SOURCES
     src/Game/Systems/AttackSystem.cpp
     src/Game/Systems/SkillSystem.cpp
     src/Game/Systems/RenderingSystem.cpp
+    src/Game/Systems/AnimationSystem.cpp
+    src/Game/Systems/NewRenderingSystem.cpp
+    src/Game/Graphics/GridSheetProvider.cpp
+    src/Game/Graphics/SpriteRenderer.cpp
+    src/Game/Graphics/AsepriteJsonAtlasProvider.cpp
     src/Game/Scenes/SceneManager.cpp
     src/Game/Scenes/LoadingScene.cpp
     src/Game/Scenes/TitleScene.cpp

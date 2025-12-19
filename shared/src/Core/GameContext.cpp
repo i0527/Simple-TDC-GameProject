@@ -46,6 +46,9 @@ bool GameContext::Initialize(const std::string &config_path) {
     }
     settings_manager_->Load(settings_path);
 
+    // SimulationContext にコンテキストを渡す
+    simulation_.SetContext(this);
+
     std::cout << "GameContext initialized successfully" << std::endl;
     std::cout << "  Data path: " << data_path_ << std::endl;
     std::cout << "  Assets path: " << assets_path_ << std::endl;
@@ -109,6 +112,10 @@ SettingsManager &GameContext::GetSettingsManager() {
 
 const SettingsManager &GameContext::GetSettingsManager() const {
   return *settings_manager_;
+}
+
+void GameContext::BindDefinitions(Shared::Data::DefinitionRegistry *definitions) {
+  simulation_.SetDefinitions(definitions);
 }
 
 } // namespace Shared::Core

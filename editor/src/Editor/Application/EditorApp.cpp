@@ -11,6 +11,8 @@
 #include "Data/Loaders/StageLoader.h"
 #include "Data/Loaders/WaveLoader.h"
 #include "Data/Validators/DataValidator.h"
+#include "Editor/Windows/PreviewWindow.h"
+#include "Editor/Windows/PropertyPanel.h"
 
 namespace {
 constexpr int SCREEN_WIDTH = 1920;
@@ -36,6 +38,7 @@ bool EditorApp::Initialize() {
 
   // DefinitionRegistry初期化
   definitions_ = std::make_unique<Shared::Data::DefinitionRegistry>();
+  context_->BindDefinitions(definitions_.get());
 
   // 定義データのロード
   LoadDefinitions();
@@ -61,8 +64,11 @@ bool EditorApp::Initialize() {
       "assets/fonts/NotoSansJP-Medium.ttf", 18.0f);
   if (defaultFont_ != nullptr) {
     io.FontDefault = defaultFont_;
-    rlImGuiReloadFonts();
+    // フォントを再構築（rlImGuiReloadFonts()は利用できない場合があるため）
+    io.Fonts->Build();
   }
+
+  InitializeEditorWindows();
 
   is_running_ = true;
   std::cout << "=== EditorApp Initialized ===" << std::endl;
@@ -88,6 +94,13 @@ void EditorApp::Shutdown() {
 
   std::cout << "=== EditorApp Shutdown ===" << std::endl;
 
+  for (auto &w : windows_) {
+    if (w) {
+      w->Shutdown();
+    }
+  }
+  windows_.clear();
+
   context_->Shutdown();
 
   rlImGuiShutdown();
@@ -98,7 +111,7 @@ void EditorApp::Shutdown() {
 }
 
 void EditorApp::Update(float delta_time) {
-  // TODO: エディタ更新処理
+  UpdateEditorWindows(delta_time);
 }
 
 void EditorApp::Render() {
@@ -108,6 +121,7 @@ void EditorApp::Render() {
   // ImGui描画
   rlImGuiBegin();
   RenderUI();
+  RenderEditorWindows();
   rlImGuiEnd();
 
   EndDrawing();
@@ -146,6 +160,53 @@ void EditorApp::RenderUI() {
   ImGui::Text("スキル数: %zu", definitions_->GetAllSkills().size());
   ImGui::Text("ステージ数: %zu", definitions_->GetAllStages().size());
   ImGui::End();
+}
+
+void EditorApp::InitializeEditorWindows() {
+  windows_.clear();
+  windows_.push_back(std::make_unique<Editor::Windows::PreviewWindow>());
+  windows_.push_back(std::make_unique<Editor::Windows::PropertyPanel>());
+
+  for (auto &w : windows_) {
+    if (w) {
+      w->Initialize(*context_, *definitions_);
+    }
+  }
+}
+
+void EditorApp::UpdateEditorWindows(float delta_time) {
+  for (auto &w : windows_) {
+    if (w && w->IsOpen()) {
+      w->OnUpdate(delta_time);
+    }
+  }
+}
+
+void EditorApp::RenderEditorWindows() {
+  // PreviewWindowとPropertyPanelの連携
+  Editor::Windows::PreviewWindow* preview = nullptr;
+  Editor::Windows::PropertyPanel* property = nullptr;
+  
+  for (auto &w : windows_) {
+    if (!w || !w->IsOpen()) continue;
+    
+    // 型を確認してキャスト
+    if (w->GetWindowId() == "preview_window") {
+      preview = dynamic_cast<Editor::Windows::PreviewWindow*>(w.get());
+    } else if (w->GetWindowId() == "property_panel") {
+      property = dynamic_cast<Editor::Windows::PropertyPanel*>(w.get());
+    }
+    
+    w->OnDrawUI();
+  }
+  
+  // PreviewWindowのエンティティ情報をPropertyPanelに反映
+  if (preview && property && preview->GetPreviewEntity() != entt::null) {
+    const auto* sim = preview->GetSimulation();
+    if (sim) {
+      property->SetSelection(preview->GetPreviewEntity(), &sim->GetRegistry());
+    }
+  }
 }
 
 void EditorApp::LoadDefinitions() {
