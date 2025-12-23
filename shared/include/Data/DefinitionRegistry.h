@@ -25,6 +25,7 @@ public:
     const EntityDef* GetEntity(const std::string& id) const;
     std::vector<const EntityDef*> GetAllEntities() const;
     bool HasEntity(const std::string& id) const;
+    bool RemoveEntity(const std::string& id);
 
     // Skill
     bool RegisterSkill(const SkillDef& def);

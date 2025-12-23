@@ -178,4 +178,46 @@ bool StageLoader::SaveToJson(const std::string &json_path,
   }
 }
 
+bool StageLoader::SaveSingleStage(const std::string &json_path,
+                                  const StageDef &def) {
+  try {
+    nlohmann::json j;
+    j["id"] = def.id;
+    j["name"] = def.name;
+    j["description"] = def.description;
+    j["difficulty"] = def.difficulty;
+    j["domain"] = def.domain;
+    j["subdomain"] = def.subdomain;
+    j["baseArrivalDamage"] = def.base_arrival_damage;
+
+    j["environment"]["background_image"] = def.environment.background_image;
+    j["environment"]["bgm_id"] = def.environment.bgm_id;
+    j["environment"]["scroll_speed"] = def.environment.scroll_speed;
+
+    j["castle_hp"]["player_castle_hp"] = def.castle_hp.player_castle_hp;
+    j["castle_hp"]["enemy_castle_hp"] = def.castle_hp.enemy_castle_hp;
+
+    j["wave_ids"] = def.wave_ids;
+
+    j["rewards"]["gold"] = def.rewards.gold;
+    j["rewards"]["exp"] = def.rewards.exp;
+    j["rewards"]["items"] = def.rewards.items;
+
+    j["tags"] = def.tags;
+
+    std::ofstream file(json_path);
+    if (!file.is_open()) {
+      std::cerr << "Failed to open file for writing: " << json_path << std::endl;
+      return false;
+    }
+
+    file << j.dump(2);
+    return true;
+
+  } catch (const std::exception &e) {
+    std::cerr << "Error saving stage: " << e.what() << std::endl;
+    return false;
+  }
+}
+
 } // namespace Shared::Data

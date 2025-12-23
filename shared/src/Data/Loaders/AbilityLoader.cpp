@@ -146,4 +146,34 @@ bool AbilityLoader::SaveToJson(const std::string &json_path,
   }
 }
 
+bool AbilityLoader::SaveSingleAbility(const std::string &json_path,
+                                      const AbilityDef &def) {
+  try {
+    nlohmann::json j;
+    j["id"] = def.id;
+    j["name"] = def.name;
+    j["description"] = def.description;
+    j["type"] = def.type;
+
+    j["effect"]["stat_type"] = def.effect.stat_type;
+    j["effect"]["value"] = def.effect.value;
+    j["effect"]["is_percentage"] = def.effect.is_percentage;
+
+    j["tags"] = def.tags;
+
+    std::ofstream file(json_path);
+    if (!file.is_open()) {
+      std::cerr << "Failed to open file for writing: " << json_path << std::endl;
+      return false;
+    }
+
+    file << j.dump(2);
+    return true;
+
+  } catch (const std::exception &e) {
+    std::cerr << "Error saving ability: " << e.what() << std::endl;
+    return false;
+  }
+}
+
 } // namespace Shared::Data

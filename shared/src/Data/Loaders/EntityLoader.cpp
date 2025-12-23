@@ -3,6 +3,7 @@
 #include <iostream>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <unordered_set>
 
 namespace Shared::Data {
 
@@ -18,13 +19,17 @@ bool EntityLoader::LoadFromJson(const std::string &json_path,
     nlohmann::json j = nlohmann::json::parse(file);
 
     // Accept either top-level array or { "entities": [...] }
+      // Accept either top-level array, {"entities": [...]}, or single object
     if (j.is_array()) {
       // ok
     } else if (j.contains("entities") && j["entities"].is_array()) {
       j = j["entities"];
+        } else if (j.is_object() && j.contains("id")) {
+          // Single entity object - wrap in array
+          j = nlohmann::json::array({j});
     } else {
       std::cerr
-          << "Invalid entity JSON format: expected array or {\"entities\":[]}"
+          << "Invalid entity JSON format: expected array, {\"entities\":[]}, or single entity object"
           << std::endl;
       return false;
     }
@@ -37,6 +42,7 @@ bool EntityLoader::LoadFromJson(const std::string &json_path,
       }
       try {
         EntityDef def;
+        def.source_path = json_path;
         def.id = entity_json.value("id", "");
         if (def.id.empty()) {
           std::cerr << "[EntityLoader] Skip entry with empty id in "
@@ -62,6 +68,19 @@ bool EntityLoader::LoadFromJson(const std::string &json_path,
           def.stats.knockback = stats.value("knockback", 0);
         }
 
+        if (entity_json.contains("combat") && entity_json["combat"].is_object()) {
+          auto combat = entity_json["combat"];
+          def.combat.attack_point = combat.value("attack_point", 0.0f);
+          def.combat.attack_frame = combat.value("attack_frame", -1);
+          if (combat.contains("hitbox") && combat["hitbox"].is_object()) {
+            auto hitbox = combat["hitbox"];
+            def.combat.hitbox.width = hitbox.value("width", 32.0f);
+            def.combat.hitbox.height = hitbox.value("height", 32.0f);
+            def.combat.hitbox.offset_x = hitbox.value("offset_x", 0.0f);
+            def.combat.hitbox.offset_y = hitbox.value("offset_y", 0.0f);
+          }
+        }
+
         def.draw_type = entity_json.value("draw_type", "sprite");
 
         if (entity_json.contains("display") &&
@@ -73,7 +92,34 @@ bool EntityLoader::LoadFromJson(const std::string &json_path,
           def.display.attack_animation = display.value("attack_animation", "");
           def.display.death_animation = display.value("death_animation", "");
           def.display.atlas_texture = display.value("atlas_texture", "");
-        def.display.icon = display.value("icon", "");
+          def.display.icon = display.value("icon", "");
+          def.display.mirror_h = display.value("mirror_h", false);
+          def.display.mirror_v = display.value("mirror_v", false);
+          // 新形式 animations (固定4アニメ想定)
+          if (display.contains("animations") && display["animations"].is_object()) {
+            for (auto it = display["animations"].begin(); it != display["animations"].end(); ++it) {
+              if (!it.value().is_object()) continue;
+              Shared::Data::EntityDef::Display::AnimClip clip;
+              const auto &obj = it.value();
+              clip.atlas = obj.value("atlas", "");
+              clip.json = obj.value("json", "");
+              clip.loop = obj.value("loop", true);
+              clip.mirror_h = obj.value("mirror_h", false);
+              clip.mirror_v = obj.value("mirror_v", false);
+              def.display.animations[it.key()] = clip;
+            }
+          }
+          // アクション別ミラー既定
+          if (display.contains("mirror_by_action") && display["mirror_by_action"].is_object()) {
+            for (auto it = display["mirror_by_action"].begin(); it != display["mirror_by_action"].end(); ++it) {
+              const std::string action = it.key();
+              if (it.value().is_object()) {
+                const auto &obj = it.value();
+                def.display.action_mirror_h[action] = obj.value("h", false);
+                def.display.action_mirror_v[action] = obj.value("v", false);
+              }
+            }
+          }
           if (display.contains("sprite_actions") &&
               display["sprite_actions"].is_object()) {
             for (auto it = display["sprite_actions"].begin();
@@ -83,6 +129,23 @@ bool EntityLoader::LoadFromJson(const std::string &json_path,
               }
             }
           }
+          // 新形式から旧形式へフォールバック連携（atlas/json指定をsprite_actionsへ反映）
+          if (!def.display.animations.empty() && def.display.sprite_actions.empty()) {
+            for (const auto &kv : def.display.animations) {
+              if (!kv.second.json.empty()) {
+                def.display.sprite_actions[kv.first] = kv.second.json;
+              }
+            }
+          }
+          // atlas_texture が空なら animations の先頭atlasを採用
+          if (def.display.atlas_texture.empty() && !def.display.animations.empty()) {
+            for (const auto &kv : def.display.animations) {
+              if (!kv.second.atlas.empty()) { def.display.atlas_texture = kv.second.atlas; break; }
+            }
+          }
+          // 開発用分割スプライト管理
+          def.display.dev_animation_config_path = display.value("dev_animation_config_path", "");
+          def.display.use_dev_mode = display.value("use_dev_mode", false);
         }
 
         if (entity_json.contains("skill_ids") &&
@@ -235,6 +298,18 @@ bool EntityLoader::LoadSingleCharacter(const std::string &json_path,
       def.display.death_animation = display.value("death_animation", "");
       def.display.atlas_texture = display.value("atlas_texture", "");
       def.display.icon = display.value("icon", "");
+      def.display.mirror_h = display.value("mirror_h", false);
+      def.display.mirror_v = display.value("mirror_v", false);
+      if (display.contains("mirror_by_action") && display["mirror_by_action"].is_object()) {
+        for (auto it = display["mirror_by_action"].begin(); it != display["mirror_by_action"].end(); ++it) {
+          const std::string action = it.key();
+          if (it.value().is_object()) {
+            const auto &obj = it.value();
+            def.display.action_mirror_h[action] = obj.value("h", false);
+            def.display.action_mirror_v[action] = obj.value("v", false);
+          }
+        }
+      }
       if (display.contains("sprite_actions") &&
           display["sprite_actions"].is_object()) {
         for (auto it = display["sprite_actions"].begin();
@@ -326,18 +401,71 @@ bool EntityLoader::SaveToJson(const std::string &json_path,
       entity_json["stats"]["move_speed"] = entity->stats.move_speed;
       entity_json["stats"]["knockback"] = entity->stats.knockback;
 
+      entity_json["combat"]["attack_point"] = entity->combat.attack_point;
+      entity_json["combat"]["attack_frame"] = entity->combat.attack_frame;
+      entity_json["combat"]["hitbox"]["width"] = entity->combat.hitbox.width;
+      entity_json["combat"]["hitbox"]["height"] = entity->combat.hitbox.height;
+      entity_json["combat"]["hitbox"]["offset_x"] = entity->combat.hitbox.offset_x;
+      entity_json["combat"]["hitbox"]["offset_y"] = entity->combat.hitbox.offset_y;
+
       entity_json["draw_type"] = entity->draw_type;
 
-      entity_json["display"]["sprite_sheet"] = entity->display.sprite_sheet;
-      entity_json["display"]["idle_animation"] = entity->display.idle_animation;
-      entity_json["display"]["walk_animation"] = entity->display.walk_animation;
-      entity_json["display"]["attack_animation"] =
-          entity->display.attack_animation;
-      entity_json["display"]["death_animation"] =
-          entity->display.death_animation;
-      entity_json["display"]["atlas_texture"] = entity->display.atlas_texture;
-      entity_json["display"]["icon"] = entity->display.icon;
-      entity_json["display"]["sprite_actions"] = entity->display.sprite_actions;
+      // display設定（相対パスに正規化）
+      auto normalizePathForJson = [](const std::string& path) -> std::string {
+        if (path.empty()) return "";
+        // バックスラッシュをスラッシュに統一
+        std::string normalized = path;
+        std::replace(normalized.begin(), normalized.end(), '\\', '/');
+        return normalized;
+      };
+
+      entity_json["display"]["sprite_sheet"] = normalizePathForJson(entity->display.sprite_sheet);
+      entity_json["display"]["idle_animation"] = normalizePathForJson(entity->display.idle_animation);
+      entity_json["display"]["walk_animation"] = normalizePathForJson(entity->display.walk_animation);
+      entity_json["display"]["attack_animation"] = normalizePathForJson(entity->display.attack_animation);
+      entity_json["display"]["death_animation"] = normalizePathForJson(entity->display.death_animation);
+      entity_json["display"]["atlas_texture"] = normalizePathForJson(entity->display.atlas_texture);
+      entity_json["display"]["icon"] = normalizePathForJson(entity->display.icon);
+      entity_json["display"]["mirror_h"] = entity->display.mirror_h;
+      entity_json["display"]["mirror_v"] = entity->display.mirror_v;
+      // アクション別ミラー既定の書き出し
+      {
+        nlohmann::json mirror_by_action = nlohmann::json::object();
+        // 可能なアクション集合（sprite_actions優先）
+        std::unordered_set<std::string> actions;
+        for (const auto &kv : entity->display.sprite_actions) actions.insert(kv.first);
+        for (const auto &kv : entity->display.action_mirror_h) actions.insert(kv.first);
+        for (const auto &kv : entity->display.action_mirror_v) actions.insert(kv.first);
+        for (const auto &name : actions) {
+          nlohmann::json obj;
+          obj["h"] = entity->display.action_mirror_h.count(name) ? entity->display.action_mirror_h.at(name) : false;
+          obj["v"] = entity->display.action_mirror_v.count(name) ? entity->display.action_mirror_v.at(name) : false;
+          mirror_by_action[name] = obj;
+        }
+        entity_json["display"]["mirror_by_action"] = mirror_by_action;
+      }
+      
+      // sprite_actionsも正規化
+      nlohmann::json sprite_actions_json;
+      for (const auto& [actionName, jsonPath] : entity->display.sprite_actions) {
+        sprite_actions_json[actionName] = normalizePathForJson(jsonPath);
+      }
+      entity_json["display"]["sprite_actions"] = sprite_actions_json;
+
+      // animations (新形式)
+      if (!entity->display.animations.empty()) {
+        nlohmann::json anims = nlohmann::json::object();
+        for (const auto &kv : entity->display.animations) {
+          nlohmann::json a;
+          a["atlas"] = normalizePathForJson(kv.second.atlas);
+          a["json"] = normalizePathForJson(kv.second.json);
+          a["loop"] = kv.second.loop;
+          a["mirror_h"] = kv.second.mirror_h;
+          a["mirror_v"] = kv.second.mirror_v;
+          anims[kv.first] = a;
+        }
+        entity_json["display"]["animations"] = anims;
+      }
 
       entity_json["skill_ids"] = entity->skill_ids;
       entity_json["ability_ids"] = entity->ability_ids;
@@ -361,6 +489,95 @@ bool EntityLoader::SaveToJson(const std::string &json_path,
 
   } catch (const std::exception &e) {
     std::cerr << "Error saving entities: " << e.what() << std::endl;
+    return false;
+  }
+}
+
+bool EntityLoader::SaveSingleEntity(const std::string &json_path,
+                                    const EntityDef &def) {
+  try {
+    nlohmann::json j;
+    j["id"] = def.id;
+    j["name"] = def.name;
+    j["description"] = def.description;
+    j["rarity"] = def.rarity;
+    j["type"] = def.type;
+    j["is_enemy"] = def.is_enemy;
+    j["cost"] = def.cost;
+    j["cooldown"] = def.cooldown;
+    j["draw_type"] = def.draw_type;
+
+    j["stats"]["hp"] = def.stats.hp;
+    j["stats"]["attack"] = def.stats.attack;
+    j["stats"]["attack_speed"] = def.stats.attack_speed;
+    j["stats"]["range"] = def.stats.range;
+    j["stats"]["move_speed"] = def.stats.move_speed;
+    j["stats"]["knockback"] = def.stats.knockback;
+
+    j["combat"]["attack_point"] = def.combat.attack_point;
+    j["combat"]["attack_frame"] = def.combat.attack_frame;
+    j["combat"]["hitbox"]["width"] = def.combat.hitbox.width;
+    j["combat"]["hitbox"]["height"] = def.combat.hitbox.height;
+    j["combat"]["hitbox"]["offset_x"] = def.combat.hitbox.offset_x;
+    j["combat"]["hitbox"]["offset_y"] = def.combat.hitbox.offset_y;
+
+    j["display"]["sprite_sheet"] = def.display.sprite_sheet;
+    j["display"]["idle_animation"] = def.display.idle_animation;
+    j["display"]["walk_animation"] = def.display.walk_animation;
+    j["display"]["attack_animation"] = def.display.attack_animation;
+    j["display"]["death_animation"] = def.display.death_animation;
+    j["display"]["atlas_texture"] = def.display.atlas_texture;
+    j["display"]["icon"] = def.display.icon;
+    j["display"]["sprite_actions"] = def.display.sprite_actions;
+    j["display"]["mirror_h"] = def.display.mirror_h;
+    j["display"]["mirror_v"] = def.display.mirror_v;
+    if (!def.display.animations.empty()) {
+      nlohmann::json anims = nlohmann::json::object();
+      for (const auto &kv : def.display.animations) {
+        nlohmann::json a;
+        a["atlas"] = kv.second.atlas;
+        a["json"] = kv.second.json;
+        a["loop"] = kv.second.loop;
+        a["mirror_h"] = kv.second.mirror_h;
+        a["mirror_v"] = kv.second.mirror_v;
+        anims[kv.first] = a;
+      }
+      j["display"]["animations"] = anims;
+    }
+    {
+      nlohmann::json mirror_by_action = nlohmann::json::object();
+      for (const auto &kv : def.display.action_mirror_h) {
+        nlohmann::json obj;
+        obj["h"] = kv.second;
+        obj["v"] = def.display.action_mirror_v.count(kv.first) ? def.display.action_mirror_v.at(kv.first) : false;
+        mirror_by_action[kv.first] = obj;
+      }
+      for (const auto &kv : def.display.action_mirror_v) {
+        if (!mirror_by_action.contains(kv.first)) {
+          nlohmann::json obj;
+          obj["h"] = def.display.action_mirror_h.count(kv.first) ? def.display.action_mirror_h.at(kv.first) : false;
+          obj["v"] = kv.second;
+          mirror_by_action[kv.first] = obj;
+        }
+      }
+      j["display"]["mirror_by_action"] = mirror_by_action;
+    }
+
+    j["skill_ids"] = def.skill_ids;
+    j["ability_ids"] = def.ability_ids;
+    j["tags"] = def.tags;
+
+    std::ofstream file(json_path);
+    if (!file.is_open()) {
+      std::cerr << "Failed to open file for writing: " << json_path << std::endl;
+      return false;
+    }
+
+    file << j.dump(2);
+    return true;
+
+  } catch (const std::exception &e) {
+    std::cerr << "Error saving entity: " << e.what() << std::endl;
     return false;
   }
 }

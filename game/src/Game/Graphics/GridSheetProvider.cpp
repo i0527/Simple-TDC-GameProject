@@ -6,6 +6,8 @@
 
 using json = nlohmann::json;
 
+namespace Game::Graphics {
+
 GridSheetProvider::GridSheetProvider(Texture2D& texture, const Config& config)
     : texture_(&texture), config_(config) {
 }
@@ -32,17 +34,36 @@ bool GridSheetProvider::LoadFromJson(const std::string& jsonPath) {
         
         // JSON の形式は以下を想定:
         // {
-        //   "idle": {"start": 0, "count": 8, "loop": true, "fps": 12.0},
-        //   "walk": {"start": 8, "count": 8, "loop": true, "fps": 12.0}
+        //   "clips": [
+        //     { "name": "idle", "startIndex": 0, "length": 8, "loop": true, "fps": 12.0 }
+        //   ]
+        // }
+        // または旧形式:
+        // {
+        //   "idle": {"start": 0, "count": 8, "loop": true, "fps": 12.0}
         // }
         
-        for (auto& [name, def] : data.items()) {
-            int start = def.value("start", 0);
-            int count = def.value("count", 1);
-            bool loop = def.value("loop", true);
-            float fps = def.value("fps", 12.0f);
-            
-            RegisterClip(name, start, count, loop, fps);
+        if (data.contains("clips")) {
+            // 新形式
+            for (auto& clip : data["clips"]) {
+                std::string name = clip.value("name", "");
+                int start = clip.value("startIndex", 0);
+                int count = clip.value("length", 1);
+                bool loop = clip.value("loop", true);
+                float fps = clip.value("fps", 12.0f);
+                
+                RegisterClip(name, start, count, loop, fps);
+            }
+        } else {
+            // 旧形式
+            for (auto& [name, def] : data.items()) {
+                int start = def.value("start", 0);
+                int count = def.value("count", 1);
+                bool loop = def.value("loop", true);
+                float fps = def.value("fps", 12.0f);
+                
+                RegisterClip(name, start, count, loop, fps);
+            }
         }
         
         return true;
@@ -125,3 +146,5 @@ FrameRef GridSheetProvider::CreateFrameRef(int col, int row) const {
     
     return ref;
 }
+
+} // namespace Game::Graphics

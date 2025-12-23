@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <string>
 
+namespace Game::Graphics {
+
 /**
  * @brief Aseprite JSON Atlas Provider
  *
@@ -22,6 +24,7 @@ public:
      * @param atlasJson Aseprite JSON Array形式のデータ
      */
     AsepriteJsonAtlasProvider(Texture2D texture, const nlohmann::json& atlasJson);
+    ~AsepriteJsonAtlasProvider();
 
     // ===== IFrameProvider インターフェース =====
 
@@ -85,3 +88,5 @@ private:
     /// ミリ秒を秒に変換
     static float MillisecondsToSeconds(int ms) { return static_cast<float>(ms) / 1000.0f; }
 };
+
+} // namespace Game::Graphics

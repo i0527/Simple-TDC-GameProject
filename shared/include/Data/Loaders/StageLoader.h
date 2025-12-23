@@ -10,6 +10,7 @@ class StageLoader {
 public:
     static bool LoadFromJson(const std::string& json_path, DefinitionRegistry& registry);
     static bool SaveToJson(const std::string& json_path, const DefinitionRegistry& registry);
+    static bool SaveSingleStage(const std::string& json_path, const StageDef& def);
 };
 
 } // namespace Shared::Data

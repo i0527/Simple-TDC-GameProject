@@ -29,6 +29,12 @@ public:
     /// @param registry 対象のRegistry
     /// @return 成功時 true
     static bool SaveToJson(const std::string& json_path, const DefinitionRegistry& registry);
+
+    /// @brief 単一のEntity定義をJSONファイルへ書き込み
+    /// @param json_path 書き込み先JSONファイルパス
+    /// @param def Entity定義
+    /// @return 成功時 true
+    static bool SaveSingleEntity(const std::string& json_path, const EntityDef& def);
 };
 
 } // namespace Shared::Data

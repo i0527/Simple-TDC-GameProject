@@ -1,6 +1,8 @@
 #include "Game/Graphics/SpriteRenderer.h"
 #include <raymath.h>
 
+namespace Game::Graphics {
+
 void SpriteRenderer::DrawSprite(
     Shared::Data::Graphics::IFrameProvider& provider,
     const std::string& clipName,
@@ -106,3 +108,5 @@ void SpriteRenderer::DrawSpriteDebug(
         outlineColor
     );
 }
+
+} // namespace Game::Graphics

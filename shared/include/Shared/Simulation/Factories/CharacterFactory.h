@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Data/DefinitionRegistry.h"
-#include "Game/Components/NewCoreComponents.h"
-#include "Game/Graphics/AsepriteJsonAtlasProvider.h"
 #include "Game/Graphics/GridSheetProvider.h"
+#include "Game/Graphics/AsepriteJsonAtlasProvider.h"
+#include "Game/Components/NewCoreComponents.h"
 #include <entt/entt.hpp>
 #include <memory>
 #include <string>
@@ -41,14 +41,17 @@ public:
 
 private:
     // Provider種類
-    enum class ProviderType { GridSheet, AsepriteJson, Unknown };
+    enum class ProviderType { GridSheet, AsepriteJson, AsepriteMulti, Unknown };
 
     ProviderType DetectProviderType(const Shared::Data::EntityDef& entityDef);
 
-    std::unique_ptr<GridSheetProvider> CreateGridSheetProvider(
+    std::unique_ptr<Game::Graphics::GridSheetProvider> CreateGridSheetProvider(
         const Shared::Data::EntityDef& entityDef);
 
-    std::unique_ptr<AsepriteJsonAtlasProvider> CreateAsepriteProvider(
+    std::unique_ptr<Game::Graphics::AsepriteJsonAtlasProvider> CreateAsepriteProvider(
+        const Shared::Data::EntityDef& entityDef);
+
+    std::unique_ptr<Shared::Data::Graphics::IFrameProvider> CreateAsepriteMultiProvider(
         const Shared::Data::EntityDef& entityDef);
 
     Texture2D LoadTextureCached(const std::string& path);
@@ -56,8 +59,8 @@ private:
 
 private:
     // キャッシュ
-    std::unordered_map<std::string, std::unique_ptr<GridSheetProvider>> gridProviders_;
-    std::unordered_map<std::string, std::unique_ptr<AsepriteJsonAtlasProvider>> asepriteProviders_;
+    std::unordered_map<std::string, std::unique_ptr<Game::Graphics::GridSheetProvider>> gridProviders_;
+    std::unordered_map<std::string, std::unique_ptr<Game::Graphics::AsepriteJsonAtlasProvider>> asepriteProviders_;
     std::unordered_map<std::string, Texture2D> textureCache_;
 
     // 依存

@@ -95,3 +95,9 @@ assets/definitions/*/*
 *.log
 *.swp
 *~
+# WebUI (Node.js)
+webui/node_modules/
+node_modules/
+
+# Local dependency cache (user-provided, not versioned)
+external/local_cache/

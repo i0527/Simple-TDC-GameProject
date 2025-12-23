@@ -7,6 +7,7 @@ constexpr float BASE_WIDTH = 110.0f;
 constexpr float BASE_HEIGHT = 160.0f;
 constexpr float BASE_MARGIN = 10.0f;
 constexpr float UNIT_HEIGHT = 40.0f;
+constexpr float UNIT_SPACING = 80.0f;
 constexpr float BETWEEN_WAVE_MESSAGE_Y = 120.0f;
 
 struct TopUiLayout {
@@ -569,6 +570,19 @@ void TDGameScene::PrepareStage() {
   player_spawn_x_ = player_base_x_;
 
   SpawnBases();
+
+  // 味方ユニットを編成からスポーン
+  if (formation_manager_) {
+    const auto &slots = formation_manager_->GetSlots();
+    for (size_t i = 0; i < slots.size(); ++i) {
+      if (!slots[i].empty()) {
+        float x = player_spawn_x_ - (static_cast<float>(i) - static_cast<float>(slots.size() - 1) * 0.5f) * UNIT_SPACING;
+        Components::Stats stats = BuildStatsFromDef(definitions_.GetEntity(slots[i]));
+        Components::Velocity vel = BuildVelocityFromTeam(Components::Team::Type::Player);
+        SpawnEntity({x, lane_y_}, Components::Team::Type::Player, stats, vel, slots[i]);
+      }
+    }
+  }
 }
 
 void TDGameScene::SpawnBases() {

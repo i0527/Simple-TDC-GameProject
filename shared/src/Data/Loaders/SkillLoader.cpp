@@ -157,4 +157,48 @@ bool SkillLoader::SaveToJson(const std::string &json_path,
   }
 }
 
+bool SkillLoader::SaveSingleSkill(const std::string &json_path,
+                                  const SkillDef &def) {
+  try {
+    nlohmann::json j;
+    j["id"] = def.id;
+    j["name"] = def.name;
+    j["description"] = def.description;
+    j["type"] = def.type;
+
+    j["event_trigger"]["event_type"] = def.event_trigger.event_type;
+    j["event_trigger"]["interval"] = def.event_trigger.interval;
+
+    nlohmann::json effects_array = nlohmann::json::array();
+    for (const auto &effect : def.effects) {
+      nlohmann::json effect_json;
+      effect_json["effect_type"] = effect.effect_type;
+      effect_json["parameters"] = effect.parameters;
+      effects_array.push_back(effect_json);
+    }
+    j["effects"] = effects_array;
+
+    j["target"]["target_type"] = def.target.target_type;
+    j["target"]["range"] = def.target.range;
+    j["target"]["max_targets"] = def.target.max_targets;
+
+    j["cooldown"] = def.cooldown;
+    j["activation_chance"] = def.activation_chance;
+    j["tags"] = def.tags;
+
+    std::ofstream file(json_path);
+    if (!file.is_open()) {
+      std::cerr << "Failed to open file for writing: " << json_path << std::endl;
+      return false;
+    }
+
+    file << j.dump(2);
+    return true;
+
+  } catch (const std::exception &e) {
+    std::cerr << "Error saving skill: " << e.what() << std::endl;
+    return false;
+  }
+}
+
 } // namespace Shared::Data

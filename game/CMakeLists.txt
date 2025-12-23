@@ -11,6 +11,11 @@ include(FetchContent)
 
 # ImGui（rlImGui互換の v1.89.9 に固定） - 既存ターゲットが無ければ定義
 if(NOT TARGET imgui_lib)
+    set(_imgui_local ${FETCHCONTENT_BASE_DIR}/imgui-src)
+    if(EXISTS ${_imgui_local}/CMakeLists.txt)
+        set(FETCHCONTENT_SOURCE_DIR_IMGUI ${_imgui_local})
+    endif()
+
     FetchContent_Declare(
         imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
@@ -32,6 +37,11 @@ endif()
 
 # rlImGui
 if(NOT TARGET rlimgui_lib)
+    set(_rlimgui_local ${FETCHCONTENT_BASE_DIR}/rlimgui-src)
+    if(EXISTS ${_rlimgui_local}/CMakeLists.txt)
+        set(FETCHCONTENT_SOURCE_DIR_RLIMGUI ${_rlimgui_local})
+    endif()
+
     FetchContent_Declare(
         rlimgui
         GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
@@ -77,9 +87,6 @@ set(GAME_SOURCES
     src/Game/Scenes/TDGameScene.cpp
     src/Game/UI/SettingsPanel.cpp
     src/Game/UI/UiComponents.cpp
-    src/Game/Managers/EntityManager.cpp
-    src/Game/Managers/SkillManager.cpp
-    src/Game/Managers/StageManager.cpp
     src/Game/Managers/FormationManager.cpp
     src/Game/Audio/BgmService.cpp
 )

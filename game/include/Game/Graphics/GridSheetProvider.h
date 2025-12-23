@@ -11,6 +11,8 @@
 using Shared::Data::Graphics::IFrameProvider;
 using Shared::Data::Graphics::FrameRef;
 
+namespace Game::Graphics {
+
 /**
  * @brief グリッド形式スプライトシート Provider
  * 
@@ -118,5 +120,7 @@ private:
      */
     FrameRef CreateFrameRef(int col, int row) const;
 };
+
+} // namespace Game::Graphics
 
 #endif // GAME_GRAPHICS_GRIDSHEETPROVIDER_H

@@ -9,6 +9,9 @@
 #include "Data/DefinitionRegistry.h"
 #include "Game/Managers/FormationManager.h"
 #include "Game/Scenes/IScene.h"
+#include "Game/Graphics/GridSheetProvider.h"
+#include "Game/Graphics/SpriteRenderer.h"
+#include "Game/Graphics/AsepriteJsonAtlasProvider.h"
 
 namespace Game::Scenes {
 
@@ -52,8 +55,6 @@ private:
   };
 
   struct PreviewState {
-    std::string walkPath;
-    std::string attackPath;
     float animTimer = 0.0f;
     int currentFrame = 0;
     bool playingAttack = false;
@@ -84,7 +85,9 @@ private:
   EnhancementState enhancement_;
   float candidate_scroll_ = 0.0f;
 
-  mutable std::unordered_map<std::string, SpriteSheet> sprite_cache_;
+  mutable std::unordered_map<std::string, std::unique_ptr<Game::Graphics::AsepriteJsonAtlasProvider>> provider_cache_;
+  Game::Graphics::SpriteRenderer sprite_renderer_;
+  mutable std::unordered_map<std::string, Texture2D> icon_cache_;
 
   void RefreshData();
   LayoutInfo BuildLayout() const;
@@ -95,14 +98,14 @@ private:
   void AssignSelectedToSlot(int slot_index);
   void DrawIcon(const Rectangle &rect, const std::string &entity_id) const;
   const Shared::Data::EntityDef *GetSelectedDef() const;
-  const SpriteSheet &GetSpriteSheet(const std::string &path) const;
+  const Game::Graphics::AsepriteJsonAtlasProvider *GetProvider(const std::string &entity_id) const;
   void DrawStatusPanel(const Rectangle &panel, const Shared::Data::EntityDef *def);
   void DrawCharacterPreview(const Rectangle &panel,
                             const Shared::Data::EntityDef *def);
   void UpdatePreview(float delta_time);
   void StartAttackPreview();
-  void DrawSpriteAnim(const Rectangle &area, const SpriteSheet &sheet,
-                      float elapsed, int current_frame) const;
+  void DrawSpriteAnim(const Rectangle &area, Game::Graphics::AsepriteJsonAtlasProvider &provider,
+                      const std::string &clipName, float elapsed, int current_frame) const;
   bool HasPreviewAnimation() const;
   void TryMockUpgrade();
   Rectangle GetEnhancementArea(const Rectangle &status_panel) const;

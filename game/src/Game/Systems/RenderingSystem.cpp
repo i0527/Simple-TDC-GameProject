@@ -278,13 +278,20 @@ void RenderingSystem::DrawEntities(entt::registry &registry) const {
                                 static_cast<float>(fr.y),
                                 static_cast<float>(fr.w),
                                 static_cast<float>(fr.h)};
-                  Rectangle dst{
+                      // Combine global flip and per-action mirror
+                      bool flipH = transform.flipH;
+                      bool flipV = transform.flipV;
+                      auto itH = anim->mirrorHByAction.find(anim->currentAction);
+                      auto itV = anim->mirrorVByAction.find(anim->currentAction);
+                      if (itH != anim->mirrorHByAction.end()) flipH = flipH || itH->second;
+                      if (itV != anim->mirrorVByAction.end()) flipV = flipV || itV->second;
+                      Rectangle dst{
                       transform.x + static_cast<float>(fr.sourceX),
                       transform.y + static_cast<float>(fr.sourceY),
-                      std::abs(src.width) * SPRITE_DRAW_SCALE,
-                      std::abs(src.height) * SPRITE_DRAW_SCALE};
-                  Vector2 origin{0.0f, 0.0f};
-                  DrawTexturePro(*tex, src, dst, origin, transform.rotation,
+                        (flipH ? -1.0f : 1.0f) * std::abs(src.width) * SPRITE_DRAW_SCALE,
+                        (flipV ? -1.0f : 1.0f) * std::abs(src.height) * SPRITE_DRAW_SCALE};
+                      Vector2 origin{std::fabs(dst.width) * 0.5f, std::fabs(dst.height) * 0.5f};
+                      DrawTexturePro(*tex, src, dst, origin, transform.rotation,
                                  RAYWHITE);
                   bounds = dst;
                   drew_sprite = true;
@@ -326,10 +333,12 @@ void RenderingSystem::DrawEntities(entt::registry &registry) const {
                    static_cast<float>(frame_w), static_cast<float>(frame_h)};
           }
 
+          bool flipH = transform.flipH;
+          bool flipV = transform.flipV;
           Rectangle dst{transform.x, transform.y,
-                        std::abs(src.width) * SPRITE_DRAW_SCALE,
-                        std::abs(src.height) * SPRITE_DRAW_SCALE};
-          Vector2 origin{0.0f, 0.0f};
+                        (flipH ? -1.0f : 1.0f) * std::abs(src.width) * SPRITE_DRAW_SCALE,
+                        (flipV ? -1.0f : 1.0f) * std::abs(src.height) * SPRITE_DRAW_SCALE};
+          Vector2 origin{std::fabs(dst.width) * 0.5f, std::fabs(dst.height) * 0.5f};
           DrawTexturePro(*tex, src, dst, origin, transform.rotation, RAYWHITE);
           bounds = dst;
           drew_sprite = true;

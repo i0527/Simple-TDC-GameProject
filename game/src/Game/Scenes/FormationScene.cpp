@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <unordered_map>
@@ -45,10 +46,9 @@ FormationScene::FormationScene(
 }
 
 FormationScene::~FormationScene() {
-  for (auto &[path, sheet] : sprite_cache_) {
-    if (sheet.loaded) {
-      UnloadTexture(sheet.texture);
-      sheet.loaded = false;
+  for (auto &[entity_id, tex] : icon_cache_) {
+    if (tex.id != 0) {
+      UnloadTexture(tex);
     }
   }
 }
@@ -68,46 +68,107 @@ const Shared::Data::EntityDef *FormationScene::GetSelectedDef() const {
   return nullptr;
 }
 
-const FormationScene::SpriteSheet &
-FormationScene::GetSpriteSheet(const std::string &path) const {
-  auto it = sprite_cache_.find(path);
-  if (it != sprite_cache_.end()) {
-    return it->second;
+const Game::Graphics::AsepriteJsonAtlasProvider *FormationScene::GetProvider(const std::string &entity_id) const {
+  auto it = provider_cache_.find(entity_id);
+  if (it != provider_cache_.end()) {
+    return it->second.get();
   }
 
-  SpriteSheet sheet{};
-  if (!path.empty() && std::filesystem::exists(path)) {
-    Texture2D tex = LoadTexture(path.c_str());
-    if (tex.id != 0) {
-      sheet.texture = tex;
-      sheet.loaded = true;
-      sheet.frames = std::max(1, tex.width / 64);
-      sheet.frameWidth =
-          sheet.frames > 0 ? tex.width / sheet.frames : tex.width;
-      sheet.frameHeight = tex.height > 0 ? std::min(64, tex.height) : 64;
+  const auto *def = definitions_.GetEntity(entity_id);
+  if (!def || def->display.atlas_texture.empty()) {
+    return nullptr;
+  }
+
+  std::string pngPath = def->display.atlas_texture;
+  if (!std::filesystem::exists(pngPath)) {
+    return nullptr;
+  }
+
+  Texture2D tex = LoadTexture(pngPath.c_str());
+  if (tex.id == 0) {
+    return nullptr;
+  }
+
+  // sprite_actions から最初のJSONをロード
+  nlohmann::json atlasJson;
+  bool loaded = false;
+  for (const auto &[action, jsonPath] : def->display.sprite_actions) {
+    std::filesystem::path fullJsonPath = std::filesystem::path(pngPath).parent_path() / jsonPath;
+    if (std::filesystem::exists(fullJsonPath)) {
+      std::ifstream file(fullJsonPath.string());
+      if (file) {
+        file >> atlasJson;
+        loaded = true;
+        break;
+      }
     }
   }
-  auto [inserted, _] = sprite_cache_.emplace(path, sheet);
-  return inserted->second;
+  if (!loaded) {
+    return nullptr;
+  }
+
+  auto provider = std::make_unique<Game::Graphics::AsepriteJsonAtlasProvider>(tex, atlasJson);
+
+  auto [inserted, _] = provider_cache_.emplace(entity_id, std::move(provider));
+  return inserted->second.get();
 }
 
 void FormationScene::DrawIcon(const Rectangle &rect,
                               const std::string &entity_id) const {
   const auto *def = definitions_.GetEntity(entity_id);
-  std::string icon_path;
-  if (def) {
-    if (!def->display.icon.empty()) {
-      icon_path = def->display.icon;
-    } else if (!def->display.sprite_sheet.empty()) {
-      icon_path = def->display.sprite_sheet;
+
+  auto resolveIconPath = [](const Shared::Data::EntityDef* d) -> std::string {
+    if (!d) return {};
+    namespace fs = std::filesystem;
+
+    auto exists_path = [](const fs::path& p) { return !p.empty() && fs::exists(p); };
+
+    if (exists_path(d->display.icon)) {
+      return fs::path(d->display.icon).lexically_normal().generic_string();
+    }
+
+    fs::path hint = d->display.icon.empty() ? fs::path(d->display.atlas_texture) : fs::path(d->display.icon);
+    if (!hint.empty()) {
+      fs::path folder = hint.parent_path().filename();
+      std::string tier = d->type.empty() ? "main" : d->type; // main / sub
+      fs::path candidate = fs::path("assets/textures/icons/characters") / tier / folder / "icon.png";
+      if (exists_path(candidate)) {
+        return candidate.lexically_normal().generic_string();
+      }
+    }
+    return {};
+  };
+  const std::string icon_path = resolveIconPath(def);
+
+  // Try to draw icon first
+  if (def && !icon_path.empty()) {
+    auto it = icon_cache_.find(entity_id);
+    if (it == icon_cache_.end()) {
+      Texture2D tex = LoadTexture(icon_path.c_str());
+      if (tex.id != 0) {
+        icon_cache_[entity_id] = tex;
+        it = icon_cache_.find(entity_id);
+      }
+    }
+    if (it != icon_cache_.end()) {
+      DrawTexturePro(it->second, 
+                     {0.0f, 0.0f, (float)it->second.width, (float)it->second.height}, 
+                     rect, 
+                     {0.0f, 0.0f}, 
+                     0.0f, 
+                     WHITE);
+      return;
     }
   }
-  const SpriteSheet &sheet = GetSpriteSheet(icon_path);
-  if (sheet.loaded) {
-    Rectangle src{0.0f, 0.0f, static_cast<float>(sheet.frameWidth),
-                  static_cast<float>(sheet.frameHeight)};
-    Rectangle dst{rect.x, rect.y, rect.width, rect.height};
-    DrawTexturePro(sheet.texture, src, dst, {0.0f, 0.0f}, 0.0f, WHITE);
+  
+  // Fallback: draw sprite
+  auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(entity_id));
+  if (provider) {
+    sprite_renderer_.DrawSprite(
+        *provider, "idle", 0.0f,
+        Vector2{rect.x + rect.width / 2.0f, rect.y + rect.height}, // 足元基準
+        Vector2{rect.width / 64.0f, rect.height / 64.0f}, // スケール (64x64想定)
+        0.0f, WHITE);
   } else {
     DrawRectangleRec(rect, Color{60, 100, 200, 255});
     DrawRectangleLinesEx(rect, 2.0f, Color{120, 170, 240, 255});
@@ -115,25 +176,14 @@ void FormationScene::DrawIcon(const Rectangle &rect,
 }
 
 void FormationScene::DrawSpriteAnim(const Rectangle &area,
-                                    const SpriteSheet &sheet, float elapsed,
+                                    Game::Graphics::AsepriteJsonAtlasProvider &provider,
+                                    const std::string &clipName, float elapsed,
                                     int current_frame) const {
-  if (!sheet.loaded) {
-    // Placeholder rectangle animation
-    float t = fmodf(elapsed, 1.0f);
-    float alpha = 0.6f + 0.4f * sinf(t * 6.28f);
-    DrawRectangleRounded(
-        area, 0.1f, 6,
-        Color{60, 100, 200, static_cast<unsigned char>(alpha * 255)});
-    DrawRectangleLinesEx(area, 2.0f, Color{120, 170, 240, 230});
-    return;
-  }
-
-  int frame = sheet.frames > 0 ? current_frame % sheet.frames : 0;
-  Rectangle src{static_cast<float>(frame * sheet.frameWidth), 0.0f,
-                static_cast<float>(sheet.frameWidth),
-                static_cast<float>(sheet.frameHeight)};
-  Rectangle dst{area.x, area.y, area.width, area.height};
-  DrawTexturePro(sheet.texture, src, dst, {0.0f, 0.0f}, 0.0f, WHITE);
+  sprite_renderer_.DrawSprite(
+      provider, clipName, current_frame,
+      Vector2{area.x + area.width / 2.0f, area.y + area.height}, // 足元基準
+      Vector2{area.width / 64.0f, area.height / 64.0f}, // スケール (64x64想定)
+      0.0f, WHITE);
 }
 
 void FormationScene::UpdatePreview(float delta_time) {
@@ -144,25 +194,28 @@ void FormationScene::UpdatePreview(float delta_time) {
     return;
   }
 
+  const auto *def = GetSelectedDef();
+  std::string entity_id = def ? def->id : "";
+  auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(entity_id));
+  if (!provider) {
+    preview_.animTimer = 0.0f;
+    preview_.currentFrame = 0;
+    return;
+  }
+
+  const std::string &clipName = preview_.playingAttack ? "attack" : "walk";
+  if (!provider->HasClip(clipName)) {
+    return;
+  }
+
+  float fps = provider->GetClipFps(clipName);
+  float frameDuration = 1.0f / fps;
+  int frameCount = provider->GetFrameCount(clipName);
+
   preview_.animTimer += delta_time;
-
-  const std::string &path =
-      (preview_.playingAttack && !preview_.attackPath.empty())
-          ? preview_.attackPath
-          : preview_.walkPath;
-  const SpriteSheet &sheet = GetSpriteSheet(path);
-
-  const float frame_duration = 0.15f;
-  if (sheet.loaded && sheet.frames > 0) {
-    while (preview_.animTimer >= frame_duration) {
-      preview_.animTimer -= frame_duration;
-      preview_.currentFrame = (preview_.currentFrame + 1) % sheet.frames;
-    }
-  } else {
-    // keep placeholder timing
-    if (preview_.animTimer > 2.0f) {
-      preview_.animTimer = 0.0f;
-    }
+  while (preview_.animTimer >= frameDuration) {
+    preview_.animTimer -= frameDuration;
+    preview_.currentFrame = (preview_.currentFrame + 1) % frameCount;
   }
 
   if (preview_.playingAttack) {
@@ -175,6 +228,7 @@ void FormationScene::UpdatePreview(float delta_time) {
   }
 }
 
+
 void FormationScene::StartAttackPreview() {
   preview_.playingAttack = true;
   preview_.animTimer = 0.0f;
@@ -182,16 +236,10 @@ void FormationScene::StartAttackPreview() {
 }
 
 bool FormationScene::HasPreviewAnimation() const {
-  if (preview_.walkPath.empty() && preview_.attackPath.empty()) {
-    return false;
-  }
-  const std::string &path =
-      preview_.playingAttack && !preview_.attackPath.empty()
-          ? preview_.attackPath
-          : (!preview_.walkPath.empty() ? preview_.walkPath
-                                        : preview_.attackPath);
-  const SpriteSheet &sheet = GetSpriteSheet(path);
-  return sheet.loaded;
+  const auto *def = GetSelectedDef();
+  if (!def) return false;
+  const auto *provider = GetProvider(def->id);
+  return provider != nullptr;
 }
 
 bool FormationScene::ConsumeReturnHome() {
@@ -221,8 +269,6 @@ void FormationScene::RefreshData() {
   }
 
   const auto *def = GetSelectedDef();
-  preview_.walkPath = def ? def->display.walk_animation : "";
-  preview_.attackPath = def ? def->display.attack_animation : "";
   preview_.animTimer = 0.0f;
   preview_.currentFrame = 0;
   preview_.playingAttack = false;
@@ -438,9 +484,6 @@ void FormationScene::HandleInput() {
         CheckCollisionPointRec(mouse, r)) {
       if (click) {
         selected_candidate_ = i;
-        const auto *def = GetSelectedDef();
-        preview_.walkPath = def ? def->display.walk_animation : "";
-        preview_.attackPath = def ? def->display.attack_animation : "";
         preview_.animTimer = 0.0f;
         preview_.currentFrame = 0;
         preview_.playingAttack = false;
@@ -871,15 +914,20 @@ void FormationScene::DrawCharacterPreview(const Rectangle &panel,
                       panel.height - 64.0f};
 
   if (HasPreviewAnimation()) {
-    const std::string &path =
-        (preview_.playingAttack && !preview_.attackPath.empty())
-            ? preview_.attackPath
-            : preview_.walkPath;
-    const SpriteSheet &sheet = GetSpriteSheet(path);
-    DrawSpriteAnim(anim_area, sheet, preview_.animTimer, preview_.currentFrame);
+    const auto *selDef = GetSelectedDef();
+    std::string entity_id = selDef ? selDef->id : "";
+    auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(entity_id));
+    if (provider) {
+      const std::string &clipName = preview_.playingAttack ? "attack" : "walk";
+      DrawSpriteAnim(anim_area, *provider, clipName, preview_.animTimer, preview_.currentFrame);
+    }
   } else {
-    DrawSpriteAnim(anim_area, SpriteSheet{}, preview_.animTimer,
-                   preview_.currentFrame);
+    // Placeholder
+    float t = fmodf(preview_.animTimer, 1.0f);
+    float alpha = 0.6f + 0.4f * sinf(t * 6.28f);
+    DrawRectangleRounded(anim_area, 0.1f, 6,
+        Color{60, 100, 200, static_cast<unsigned char>(alpha * 255)});
+    DrawRectangleLinesEx(anim_area, 2.0f, Color{120, 170, 240, 230});
   }
 
   if (def) {

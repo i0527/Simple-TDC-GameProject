@@ -10,6 +10,7 @@ class SkillLoader {
 public:
     static bool LoadFromJson(const std::string& json_path, DefinitionRegistry& registry);
     static bool SaveToJson(const std::string& json_path, const DefinitionRegistry& registry);
+    static bool SaveSingleSkill(const std::string& json_path, const SkillDef& def);
 };
 
 } // namespace Shared::Data

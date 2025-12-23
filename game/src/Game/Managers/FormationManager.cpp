@@ -9,7 +9,7 @@
 namespace Game::Managers {
 
 namespace {
-constexpr const char *DEFAULT_FORMATION_PATH = "formation_debug.json";
+constexpr const char *DEFAULT_FORMATION_PATH = "formations/debug.json";
 constexpr int DEFAULT_MAX_SLOTS = 10; // 2 x 5 固定
 }
 

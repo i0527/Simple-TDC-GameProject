@@ -9,6 +9,7 @@
 #include <raylib.h>
 #include <rlImGui.h>
 #include <sstream>
+#include <filesystem>
 
 #include "Data/Loaders/AbilityLoader.h"
 #include "Data/Loaders/EntityLoader.h"
@@ -128,9 +129,6 @@ void GameApp::Shutdown() {
     imgui_initialized_ = false;
   }
 
-  entity_manager_->Shutdown();
-  skill_manager_->Shutdown();
-  stage_manager_->Shutdown();
 
   rendering_system_.Shutdown(*registry_);
   registry_->clear();
@@ -500,28 +498,50 @@ bool GameApp::LoadDefinitions() {
                                                 true);
   Shared::Data::EntityLoader::LoadFromDirectory(sub_chars, *definitions_, true);
 
-  // Skill定義（abilities_debug.jsonから）
-  std::string ability_path = context_->GetDataPath("abilities_debug.json");
+  // Entity定義（敵・キャラクター定義JSONを追加読み込み）
+  {
+    // 敵デバッグ定義
+    std::string entity_debug = context_->GetDataPath("entities/debug.json");
+    Shared::Data::EntityLoader::LoadFromJson(entity_debug, *definitions_);
+
+    // キャラクター定義（assets/definitions/entities/characters/*.json）
+    namespace fs = std::filesystem;
+    std::string chars_dir = context_->GetDataPath("entities/characters");
+    try {
+      if (fs::exists(chars_dir) && fs::is_directory(chars_dir)) {
+        for (const auto &entry : fs::recursive_directory_iterator(chars_dir)) {
+          if (entry.is_regular_file() && entry.path().filename() == "entity.json") {
+            Shared::Data::EntityLoader::LoadFromJson(entry.path().string(), *definitions_);
+          }
+        }
+      }
+    } catch (const std::exception &e) {
+      std::cerr << "[GameApp] Failed to scan character defs: " << e.what() << std::endl;
+    }
+  }
+
+  // Ability定義（abilities/debug.json）
+  std::string ability_path = context_->GetDataPath("abilities/debug.json");
   if (!Shared::Data::AbilityLoader::LoadFromJson(ability_path, *definitions_)) {
     return false;
   }
 
   // Stage定義
-  std::string stage_path = context_->GetDataPath("stages_debug.json");
+  std::string stage_path = context_->GetDataPath("stages/debug.json");
   if (!Shared::Data::StageLoader::LoadFromJson(stage_path, *definitions_)) {
     return false;
   }
   // 追加ステージ定義（多量スポーン検証用）
-  std::string stage_path2 = context_->GetDataPath("stages_debug2.json");
+  std::string stage_path2 = context_->GetDataPath("stages/debug2.json");
   Shared::Data::StageLoader::LoadFromJson(stage_path2, *definitions_);
 
   // Wave定義
-  std::string wave_path = context_->GetDataPath("waves_debug.json");
+  std::string wave_path = context_->GetDataPath("waves/debug.json");
   if (!Shared::Data::WaveLoader::LoadFromJson(wave_path, *definitions_)) {
     return false;
   }
   // 追加Wave定義（多量スポーン検証用）
-  std::string wave_path2 = context_->GetDataPath("waves_debug2.json");
+  std::string wave_path2 = context_->GetDataPath("waves/debug2.json");
   Shared::Data::WaveLoader::LoadFromJson(wave_path2, *definitions_);
 
   std::cout << "Definitions loaded" << std::endl;
@@ -542,19 +562,9 @@ bool GameApp::SetupGameResources(std::string &message) {
   }
 
   message = "Initializing managers...";
-  entity_manager_ =
-      std::make_unique<Game::Managers::EntityManager>(*context_, *definitions_);
   formation_manager_ = std::make_unique<Game::Managers::FormationManager>(
       *context_, *definitions_);
-  skill_manager_ =
-      std::make_unique<Game::Managers::SkillManager>(*context_, *definitions_);
-  stage_manager_ =
-      std::make_unique<Game::Managers::StageManager>(*context_, *definitions_);
-
-  entity_manager_->Initialize();
   // FormationManager はデータ読み込みのみで初期化
-  skill_manager_->Initialize();
-  stage_manager_->Initialize();
 
   message = "Done.";
   return true;

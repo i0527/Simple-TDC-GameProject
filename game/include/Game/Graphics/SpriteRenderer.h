@@ -5,6 +5,8 @@
 #include <raylib.h>
 #include <string>
 
+namespace Game::Graphics {
+
 /**
  * @brief 統一スプライト描画器
  * 
@@ -59,5 +61,7 @@ public:
         Color outlineColor = RED
     );
 };
+
+} // namespace Game::Graphics
 
 #endif // GAME_GRAPHICS_SPRITERENDERER_H
