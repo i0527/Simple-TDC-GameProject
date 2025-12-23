@@ -13,10 +13,7 @@
 #include "Data/DefinitionRegistry.h"
 #include "Data/UserDataManager.h"
 #include "Game/Audio/BgmService.h"
-#include "Game/Managers/EntityManager.h"
 #include "Game/Managers/FormationManager.h"
-#include "Game/Managers/SkillManager.h"
-#include "Game/Managers/StageManager.h"
 #include "Game/Scenes/LoadingScene.h"
 #include "Game/Scenes/SceneManager.h"
 #include "Game/Scenes/TDGameScene.h"
@@ -47,10 +44,7 @@ private:
   std::unique_ptr<Shared::Data::UserDataManager> user_data_manager_;
 
   // マネージャー
-  std::unique_ptr<Game::Managers::EntityManager> entity_manager_;
   std::unique_ptr<Game::Managers::FormationManager> formation_manager_;
-  std::unique_ptr<Game::Managers::SkillManager> skill_manager_;
-  std::unique_ptr<Game::Managers::StageManager> stage_manager_;
   std::unique_ptr<Game::Audio::BgmService> bgm_service_;
 
   // ECS Registry

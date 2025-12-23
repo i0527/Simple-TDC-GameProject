@@ -1,5 +1,6 @@
 #include "Editor/Application/EditorApp.h"
 #include <iostream>
+#include <memory>
 
 int main() {
     auto app = std::make_unique<Editor::Application::EditorApp>();

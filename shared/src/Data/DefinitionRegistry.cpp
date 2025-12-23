@@ -48,6 +48,15 @@ bool DefinitionRegistry::HasEntity(const std::string &id) const {
   return entities_.find(id) != entities_.end();
 }
 
+bool DefinitionRegistry::RemoveEntity(const std::string &id) {
+  auto it = entities_.find(id);
+  if (it == entities_.end()) {
+    return false;
+  }
+  entities_.erase(it);
+  return true;
+}
+
 // ========== Skill ==========
 
 bool DefinitionRegistry::RegisterSkill(const SkillDef &def) {
@@ -286,7 +295,7 @@ void DefinitionRegistry::OnFileChanged(const std::string &file_path) {
     // ファイルパスから定義タイプを判定して再ロード
     std::string lower_path = file_path;
     std::transform(lower_path.begin(), lower_path.end(), lower_path.begin(),
-                   ::tolower);
+             [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
     if (lower_path.find("entities") != std::string::npos) {
       // Entity定義の再ロード

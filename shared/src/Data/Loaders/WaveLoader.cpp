@@ -117,4 +117,41 @@ bool WaveLoader::SaveToJson(const std::string &json_path,
   }
 }
 
+bool WaveLoader::SaveSingleWave(const std::string &json_path,
+                                const WaveDef &def) {
+  try {
+    nlohmann::json j;
+    j["id"] = def.id;
+    j["stage_id"] = def.stage_id;
+    j["wave_number"] = def.wave_number;
+
+    nlohmann::json groups_array = nlohmann::json::array();
+    for (const auto &group : def.spawn_groups) {
+      nlohmann::json group_json;
+      group_json["entity_id"] = group.entity_id;
+      group_json["count"] = group.count;
+      group_json["spawn_interval"] = group.spawn_interval;
+      group_json["delay_from_wave_start"] = group.delay_from_wave_start;
+      groups_array.push_back(group_json);
+    }
+    j["spawn_groups"] = groups_array;
+
+    j["duration"] = def.duration;
+    j["tags"] = def.tags;
+
+    std::ofstream file(json_path);
+    if (!file.is_open()) {
+      std::cerr << "Failed to open file for writing: " << json_path << std::endl;
+      return false;
+    }
+
+    file << j.dump(2);
+    return true;
+
+  } catch (const std::exception &e) {
+    std::cerr << "Error saving wave: " << e.what() << std::endl;
+    return false;
+  }
+}
+
 } // namespace Shared::Data

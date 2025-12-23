@@ -43,6 +43,12 @@ target_include_directories(SimpleTDC_Shared
 # nlohmann/json とグラフィックス依存関係
 include(FetchContent)
 
+# ローカルキャッシュに展開済みがあればそれを優先する
+set(_json_local ${FETCHCONTENT_BASE_DIR}/json-src)
+if(EXISTS ${_json_local}/CMakeLists.txt)
+    set(FETCHCONTENT_SOURCE_DIR_JSON ${_json_local})
+endif()
+
 FetchContent_Declare(
     json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
@@ -50,6 +56,11 @@ FetchContent_Declare(
 )
 
 # EnTT (ECS ライブラリ)
+set(_entt_local ${FETCHCONTENT_BASE_DIR}/entt-src)
+if(EXISTS ${_entt_local}/CMakeLists.txt)
+    set(FETCHCONTENT_SOURCE_DIR_ENTT ${_entt_local})
+endif()
+
 FetchContent_Declare(
     entt
     GIT_REPOSITORY https://github.com/skypjack/entt.git
@@ -58,6 +69,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(entt)
 
 if(NOT TARGET raylib)
+    set(_raylib_local ${FETCHCONTENT_BASE_DIR}/raylib-src)
+    if(EXISTS ${_raylib_local}/CMakeLists.txt)
+        set(FETCHCONTENT_SOURCE_DIR_RAYLIB ${_raylib_local})
+    endif()
+
     FetchContent_Declare(
         raylib
         GIT_REPOSITORY https://github.com/raysan5/raylib.git
@@ -67,6 +83,11 @@ if(NOT TARGET raylib)
 endif()
 
 if(NOT TARGET imgui_lib)
+    set(_imgui_local ${FETCHCONTENT_BASE_DIR}/imgui-src)
+    if(EXISTS ${_imgui_local}/CMakeLists.txt)
+        set(FETCHCONTENT_SOURCE_DIR_IMGUI ${_imgui_local})
+    endif()
+
     FetchContent_Declare(
         imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git

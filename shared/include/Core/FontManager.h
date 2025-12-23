@@ -20,6 +20,8 @@ public:
   ImFont *LoadImGuiJapaneseFont(const char *filePath, float fontSize);
 
 private:
+  // 指定パスが存在しない場合に代替の候補から解決する
+  std::string ResolveFontPath(const char *requested) const;
   std::vector<int> GetJapaneseCodepoints() const;
 };
 

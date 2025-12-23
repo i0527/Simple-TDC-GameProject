@@ -1,6 +1,7 @@
 #include "Game/Systems/NewRenderingSystem.h"
 
 #include "Game/Components/NewCoreComponents.h"
+#include "Game/Graphics/SpriteRenderer.h"
 
 namespace Game::Systems {
 
@@ -17,7 +18,7 @@ void NewRenderingSystem::DrawEntities(entt::registry& registry) const {
 
         Color tint = (team.type == Game::Components::Team::Type::Player) ? BLUE : RED;
 
-        SpriteRenderer::DrawSprite(
+        Game::Graphics::SpriteRenderer::DrawSprite(
             *sprite.provider,
             anim.currentClip,
             anim.frameIndex,

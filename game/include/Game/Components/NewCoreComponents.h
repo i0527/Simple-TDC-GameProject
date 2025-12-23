@@ -54,6 +54,9 @@ struct Animation {
   float atlasDefaultFps = 10.0f;
   bool atlasLoop = true;
   std::unordered_map<std::string, std::string> actionToJson;
+  // Per-action mirror defaults (from JSON meta or entity display overrides)
+  std::unordered_map<std::string, bool> mirrorHByAction;
+  std::unordered_map<std::string, bool> mirrorVByAction;
 };
 
 /// @brief Spriteコンポーネント（新旧両方のフィールドをサポート）

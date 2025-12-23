@@ -2,6 +2,8 @@
 #include <iostream>
 #include <algorithm>
 
+namespace Game::Graphics {
+
 AsepriteJsonAtlasProvider::AsepriteJsonAtlasProvider(Texture2D texture, const nlohmann::json& atlasJson)
     : texture_(texture) {
 
@@ -29,6 +31,12 @@ AsepriteJsonAtlasProvider::AsepriteJsonAtlasProvider(Texture2D texture, const nl
     } catch (const std::exception& e) {
         std::cerr << "[AsepriteJsonAtlasProvider] Error: " << e.what() << std::endl;
         throw;
+    }
+}
+
+AsepriteJsonAtlasProvider::~AsepriteJsonAtlasProvider() {
+    if (texture_.id != 0) {
+        UnloadTexture(texture_);
     }
 }
 
@@ -213,3 +221,5 @@ bool AsepriteJsonAtlasProvider::IsLooping(const std::string& clipName) const {
     const auto* clip = spriteSet_.GetClip(clipName);
     return clip ? clip->loop : false;
 }
+
+} // namespace Game::Graphics

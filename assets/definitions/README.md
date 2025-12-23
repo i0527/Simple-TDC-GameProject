@@ -4,12 +4,31 @@
 
 ## ディレクトリ構成
 
-- **characters/** - キャラクター定義ファイル（*.char.json）
-- **stages/** - ステージ定義ファイル（*.stage.json）
-- **ui/** - UIレイアウト定義ファイル（*.ui.json）
-- **skills/** - スキル定義ファイル（*.skill.json）
-- **effects/** - エフェクト定義ファイル（*.effect.json）
-- **sounds/** - サウンド定義ファイル（*.sound.json）
+- **abilities/** - アビリティ定義ファイル
+  - debug.json, sample.json
+- **decks/** - デッキ定義ファイル
+  - debug.json, sample.json
+- **effects/** - エフェクト定義ファイル（将来用）
+- **entities/** - エンティティ定義ファイル
+  - debug.json, formation_debug.json, sample.json
+- **formations/** - 編成定義ファイル
+  - debug.json
+- **maps/** - マップ定義ファイル（将来用）
+- **schemas/** - JSONスキーマファイル
+  - ability.schema.json, entity.schema.json, etc.
+- **skills/** - スキル定義ファイル（将来用）
+- **sounds/** - サウンド定義ファイル（将来用）
+- **stages/** - ステージ定義ファイル
+  - debug.json, debug2.json, sample.json
+- **ui/** - UI定義ファイル（将来用）
+- **waves/** - ウェーブ定義ファイル
+  - debug.json, debug2.json, sample.json
+
+## 命名規則
+
+- **debug.json**: デバッグ用データ
+- **sample.json**: サンプルデータ
+- **production.json**: 本番用データ（将来）
 
 ## WebUIエディター
 
@@ -18,6 +37,7 @@
 ### 使用方法
 
 1. WebUIエディターを起動:
+
    ```bash
    cd tools/webui-editor
    npm install
@@ -25,18 +45,20 @@
    ```
 
 2. ゲームサーバーをHTTPサーバー有効で起動:
+
    ```bash
    # ビルド後
    ./bin/SimpleTDCGame
    ```
 
 3. ブラウザでエディターにアクセス:
-   - WebUI: http://localhost:3000
-   - API: http://localhost:8080/api/*
+   - WebUI: <http://localhost:3000>
+   - API: <http://localhost:8080/api/>*
 
 ## 定義ファイルの例
 
 ### キャラクター定義 (characters/example.char.json)
+
 ```json
 {
   "id": "example_character",
@@ -54,6 +76,7 @@
 ```
 
 ### ステージ定義 (stages/example.stage.json)
+
 ```json
 {
   "id": "stage_1",
@@ -66,6 +89,7 @@
 ```
 
 ### スキル定義 (skills/example.skill.json)
+
 ```json
 {
   "id": "fireball",

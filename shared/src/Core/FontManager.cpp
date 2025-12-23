@@ -1,21 +1,51 @@
 #include "Core/FontManager.h"
 
 #include <iostream>
+#include <filesystem>
 
 namespace Shared::Core {
 
+std::string FontManager::ResolveFontPath(const char *requested) const {
+  using std::filesystem::path;
+  path req(requested ? requested : "");
+  path fname = req.filename();
+
+  // 候補リスト（順序優先）
+  std::vector<path> candidates;
+  if (!req.empty()) candidates.push_back(req);
+  candidates.push_back(path("assets/shared/fonts") / fname);
+  // よくあるタイポも許容
+  candidates.push_back(path("assets/shared/font") / fname);    // fonts → font
+  candidates.push_back(path("assets/shareds/fonts") / fname);   // shared → shareds
+  candidates.push_back(path("assets/fonts") / fname);
+  candidates.push_back(path("fonts") / fname);
+  // ユーザレポートのタイプミス（shareds/font）にも対応
+  candidates.push_back(path("assets/shareds/font") / fname);
+
+  for (const auto &p : candidates) {
+    std::string ps = p.string();
+    if (FileExists(ps.c_str())) {
+      return ps;
+    }
+  }
+  return requested ? std::string(requested) : std::string();
+}
+
 Font FontManager::LoadJapaneseFont(const char *filePath, int fontSize) {
-  if (!FileExists(filePath)) {
-    std::cerr << "Font file not found: " << filePath << std::endl;
+  std::string resolved = FileExists(filePath) ? std::string(filePath)
+                                              : ResolveFontPath(filePath);
+  if (!FileExists(resolved.c_str())) {
+    std::cerr << "Font file not found: " << (filePath ? filePath : "")
+              << " (resolved: " << resolved << ")" << std::endl;
     return GetFontDefault();
   }
 
   auto codepoints = GetJapaneseCodepoints();
-  Font font = LoadFontEx(filePath, fontSize, codepoints.data(),
+  Font font = LoadFontEx(resolved.c_str(), fontSize, codepoints.data(),
                          static_cast<int>(codepoints.size()));
 
   if (font.texture.id == 0) {
-    std::cerr << "Failed to load font: " << filePath << std::endl;
+    std::cerr << "Failed to load font: " << resolved << std::endl;
     return GetFontDefault();
   }
 
@@ -25,6 +55,8 @@ Font FontManager::LoadJapaneseFont(const char *filePath, int fontSize) {
 
 ImFont *FontManager::LoadImGuiJapaneseFont(const char *filePath,
                                            float fontSize) {
+  std::string resolved = FileExists(filePath) ? std::string(filePath)
+                                              : ResolveFontPath(filePath);
   auto codepoints = GetJapaneseCodepoints();
   std::vector<ImWchar> glyphRanges;
   glyphRanges.reserve(codepoints.size() + 1);
@@ -40,11 +72,11 @@ ImFont *FontManager::LoadImGuiJapaneseFont(const char *filePath,
   config.PixelSnapH = true;
 
   ImGuiIO &io = ImGui::GetIO();
-  ImFont *font = io.Fonts->AddFontFromFileTTF(filePath, fontSize, &config,
+  ImFont *font = io.Fonts->AddFontFromFileTTF(resolved.c_str(), fontSize, &config,
                                               glyphRanges.data());
 
   if (font == nullptr) {
-    std::cerr << "Failed to load ImGui font: " << filePath << std::endl;
+    std::cerr << "Failed to load ImGui font: " << resolved << std::endl;
   }
 
   return font;

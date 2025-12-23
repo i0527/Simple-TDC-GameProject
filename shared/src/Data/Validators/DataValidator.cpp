@@ -1,5 +1,7 @@
 #include "Data/Validators/DataValidator.h"
 #include <iostream>
+#include <filesystem>
+#include <fstream>
 
 namespace Shared::Data {
 
@@ -219,6 +221,117 @@ bool DataValidator::ValidateAbilities(const DefinitionRegistry& registry) {
     }
 
     return success;
+}
+
+bool DataValidator::ValidateEntityAgainstSchema(const nlohmann::json& entityJson, 
+                                               const std::string& schemaPath) {
+    errors_.clear();
+    
+    // スキーマファイルを読み込む
+    if (!std::filesystem::exists(schemaPath)) {
+        errors_.push_back("Schema file not found: " + schemaPath);
+        return false;
+    }
+    
+    try {
+        std::ifstream schema_file(schemaPath);
+        nlohmann::json schema = nlohmann::json::parse(schema_file);
+        
+        // 必須フィールドの確認
+        if (schema.contains("required")) {
+            for (const auto& required_field : schema["required"]) {
+                if (!entityJson.contains(required_field)) {
+                    errors_.push_back("Missing required field: " + required_field.get<std::string>());
+                }
+            }
+        }
+        
+        // プロパティの妥当性確認
+        if (schema.contains("properties")) {
+            for (const auto& [key, value] : schema["properties"].items()) {
+                if (entityJson.contains(key)) {
+                    ValidateProperty(entityJson, schema, key, key);
+                }
+            }
+        }
+        
+        // type フィールドの enum チェック
+        if (entityJson.contains("type") && schema["properties"]["type"].contains("enum")) {
+            auto allowed_types = schema["properties"]["type"]["enum"];
+            auto actual_type = entityJson["type"].get<std::string>();
+            bool type_valid = false;
+            for (const auto& enum_val : allowed_types) {
+                if (enum_val.get<std::string>() == actual_type) {
+                    type_valid = true;
+                    break;
+                }
+            }
+            if (!type_valid) {
+                errors_.push_back("Invalid type: " + actual_type + ". Allowed: main, sub, enemy");
+            }
+        }
+        
+        // rarity フィールドの range チェック
+        if (entityJson.contains("rarity")) {
+            auto rarity = entityJson["rarity"].get<int>();
+            if (rarity < 1 || rarity > 5) {
+                errors_.push_back("Rarity out of range: " + std::to_string(rarity) + " (expected 1-5)");
+            }
+        }
+        
+        // stats.hp チェック
+        if (entityJson.contains("stats") && entityJson["stats"].contains("hp")) {
+            auto hp = entityJson["stats"]["hp"].get<int>();
+            if (hp <= 0) {
+                errors_.push_back("Invalid HP: " + std::to_string(hp) + " (must be > 0)");
+            }
+        }
+        
+        return errors_.empty();
+        
+    } catch (const std::exception& e) {
+        errors_.push_back(std::string("Schema validation error: ") + e.what());
+        return false;
+    }
+}
+
+void DataValidator::ValidateProperty(const nlohmann::json& data, const nlohmann::json& schema,
+                                    const std::string& propName, const std::string& currentPath) {
+    if (!schema.contains("properties") || !schema["properties"].contains(propName)) {
+        return;
+    }
+    
+    const auto& prop_schema = schema["properties"][propName];
+    const auto& prop_value = data[propName];
+    
+    // 型チェック
+    if (prop_schema.contains("type")) {
+        std::string expected_type = prop_schema["type"].get<std::string>();
+        if (expected_type == "string" && !prop_value.is_string()) {
+            errors_.push_back(currentPath + ": expected string, got " + prop_value.type_name());
+        } else if (expected_type == "integer" && !prop_value.is_number_integer()) {
+            errors_.push_back(currentPath + ": expected integer, got " + prop_value.type_name());
+        } else if (expected_type == "number" && !prop_value.is_number()) {
+            errors_.push_back(currentPath + ": expected number, got " + prop_value.type_name());
+        } else if (expected_type == "array" && !prop_value.is_array()) {
+            errors_.push_back(currentPath + ": expected array, got " + prop_value.type_name());
+        } else if (expected_type == "object" && !prop_value.is_object()) {
+            errors_.push_back(currentPath + ": expected object, got " + prop_value.type_name());
+        }
+    }
+    
+    // 最小値・最大値チェック
+    if (prop_schema.contains("minimum") && prop_value.is_number()) {
+        if (prop_value.get<double>() < prop_schema["minimum"].get<double>()) {
+            errors_.push_back(currentPath + ": value below minimum");
+        }
+    }
+    
+    if (prop_schema.contains("maximum") && prop_value.is_number()) {
+        if (prop_value.get<double>() > prop_schema["maximum"].get<double>()) {
+            errors_.push_back(currentPath + ": value above maximum");
+        }
+    }
 }
 
 } // namespace Shared::Data

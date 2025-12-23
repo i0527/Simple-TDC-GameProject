@@ -10,8 +10,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(EDITOR_SOURCES
     src/main_editor.cpp
     src/Editor/Application/EditorApp.cpp
+    src/Editor/Windows/DefinitionEditorWindow.cpp
+    src/Editor/Windows/ValidationPanel.cpp
+    src/Editor/Windows/SearchPaletteWindow.cpp
     src/Editor/Windows/PreviewWindow.cpp
     src/Editor/Windows/PropertyPanel.cpp
+    src/Editor/Windows/UnitEditorWindow.cpp
+    src/Editor/Windows/SpriteEditorWindow.cpp
+    src/Editor/Windows/AssetBrowserWindow.cpp
     # CharacterFactoryが依存するGraphics実装
     ${CMAKE_SOURCE_DIR}/game/src/Game/Graphics/GridSheetProvider.cpp
     ${CMAKE_SOURCE_DIR}/game/src/Game/Graphics/AsepriteJsonAtlasProvider.cpp
@@ -31,6 +37,11 @@ include(FetchContent)
 
 # ImGui（rlImGui互換の v1.89.9 に固定）
 if(NOT TARGET imgui_lib)
+    set(_imgui_local ${FETCHCONTENT_BASE_DIR}/imgui-src)
+    if(EXISTS ${_imgui_local}/CMakeLists.txt)
+        set(FETCHCONTENT_SOURCE_DIR_IMGUI ${_imgui_local})
+    endif()
+
     FetchContent_Declare(
         imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
@@ -51,6 +62,11 @@ if(NOT TARGET imgui_lib)
 endif()
 
 if(NOT TARGET rlimgui_lib)
+    set(_rlimgui_local ${FETCHCONTENT_BASE_DIR}/rlimgui-src)
+    if(EXISTS ${_rlimgui_local}/CMakeLists.txt)
+        set(FETCHCONTENT_SOURCE_DIR_RLIMGUI ${_rlimgui_local})
+    endif()
+
     FetchContent_Declare(
         rlimgui
         GIT_REPOSITORY https://github.com/raylib-extras/rlImGui.git
