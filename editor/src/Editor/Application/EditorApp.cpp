@@ -9,7 +9,7 @@
 #include <sstream>
 #include <iomanip>
 #include <ctime>
-
+ 
 #include "Data/Loaders/AbilityLoader.h"
 #include "Data/Loaders/EntityLoader.h"
 #include "Data/Loaders/SkillLoader.h"
@@ -24,12 +24,18 @@
 #include "Editor/Windows/SpriteEditorWindow.h"
 #include "Editor/Windows/ValidationPanel.h"
 #include "Editor/Windows/SearchPaletteWindow.h"
-
-namespace {
-constexpr int SCREEN_WIDTH = 1920;
-constexpr int SCREEN_HEIGHT = 1080;
-constexpr float TARGET_FPS = 60.0f;
-} // namespace
+ 
+ namespace {
+ struct InitialWindowSize { int w; int h; };
+ InitialWindowSize GetInitialWindowSize() {
+   InitialWindowSize s{1920, 1080};
+ #if defined(_DEBUG)
+   s = {1280, 720};
+ #endif
+   return s;
+ }
+ constexpr float TARGET_FPS = 60.0f;
+ } // namespace
 
 namespace Editor::Application {
 
@@ -61,8 +67,9 @@ bool EditorApp::Initialize() {
 
   // Raylib初期化
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-  InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Simple TDC Editor");
-  SetWindowMinSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  const auto initial = GetInitialWindowSize();
+  InitWindow(initial.w, initial.h, "Simple TDC Editor");
+  SetWindowMinSize(initial.w, initial.h);
   SetTargetFPS(static_cast<int>(TARGET_FPS));
 
   // ImGui初期化

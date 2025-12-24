@@ -27,10 +27,31 @@ entt::entity SimulationContext::SpawnEntity(const std::string& definitionId,
                                             const Vector2& position,
                                             Game::Components::Team::Type team) {
     EnsureFactory();
-    if (!character_factory_) {
+    if (!character_factory_ || !definitions_) {
         return entt::null;
     }
-    return character_factory_->CreateEntity(registry_, definitionId, position, team);
+    
+    // エンティティを作成
+    entt::entity entity = character_factory_->CreateEntity(registry_, definitionId, position, team);
+    if (entity == entt::null) {
+        return entt::null;
+    }
+    
+    // FrameProviderManagerを使用してprovider_idを設定
+    const auto* entityDef = definitions_->GetEntity(definitionId);
+    if (entityDef && registry_.all_of<Game::Components::Sprite>(entity)) {
+        auto& sprite = registry_.get<Game::Components::Sprite>(entity);
+        
+        // FrameProviderManagerからProviderを取得（作成も行う）
+        auto provider = frame_provider_manager_.GetProvider(definitionId, *entityDef, *character_factory_);
+        if (provider) {
+            sprite.provider_id = definitionId;
+            // 後方互換性のため、providerポインタも設定（段階的移行）
+            sprite.provider = provider.get();
+        }
+    }
+    
+    return entity;
 }
 
 void SimulationContext::DestroyEntity(entt::entity entity) {
@@ -81,6 +102,7 @@ std::vector<SimulationContext::RenderCommand> SimulationContext::GetRenderComman
 
 void SimulationContext::Clear() {
     registry_.clear();
+    frame_provider_manager_.ClearAll();
 }
 
 bool SimulationContext::ReloadEntity(entt::entity entity, ReloadPolicy policy) {

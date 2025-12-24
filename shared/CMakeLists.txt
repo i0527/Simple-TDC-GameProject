@@ -17,6 +17,8 @@ set(SHARED_SOURCES
 
     # Data
     src/Data/DefinitionRegistry.cpp
+    src/Data/Graphics/FrameProviderManager.cpp
+    src/Data/Graphics/AnimationRenderer.cpp
     src/Data/Loaders/EntityLoader.cpp
     src/Data/Loaders/SkillLoader.cpp
     src/Data/Loaders/StageLoader.cpp

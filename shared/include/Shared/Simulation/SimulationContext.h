@@ -7,6 +7,7 @@
 
 #include <raylib.h>
 
+#include "Data/Graphics/FrameProviderManager.h"
 #include "Game/Components/NewCoreComponents.h"
 #include "Shared/Simulation/Factories/CharacterFactory.h"
 
@@ -44,6 +45,10 @@ public:
     const entt::registry& GetRegistry() const { return registry_; }
     size_t GetEntityCount() const;
 
+    // FrameProviderManagerアクセス
+    Shared::Data::Graphics::FrameProviderManager& GetFrameProviderManager() { return frame_provider_manager_; }
+    const Shared::Data::Graphics::FrameProviderManager& GetFrameProviderManager() const { return frame_provider_manager_; }
+
     // 便利API
     void SetEntityPosition(entt::entity entity, const Vector2& position);
     Vector2 GetEntityPosition(entt::entity entity) const;
@@ -78,6 +83,7 @@ private:
     Shared::Core::GameContext* context_ = nullptr;
     Shared::Data::DefinitionRegistry* definitions_ = nullptr;
     std::unique_ptr<CharacterFactory> character_factory_;
+    Shared::Data::Graphics::FrameProviderManager frame_provider_manager_;
 };
 
 } // namespace Shared::Simulation

@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <sstream>
 #include <unordered_map>
+#include <iostream>
 
 namespace {
 constexpr float TITLE_Y = 90.0f;
@@ -75,42 +76,70 @@ const Game::Graphics::AsepriteJsonAtlasProvider *FormationScene::GetProvider(con
   }
 
   const auto *def = definitions_.GetEntity(entity_id);
-  if (!def || def->display.atlas_texture.empty()) {
+  if (!def) {
+    std::cerr << "[FormationScene] Entity not found: " << entity_id << std::endl;
+    return nullptr;
+  }
+  
+  if (def->display.atlas_texture.empty()) {
+    std::cerr << "[FormationScene] Atlas texture path is empty for entity: " << entity_id << std::endl;
     return nullptr;
   }
 
   std::string pngPath = def->display.atlas_texture;
   if (!std::filesystem::exists(pngPath)) {
+    std::cerr << "[FormationScene] Atlas texture file not found: " << pngPath << std::endl;
     return nullptr;
   }
 
   Texture2D tex = LoadTexture(pngPath.c_str());
   if (tex.id == 0) {
+    std::cerr << "[FormationScene] Failed to load texture: " << pngPath << std::endl;
     return nullptr;
   }
 
   // sprite_actions から最初のJSONをロード
   nlohmann::json atlasJson;
   bool loaded = false;
+  std::string loadedJsonPath;
   for (const auto &[action, jsonPath] : def->display.sprite_actions) {
     std::filesystem::path fullJsonPath = std::filesystem::path(pngPath).parent_path() / jsonPath;
     if (std::filesystem::exists(fullJsonPath)) {
       std::ifstream file(fullJsonPath.string());
       if (file) {
-        file >> atlasJson;
-        loaded = true;
-        break;
+        try {
+          file >> atlasJson;
+          loaded = true;
+          loadedJsonPath = fullJsonPath.string();
+          break;
+        } catch (const nlohmann::json::parse_error& e) {
+          std::cerr << "[FormationScene] JSON parse error in " << fullJsonPath << ": " << e.what() << std::endl;
+        } catch (const std::exception& e) {
+          std::cerr << "[FormationScene] Error reading JSON file " << fullJsonPath << ": " << e.what() << std::endl;
+        }
+      } else {
+        std::cerr << "[FormationScene] Failed to open JSON file: " << fullJsonPath << std::endl;
       }
     }
   }
   if (!loaded) {
+    std::cerr << "[FormationScene] No valid JSON file found for entity: " << entity_id << std::endl;
+    UnloadTexture(tex);
     return nullptr;
   }
 
-  auto provider = std::make_unique<Game::Graphics::AsepriteJsonAtlasProvider>(tex, atlasJson);
-
-  auto [inserted, _] = provider_cache_.emplace(entity_id, std::move(provider));
-  return inserted->second.get();
+  try {
+    auto provider = std::make_unique<Game::Graphics::AsepriteJsonAtlasProvider>(tex, atlasJson);
+    auto [inserted, _] = provider_cache_.emplace(entity_id, std::move(provider));
+    std::cout << "[FormationScene] Successfully loaded provider for " << entity_id 
+              << " from " << loadedJsonPath << std::endl;
+    return inserted->second.get();
+  } catch (const std::exception& e) {
+    std::cerr << "[FormationScene] Failed to create AsepriteJsonAtlasProvider for " << entity_id 
+              << ": " << e.what() << std::endl;
+    UnloadTexture(tex);
+    return nullptr;
+  }
 }
 
 void FormationScene::DrawIcon(const Rectangle &rect,
@@ -123,10 +152,12 @@ void FormationScene::DrawIcon(const Rectangle &rect,
 
     auto exists_path = [](const fs::path& p) { return !p.empty() && fs::exists(p); };
 
+    // 1. display.iconが存在する場合はそれを使用
     if (exists_path(d->display.icon)) {
       return fs::path(d->display.icon).lexically_normal().generic_string();
     }
 
+    // 2. atlas_textureのパスからフォルダ名を取得
     fs::path hint = d->display.icon.empty() ? fs::path(d->display.atlas_texture) : fs::path(d->display.icon);
     if (!hint.empty()) {
       fs::path folder = hint.parent_path().filename();
@@ -136,6 +167,18 @@ void FormationScene::DrawIcon(const Rectangle &rect,
         return candidate.lexically_normal().generic_string();
       }
     }
+
+    // 3. source_pathからフォルダ名を取得（フォールバック）
+    if (!d->source_path.empty()) {
+      fs::path src(d->source_path);
+      fs::path folder = src.parent_path().filename();
+      std::string tier = d->type.empty() ? "main" : d->type;
+      fs::path candidate = fs::path("assets/textures/icons/characters") / tier / folder / "icon.png";
+      if (exists_path(candidate)) {
+        return candidate.lexically_normal().generic_string();
+      }
+    }
+
     return {};
   };
   const std::string icon_path = resolveIconPath(def);
@@ -151,10 +194,47 @@ void FormationScene::DrawIcon(const Rectangle &rect,
       }
     }
     if (it != icon_cache_.end()) {
+      // アスペクト比を保持してスケーリング
+      float iconAspect = static_cast<float>(it->second.width) / static_cast<float>(it->second.height);
+      float rectAspect = rect.width / rect.height;
+      
+      float scaledWidth, scaledHeight;
+      if (iconAspect > rectAspect) {
+        // 幅に合わせる
+        scaledWidth = rect.width;
+        scaledHeight = rect.width / iconAspect;
+      } else {
+        // 高さに合わせる
+        scaledWidth = rect.height * iconAspect;
+        scaledHeight = rect.height;
+      }
+      
+      // 中央配置
+      float offsetX = (rect.width - scaledWidth) * 0.5f;
+      float offsetY = (rect.height - scaledHeight) * 0.5f;
+      
+      Rectangle destRect = {
+        rect.x + offsetX,
+        rect.y + offsetY,
+        scaledWidth,
+        scaledHeight
+      };
+      
+      // originはdestRectの中心（または足元）を指定
+      // アイコンの場合は中心に配置
+      Vector2 origin = {scaledWidth * 0.5f, scaledHeight * 0.5f};
+      
+      // 味方（is_enemy == false）の場合は左右反転
+      Rectangle src_rect{0.0f, 0.0f, (float)it->second.width, (float)it->second.height};
+      if (def && !def->is_enemy) {
+        src_rect.width = -src_rect.width; // 左右反転
+        destRect.width = -destRect.width;
+      }
+      
       DrawTexturePro(it->second, 
-                     {0.0f, 0.0f, (float)it->second.width, (float)it->second.height}, 
-                     rect, 
-                     {0.0f, 0.0f}, 
+                     src_rect, 
+                     destRect, 
+                     origin, 
                      0.0f, 
                      WHITE);
       return;
@@ -164,11 +244,9 @@ void FormationScene::DrawIcon(const Rectangle &rect,
   // Fallback: draw sprite
   auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(entity_id));
   if (provider) {
-    sprite_renderer_.DrawSprite(
-        *provider, "idle", 0.0f,
-        Vector2{rect.x + rect.width / 2.0f, rect.y + rect.height}, // 足元基準
-        Vector2{rect.width / 64.0f, rect.height / 64.0f}, // スケール (64x64想定)
-        0.0f, WHITE);
+    // SharedレイヤーのAnimationRendererを使用
+    Shared::Data::Graphics::AnimationRenderer::DrawAnimationInArea(
+        *provider, "idle", 0, rect, WHITE);
   } else {
     DrawRectangleRec(rect, Color{60, 100, 200, 255});
     DrawRectangleLinesEx(rect, 2.0f, Color{120, 170, 240, 255});
@@ -176,50 +254,155 @@ void FormationScene::DrawIcon(const Rectangle &rect,
 }
 
 void FormationScene::DrawSpriteAnim(const Rectangle &area,
-                                    Game::Graphics::AsepriteJsonAtlasProvider &provider,
-                                    const std::string &clipName, float elapsed,
+                                    Shared::Data::Graphics::IFrameProvider &provider,
+                                    const std::string &clipName, float /*elapsed*/,
                                     int current_frame) const {
-  sprite_renderer_.DrawSprite(
-      provider, clipName, current_frame,
-      Vector2{area.x + area.width / 2.0f, area.y + area.height}, // 足元基準
-      Vector2{area.width / 64.0f, area.height / 64.0f}, // スケール (64x64想定)
-      0.0f, WHITE);
+  // フレームを取得
+  auto frame = provider.GetFrame(clipName, current_frame);
+  if (!frame.valid || !frame.texture) {
+    return;
+  }
+  
+  // エリア内に収まるようにスケールを計算（アスペクト比を保持）
+  if (frame.src.width <= 0.0f || frame.src.height <= 0.0f) {
+    return;
+  }
+  
+  float scaleX = area.width / frame.src.width;
+  float scaleY = area.height / frame.src.height;
+  float scale = std::min(scaleX, scaleY) * 0.9f; // 90%に縮小して余白を確保
+  
+  // エリアの中心位置
+  Vector2 centerPosition = {
+    area.x + area.width * 0.5f,
+    area.y + area.height * 0.5f
+  };
+  
+  // 足元位置を計算（中央に配置するため）
+  // DrawAnimationの動作：
+  // - positionは足元位置として扱われる
+  // - destPosition = position + (frame.offset * scale)
+  // - destRectはdestPositionから始まり、frame.originが回転中心
+  // スプライトの中心をエリアの中心に配置するには：
+  // - スプライトの中心Y = destPosition.y + frame.origin.y * scale
+  // - これをエリアの中心Yに合わせる：destPosition.y = centerY - frame.origin.y * scale
+  // - position.y = destPosition.y - frame.offset.y * scale
+  // - position.y = centerY - frame.origin.y * scale - frame.offset.y * scale
+  Vector2 footPosition = {
+    centerPosition.x,
+    centerPosition.y - (frame.origin.y * scale) - (frame.offset.y * scale)
+  };
+  
+  // ミラーリング対応で描画
+  Shared::Data::Graphics::AnimationRenderer::DrawAnimation(
+      provider, clipName, current_frame, footPosition, {scale, scale}, 0.0f, WHITE, preview_.mirrorH, preview_.mirrorV);
 }
 
 void FormationScene::UpdatePreview(float delta_time) {
-  if (!HasPreviewAnimation()) {
+  const auto *def = GetSelectedDef();
+  if (!def) {
     preview_.animTimer = 0.0f;
     preview_.currentFrame = 0;
     preview_.playingAttack = false;
     return;
   }
 
-  const auto *def = GetSelectedDef();
-  std::string entity_id = def ? def->id : "";
+  std::string entity_id = def->id;
   auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(entity_id));
   if (!provider) {
-    preview_.animTimer = 0.0f;
+    // Providerが取得できない場合でも、タイマーは進める（アイコン表示時など）
+    preview_.animTimer += delta_time;
     preview_.currentFrame = 0;
     return;
   }
 
-  const std::string &clipName = preview_.playingAttack ? "attack" : "walk";
-  if (!provider->HasClip(clipName)) {
-    return;
+  // ミラーリング設定を更新
+  if (def) {
+    preview_.mirrorH = def->display.mirror_h;
+    preview_.mirrorV = def->display.mirror_v;
+    
+    // 選択されたアニメーションを使用（playingAttackは非推奨だが互換性のため残す）
+    std::string clipName = preview_.playingAttack ? "attack" : preview_.selectedAnimation;
+    
+    // アクション別ミラー設定を確認
+    auto itH = def->display.action_mirror_h.find(clipName);
+    auto itV = def->display.action_mirror_v.find(clipName);
+    if (itH != def->display.action_mirror_h.end()) {
+      preview_.mirrorH = itH->second;
+    }
+    if (itV != def->display.action_mirror_v.end()) {
+      preview_.mirrorV = itV->second;
+    }
   }
 
-  float fps = provider->GetClipFps(clipName);
-  float frameDuration = 1.0f / fps;
+  // 選択されたアニメーションを使用（playingAttackは非推奨だが互換性のため残す）
+  std::string clipName = preview_.playingAttack ? "attack" : preview_.selectedAnimation;
+  if (!provider->HasClip(clipName)) {
+    // フォールバック: walk -> idle -> attack -> death の順で試す
+    if (provider->HasClip("walk")) {
+      clipName = "walk";
+      preview_.selectedAnimation = "walk";
+    } else if (provider->HasClip("idle")) {
+      clipName = "idle";
+      preview_.selectedAnimation = "idle";
+    } else if (provider->HasClip("attack")) {
+      clipName = "attack";
+      preview_.selectedAnimation = "attack";
+    } else if (provider->HasClip("death")) {
+      clipName = "death";
+      preview_.selectedAnimation = "death";
+    } else {
+      return;
+    }
+  }
+
+  // フレームごとの個別durationを考慮したアニメーション更新
   int frameCount = provider->GetFrameCount(clipName);
+  if (frameCount <= 0) return;
+
+  // 現在のフレームのdurationを取得
+  auto currentFrame = provider->GetFrame(clipName, preview_.currentFrame);
+  float frameDuration = 0.0f;
+  if (currentFrame.valid && currentFrame.durationSec > 0.0f) {
+    frameDuration = currentFrame.durationSec;
+  } else {
+    // フォールバック: FPSから計算
+    float fps = provider->GetClipFps(clipName);
+    if (fps <= 0.0f) fps = 12.0f; // デフォルトFPS
+    frameDuration = 1.0f / fps;
+  }
 
   preview_.animTimer += delta_time;
-  while (preview_.animTimer >= frameDuration) {
+  while (preview_.animTimer >= frameDuration && frameDuration > 0.0f) {
     preview_.animTimer -= frameDuration;
-    preview_.currentFrame = (preview_.currentFrame + 1) % frameCount;
+    preview_.currentFrame++;
+    
+    // ループ処理
+    if (preview_.currentFrame >= frameCount) {
+      if (provider->IsLooping(clipName)) {
+        preview_.currentFrame = 0;
+      } else {
+        preview_.currentFrame = frameCount - 1;
+        preview_.animTimer = 0.0f;
+        break;
+      }
+    }
+    
+    // 次のフレームのdurationを取得
+    if (preview_.currentFrame < frameCount) {
+      auto nextFrame = provider->GetFrame(clipName, preview_.currentFrame);
+      if (nextFrame.valid && nextFrame.durationSec > 0.0f) {
+        frameDuration = nextFrame.durationSec;
+      } else {
+        float fps = provider->GetClipFps(clipName);
+        if (fps <= 0.0f) fps = 12.0f;
+        frameDuration = 1.0f / fps;
+      }
+    }
   }
 
   if (preview_.playingAttack) {
-    // revert to walk after short burst
+    // revert to selected animation after short burst
     if (preview_.animTimer > 0.6f) {
       preview_.playingAttack = false;
       preview_.animTimer = 0.0f;
@@ -233,6 +416,112 @@ void FormationScene::StartAttackPreview() {
   preview_.playingAttack = true;
   preview_.animTimer = 0.0f;
   preview_.currentFrame = 0;
+}
+
+std::string FormationScene::GetAnimationClipName(const std::string &displayName) const {
+  // 表示名からクリップ名に変換
+  if (displayName == u8"移動") return "walk";
+  if (displayName == u8"攻撃") return "attack";
+  if (displayName == u8"待機") return "idle";
+  if (displayName == u8"死亡") return "death";
+  return displayName; // そのまま返す（既にクリップ名の場合）
+}
+
+void FormationScene::DrawAnimationDropdown(const Rectangle &area) {
+  const std::vector<std::string> allAnimationNames = {u8"移動", u8"攻撃", u8"待機", u8"死亡"};
+  const std::vector<std::string> allClipNames = {"walk", "attack", "idle", "death"};
+  
+  // 利用可能なアニメーションを確認
+  std::vector<std::string> availableNames;
+  std::vector<std::string> availableClips;
+  std::vector<int> originalIndices;
+  
+  const auto *def = GetSelectedDef();
+  if (def) {
+    auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(def->id));
+    if (provider) {
+      for (size_t i = 0; i < allClipNames.size(); ++i) {
+        if (provider->HasClip(allClipNames[i])) {
+          availableNames.push_back(allAnimationNames[i]);
+          availableClips.push_back(allClipNames[i]);
+          originalIndices.push_back(static_cast<int>(i));
+        }
+      }
+    }
+  }
+  
+  // 利用可能なアニメーションがない場合はデフォルトリストを使用
+  if (availableNames.empty()) {
+    availableNames = allAnimationNames;
+    availableClips = allClipNames;
+    for (size_t i = 0; i < allClipNames.size(); ++i) {
+      originalIndices.push_back(static_cast<int>(i));
+    }
+  }
+  
+  // 現在選択されているアニメーションの表示名を取得
+  std::string currentDisplayName = availableNames.empty() ? u8"移動" : availableNames[0];
+  int currentIndex = 0;
+  for (size_t i = 0; i < availableClips.size(); ++i) {
+    if (preview_.selectedAnimation == availableClips[i]) {
+      currentDisplayName = availableNames[i];
+      currentIndex = static_cast<int>(i);
+      break;
+    }
+  }
+
+  // ドロップダウンボタン
+  Color btnBg = preview_.dropdownOpen ? Color{100, 120, 160, 255} : Color{70, 90, 130, 255};
+  DrawRectangleRounded(area, 0.08f, 4, btnBg);
+  DrawRectangleLinesEx(area, 2.0f, Color{180, 220, 255, 255});
+
+  // 選択されたアニメーション名を表示
+  Vector2 textSize = MeasureTextEx(font_, currentDisplayName.c_str(), 18.0f, 2.0f);
+  DrawTextEx(font_, currentDisplayName.c_str(),
+             {area.x + 8.0f, area.y + (area.height - textSize.y) * 0.5f},
+             18.0f, 2.0f, RAYWHITE);
+
+  // 下矢印アイコン（簡易版: "▼"）
+  const char *arrow = u8"▼";
+  Vector2 arrowSize = MeasureTextEx(font_, arrow, 14.0f, 2.0f);
+  DrawTextEx(font_, arrow,
+             {area.x + area.width - arrowSize.x - 8.0f, area.y + (area.height - arrowSize.y) * 0.5f},
+             14.0f, 2.0f, RAYWHITE);
+
+  // ドロップダウンリスト（開いている場合）
+  if (preview_.dropdownOpen && !availableNames.empty()) {
+    const float itemHeight = 32.0f;
+    const float listHeight = static_cast<float>(availableNames.size()) * itemHeight;
+    Rectangle listArea{area.x, area.y + area.height, area.width, listHeight};
+
+    // 背景
+    DrawRectangleRounded(listArea, 0.08f, 4, Color{50, 60, 80, 255});
+    DrawRectangleLinesEx(listArea, 2.0f, Color{180, 220, 255, 255});
+
+    // 各項目を描画
+    for (size_t i = 0; i < availableNames.size(); ++i) {
+      Rectangle itemRect{listArea.x, listArea.y + static_cast<float>(i) * itemHeight,
+                         listArea.width, itemHeight};
+      
+      // ホバー効果（マウス位置で判定）
+      Vector2 mouse = GetMousePosition();
+      bool hovered = CheckCollisionPointRec(mouse, itemRect);
+      Color itemBg = (i == static_cast<size_t>(currentIndex))
+                         ? Color{70, 90, 130, 240}
+                         : (hovered ? Color{50, 70, 100, 240} : Color{40, 50, 70, 240});
+      
+      DrawRectangleRounded(itemRect, 0.06f, 2, itemBg);
+      if (i == static_cast<size_t>(currentIndex)) {
+        DrawRectangleLinesEx(itemRect, 1.5f, Color{120, 180, 255, 255});
+      }
+
+      // テキスト
+      Vector2 itemTextSize = MeasureTextEx(font_, availableNames[i].c_str(), 18.0f, 2.0f);
+      DrawTextEx(font_, availableNames[i].c_str(),
+                 {itemRect.x + 8.0f, itemRect.y + (itemRect.height - itemTextSize.y) * 0.5f},
+                 18.0f, 2.0f, RAYWHITE);
+    }
+  }
 }
 
 bool FormationScene::HasPreviewAnimation() const {
@@ -268,10 +557,14 @@ void FormationScene::RefreshData() {
         std::clamp(selected_slot_, 0, static_cast<int>(slots_.size() - 1));
   }
 
-  const auto *def = GetSelectedDef();
   preview_.animTimer = 0.0f;
   preview_.currentFrame = 0;
   preview_.playingAttack = false;
+  preview_.selectedAnimation = "walk"; // デフォルトは移動
+  preview_.dropdownOpen = false;
+  preview_.mirrorH = false;
+  preview_.mirrorV = false;
+  preview_.showDebug = false;
 }
 
 FormationScene::LayoutInfo FormationScene::BuildLayout() const {
@@ -283,7 +576,6 @@ FormationScene::LayoutInfo FormationScene::BuildLayout() const {
       static_cast<float>(screen_width_) - PANEL_MARGIN * 2.0f;
   int per_row = cand_count; // 全件を横に並べる
   int rows = 1;
-  int visible_rows = 1; // 1行表示
 
   float cand_panel_height = 44.0f + CAND_CARD_H + 24.0f;
   float cand_panel_y =
@@ -314,7 +606,12 @@ FormationScene::LayoutInfo FormationScene::BuildLayout() const {
     status_w = std::max(STATUS_PANEL_MIN_W, content_w - preview_w - 16.0f);
   }
 
+  // ドロップダウン（32px）+ 余白（8px）+ アニメーションエリア + キャラクター名（40px）を考慮
   float preview_h = PREVIEW_PANEL_BASE_H;
+  // ドロップダウン分の高さを確保（最低でもドロップダウン + アニメーションエリア + 名前表示）
+  const float min_preview_h = 32.0f + 8.0f + 200.0f + 40.0f; // ドロップダウン + 余白 + アニメーション + 名前
+  preview_h = std::max(preview_h, min_preview_h);
+  
   int slot_cols = 5; // 固定で 2 x 5
   int slot_rows = slot_count > 0 ? (slot_count + slot_cols - 1) / slot_cols : 1;
   slot_rows = std::min(slot_rows, 2);
@@ -325,7 +622,7 @@ FormationScene::LayoutInfo FormationScene::BuildLayout() const {
   float preview_and_slots_h = preview_h + 12.0f + slot_panel_h;
   if (preview_and_slots_h > available_h) {
     float diff = preview_and_slots_h - available_h;
-    preview_h = std::max(PREVIEW_PANEL_MIN_H, preview_h - diff);
+    preview_h = std::max(min_preview_h, preview_h - diff);
     preview_and_slots_h = preview_h + 12.0f + slot_panel_h;
   }
   float status_h = std::max(STATUS_PANEL_MIN_H, preview_and_slots_h);
@@ -363,7 +660,6 @@ void FormationScene::HandleInput() {
   Vector2 mouse = GetMousePosition();
   bool click = IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
   bool release = IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
-  bool right_click = IsMouseButtonPressed(MOUSE_RIGHT_BUTTON);
 
   LayoutInfo layout = BuildLayout();
 
@@ -487,6 +783,37 @@ void FormationScene::HandleInput() {
         preview_.animTimer = 0.0f;
         preview_.currentFrame = 0;
         preview_.playingAttack = false;
+        // 選択されたキャラクターが利用可能なアニメーションを確認してデフォルトを設定
+        const auto *def = definitions_.GetEntity(candidates_[i]);
+        if (def) {
+          // ミラーリング設定を更新
+          preview_.mirrorH = def->display.mirror_h;
+          preview_.mirrorV = def->display.mirror_v;
+          
+          auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(def->id));
+          if (provider) {
+            // 利用可能なアニメーションを優先順位で確認
+            if (provider->HasClip("walk")) {
+              preview_.selectedAnimation = "walk";
+            } else if (provider->HasClip("idle")) {
+              preview_.selectedAnimation = "idle";
+            } else if (provider->HasClip("attack")) {
+              preview_.selectedAnimation = "attack";
+            } else if (provider->HasClip("death")) {
+              preview_.selectedAnimation = "death";
+            }
+            
+            // 選択されたアニメーションのアクション別ミラー設定を確認
+            auto itH = def->display.action_mirror_h.find(preview_.selectedAnimation);
+            auto itV = def->display.action_mirror_v.find(preview_.selectedAnimation);
+            if (itH != def->display.action_mirror_h.end()) {
+              preview_.mirrorH = itH->second;
+            }
+            if (itV != def->display.action_mirror_v.end()) {
+              preview_.mirrorV = itV->second;
+            }
+          }
+        }
         drag_.active = true;
         drag_.candidateIndex = i;
         drag_.startPos = mouse;
@@ -532,9 +859,93 @@ void FormationScene::HandleInput() {
     drag_.candidateIndex = -1;
   }
 
+  // ドロップダウンのクリック処理
+  const float dropdown_y = layout.previewPanel.y + 44.0f;
+  const float dropdown_h = 32.0f;
+  const float dropdown_w = 200.0f;
+  const float dropdown_x = layout.previewPanel.x + layout.previewPanel.width - dropdown_w - 20.0f;
+  Rectangle dropdown_area{dropdown_x, dropdown_y, dropdown_w, dropdown_h};
+  const float itemHeight = 32.0f;
+  
+  // 利用可能なアニメーションを取得
+  const std::vector<std::string> allClipNames = {"walk", "attack", "idle", "death"};
+  const std::vector<std::string> allAnimationNames = {u8"移動", u8"攻撃", u8"待機", u8"死亡"};
+  std::vector<std::string> availableClips;
+  std::vector<std::string> availableNames;
+  
+  const auto *def = GetSelectedDef();
+  if (def) {
+    auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(def->id));
+    if (provider) {
+      for (size_t i = 0; i < allClipNames.size(); ++i) {
+        if (provider->HasClip(allClipNames[i])) {
+          availableClips.push_back(allClipNames[i]);
+          availableNames.push_back(allAnimationNames[i]);
+        }
+      }
+    }
+  }
+  
+  // 利用可能なアニメーションがない場合はデフォルトリストを使用
+  if (availableClips.empty()) {
+    availableClips = allClipNames;
+    availableNames = allAnimationNames;
+  }
+
+  if (click) {
+    // ドロップダウンボタンのクリック
+    if (CheckCollisionPointRec(mouse, dropdown_area)) {
+      preview_.dropdownOpen = !preview_.dropdownOpen;
+    } else if (preview_.dropdownOpen) {
+      // ドロップダウンリスト内の項目クリック
+      Rectangle listArea{dropdown_area.x, dropdown_area.y + dropdown_area.height,
+                         dropdown_area.width, static_cast<float>(availableNames.size()) * itemHeight};
+      if (CheckCollisionPointRec(mouse, listArea)) {
+        for (size_t i = 0; i < availableNames.size(); ++i) {
+          Rectangle itemRect{listArea.x, listArea.y + static_cast<float>(i) * itemHeight,
+                             listArea.width, itemHeight};
+          if (CheckCollisionPointRec(mouse, itemRect)) {
+            preview_.selectedAnimation = availableClips[i];
+            preview_.animTimer = 0.0f;
+            preview_.currentFrame = 0;
+            preview_.dropdownOpen = false;
+            
+            // 選択されたアニメーションのアクション別ミラー設定を更新
+            const auto *def = GetSelectedDef();
+            if (def) {
+              preview_.mirrorH = def->display.mirror_h;
+              preview_.mirrorV = def->display.mirror_v;
+              
+              auto itH = def->display.action_mirror_h.find(availableClips[i]);
+              auto itV = def->display.action_mirror_v.find(availableClips[i]);
+              if (itH != def->display.action_mirror_h.end()) {
+                preview_.mirrorH = itH->second;
+              }
+              if (itV != def->display.action_mirror_v.end()) {
+                preview_.mirrorV = itV->second;
+              }
+            }
+            break;
+          }
+        }
+      } else {
+        // リスト外をクリックした場合は閉じる
+        preview_.dropdownOpen = false;
+      }
+    } else {
+      // ドロップダウン外をクリックした場合は閉じる
+      preview_.dropdownOpen = false;
+    }
+  }
+
   // Preview click triggers attack animation (only if animation exists)
-  if (click && CheckCollisionPointRec(mouse, layout.previewPanel) &&
-      HasPreviewAnimation()) {
+  // ドロップダウンエリアを除外
+  Rectangle anim_click_area{layout.previewPanel.x + 20.0f,
+                             dropdown_y + dropdown_h + 8.0f,
+                             layout.previewPanel.width - 40.0f,
+                             layout.previewPanel.height - (dropdown_y + dropdown_h + 8.0f - layout.previewPanel.y) - 64.0f};
+  if (click && CheckCollisionPointRec(mouse, anim_click_area) &&
+      HasPreviewAnimation() && !preview_.dropdownOpen) {
     StartAttackPreview();
   }
 
@@ -781,9 +1192,9 @@ void FormationScene::DrawStatusPanel(const Rectangle &panel,
   draw_stat("HP", std::to_string(def->stats.hp));
   draw_stat("ATK", std::to_string(def->stats.attack));
   draw_stat("ATK SPD", fmt2(def->stats.attack_speed));
-  draw_stat("RANGE", fmt2(def->stats.range));
+  draw_stat("RANGE", fmt2(static_cast<float>(def->stats.range)));
   draw_stat("MOVE", fmt2(def->stats.move_speed));
-  draw_stat("KNOCKBACK", fmt2(def->stats.knockback));
+  draw_stat("KNOCKBACK", fmt2(static_cast<float>(def->stats.knockback)));
   draw_stat("COST", std::to_string(def->cost));
   draw_stat("COOLDOWN", fmt2(def->cooldown));
 
@@ -910,25 +1321,86 @@ void FormationScene::DrawCharacterPreview(const Rectangle &panel,
   DrawTextEx(font_, title, {panel.x + 12.0f, panel.y + 8.0f}, title_size, 2.0f,
              RAYWHITE);
 
-  Rectangle anim_area{panel.x + 20.0f, panel.y + 44.0f, panel.width - 40.0f,
-                      panel.height - 64.0f};
+  // ドロップダウンエリア（タイトルの下、アニメーションエリアの上）
+  const float title_height = ts.y + 16.0f; // タイトル高さ + 余白
+  const float dropdown_y = panel.y + title_height;
+  const float dropdown_h = 32.0f;
+  const float dropdown_w = 200.0f;
+  // 右側に配置（余白20px）
+  const float dropdown_x = panel.x + panel.width - dropdown_w - 20.0f;
+  Rectangle dropdown_area{dropdown_x, dropdown_y, dropdown_w, dropdown_h};
+  
+  // ドロップダウンがパネル内に収まるか確認
+  if (dropdown_area.x < panel.x + 10.0f) {
+    dropdown_area.x = panel.x + 10.0f;
+    dropdown_area.width = panel.width - 20.0f; // 幅を調整
+  }
+  if (dropdown_area.x + dropdown_area.width > panel.x + panel.width - 10.0f) {
+    dropdown_area.width = panel.x + panel.width - dropdown_area.x - 10.0f;
+  }
+  // 高さが足りない場合は上に移動
+  if (dropdown_area.y + dropdown_area.height > panel.y + panel.height - 50.0f) {
+    dropdown_area.y = panel.y + panel.height - dropdown_area.height - 50.0f;
+  }
+  
+  // アニメーションエリア（ドロップダウンの下）
+  const float anim_area_y = dropdown_y + dropdown_h + 8.0f;
+  const float bottom_margin = 40.0f; // 下部のキャラクター名表示用の余白
+  const float anim_area_height = (panel.y + panel.height) - anim_area_y - bottom_margin;
+  Rectangle anim_area{panel.x + 20.0f, anim_area_y, panel.width - 40.0f,
+                      std::max(0.0f, anim_area_height)};
 
-  if (HasPreviewAnimation()) {
-    const auto *selDef = GetSelectedDef();
-    std::string entity_id = selDef ? selDef->id : "";
+  // アニメーションエリアもクリッピング内で描画
+  BeginScissorMode(static_cast<int>(panel.x), static_cast<int>(panel.y),
+                   static_cast<int>(panel.width), static_cast<int>(panel.height));
+  
+  const auto *selDef = GetSelectedDef();
+  if (selDef) {
+    // 選択されたユニットがいる場合
+    std::string entity_id = selDef->id;
     auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(entity_id));
+    
+    // 可能な限りアニメーションを試みる
     if (provider) {
-      const std::string &clipName = preview_.playingAttack ? "attack" : "walk";
-      DrawSpriteAnim(anim_area, *provider, clipName, preview_.animTimer, preview_.currentFrame);
+      std::string clipName = preview_.playingAttack ? "attack" : preview_.selectedAnimation;
+      // クリップが存在しない場合はフォールバック
+      if (!provider->HasClip(clipName)) {
+        if (provider->HasClip("walk")) clipName = "walk";
+        else if (provider->HasClip("idle")) clipName = "idle";
+        else if (provider->HasClip("attack")) clipName = "attack";
+        else if (provider->HasClip("death")) clipName = "death";
+        else clipName = "";
+      }
+      if (!clipName.empty()) {
+        DrawSpriteAnim(anim_area, *provider, clipName, preview_.animTimer, preview_.currentFrame);
+      } else {
+        // クリップが見つからない場合はアイコンを表示
+        DrawIcon(anim_area, entity_id);
+      }
+    } else {
+      // Provider取得失敗時はアイコンを表示
+      DrawIcon(anim_area, entity_id);
     }
   } else {
-    // Placeholder
+    // 選択されたユニットがいない場合のプレースホルダー
     float t = fmodf(preview_.animTimer, 1.0f);
     float alpha = 0.6f + 0.4f * sinf(t * 6.28f);
     DrawRectangleRounded(anim_area, 0.1f, 6,
         Color{60, 100, 200, static_cast<unsigned char>(alpha * 255)});
     DrawRectangleLinesEx(anim_area, 2.0f, Color{120, 170, 240, 230});
+    
+    // プレースホルダーメッセージ
+    const char *placeholderMsg = u8"キャラクターを選択してください";
+    Vector2 ps = MeasureTextEx(font_, placeholderMsg, 18.0f, 2.0f);
+    DrawTextEx(font_, placeholderMsg,
+               {anim_area.x + (anim_area.width - ps.x) * 0.5f,
+                anim_area.y + (anim_area.height - ps.y) * 0.5f},
+               18.0f, 2.0f, Color{200, 200, 200, static_cast<unsigned char>(alpha * 255)});
   }
+  EndScissorMode();
+  
+  // ドロップダウンを最後に描画して前面に表示（リストはパネルの外に出る可能性があるため、ScissorModeは使わない）
+  DrawAnimationDropdown(dropdown_area);
 
   if (def) {
     std::string header = def->name.empty() ? def->id : def->name;
@@ -937,6 +1409,69 @@ void FormationScene::DrawCharacterPreview(const Rectangle &panel,
                {panel.x + (panel.width - hs.x) * 0.5f,
                 panel.y + panel.height - hs.y - 10.0f},
                20.0f, 2.0f, RAYWHITE);
+  }
+  
+  // デバッグ情報表示
+  if (preview_.showDebug && HasPreviewAnimation()) {
+    const auto *selDef = GetSelectedDef();
+    std::string entity_id = selDef ? selDef->id : "";
+    auto *provider = const_cast<Game::Graphics::AsepriteJsonAtlasProvider*>(GetProvider(entity_id));
+    if (provider) {
+      std::string clipName = preview_.playingAttack ? "attack" : preview_.selectedAnimation;
+      if (provider->HasClip(clipName)) {
+        int frameCount = provider->GetFrameCount(clipName);
+        float fps = provider->GetClipFps(clipName);
+        if (fps <= 0.0f) fps = 12.0f;
+        bool isLooping = provider->IsLooping(clipName);
+        
+        // デバッグ情報エリア（左上）
+        const float debug_x = panel.x + 12.0f;
+        const float debug_y = panel.y + title_height + 4.0f;
+        const float debug_font_size = 14.0f;
+        const float debug_line_height = 18.0f;
+        float debug_current_y = debug_y;
+        
+        // 背景（半透明）
+        Rectangle debug_bg{debug_x - 4.0f, debug_y - 4.0f, 200.0f, 120.0f};
+        DrawRectangleRounded(debug_bg, 0.08f, 4, Color{0, 0, 0, 180});
+        DrawRectangleLinesEx(debug_bg, 1.0f, Color{100, 150, 200, 200});
+        
+        // フレーム情報
+        std::string frameInfo = "Frame: " + std::to_string(preview_.currentFrame + 1) + " / " + std::to_string(frameCount);
+        DrawTextEx(font_, frameInfo.c_str(), {debug_x, debug_current_y}, debug_font_size, 1.0f, Color{200, 255, 200, 255});
+        debug_current_y += debug_line_height;
+        
+        // FPS情報
+        std::ostringstream fpsStream;
+        fpsStream << std::fixed << std::setprecision(1) << fps;
+        std::string fpsInfo = "FPS: " + fpsStream.str();
+        DrawTextEx(font_, fpsInfo.c_str(), {debug_x, debug_current_y}, debug_font_size, 1.0f, Color{200, 200, 255, 255});
+        debug_current_y += debug_line_height;
+        
+        // クリップ名
+        std::string clipInfo = "Clip: " + clipName;
+        DrawTextEx(font_, clipInfo.c_str(), {debug_x, debug_current_y}, debug_font_size, 1.0f, Color{255, 200, 200, 255});
+        debug_current_y += debug_line_height;
+        
+        // ミラーリング状態
+        std::string mirrorInfo = "Mirror: " + std::string(preview_.mirrorH ? "H" : "") + 
+                                 (preview_.mirrorV ? "V" : "") + 
+                                 (!preview_.mirrorH && !preview_.mirrorV ? "None" : "");
+        DrawTextEx(font_, mirrorInfo.c_str(), {debug_x, debug_current_y}, debug_font_size, 1.0f, Color{255, 255, 200, 255});
+        debug_current_y += debug_line_height;
+        
+        // ループ状態
+        std::string loopInfo = "Loop: " + std::string(isLooping ? "Yes" : "No");
+        DrawTextEx(font_, loopInfo.c_str(), {debug_x, debug_current_y}, debug_font_size, 1.0f, Color{200, 255, 255, 255});
+        debug_current_y += debug_line_height;
+        
+        // 経過時間
+        std::ostringstream timeStream;
+        timeStream << std::fixed << std::setprecision(2) << preview_.animTimer;
+        std::string timeInfo = "Time: " + timeStream.str() + "s";
+        DrawTextEx(font_, timeInfo.c_str(), {debug_x, debug_current_y}, debug_font_size, 1.0f, Color{255, 255, 255, 255});
+      }
+    }
   }
 }
 

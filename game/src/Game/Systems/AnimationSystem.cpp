@@ -12,17 +12,45 @@ void AnimationSystem::Update(entt::registry& registry, float deltaTime) {
         auto& anim = view.get<Game::Components::Animation>(entity);
         auto& sprite = view.get<Game::Components::Sprite>(entity);
 
-        if (!anim.isPlaying || !sprite.provider) continue;
+        if (!anim.isPlaying) continue;
 
+        // Providerを取得（新しいID参照方式を優先、後方互換性のため古い方式もサポート）
+        Shared::Data::Graphics::IFrameProvider* provider = nullptr;
+        
+        if (!sprite.provider_id.empty() && frame_provider_manager_) {
+            // 新しい方式: FrameProviderManagerからキャッシュされたProviderを取得
+            auto shared_provider = frame_provider_manager_->GetCachedProvider(sprite.provider_id);
+            if (shared_provider) {
+                provider = shared_provider.get();
+            }
+        } else if (sprite.provider) {
+            // 後方互換性: 既存のproviderポインタを使用
+            provider = sprite.provider;
+        }
+
+        // providerがnullptrの場合は、PNGベースの描画として扱う
+        // PNGファイルは単一画像なので、フレームアニメーションは不要
+        // frameIndexを0に固定してスキップ
+        if (!provider) {
+            anim.frameIndex = 0;
+            continue;
+        }
+        
         anim.elapsedTime += deltaTime;
 
-        float fps = sprite.provider->GetClipFps(anim.currentClip);
+        // providerを使用してフレームアニメーションを更新
+        float fps = provider->GetClipFps(anim.currentClip);
+        if (fps <= 0.0f) fps = 12.0f;
         float frameDuration = 1.0f / fps;
         int nextFrameIndex = (int)(anim.elapsedTime / frameDuration);
-        int frameCount = sprite.provider->GetFrameCount(anim.currentClip);
+        int frameCount = provider->GetFrameCount(anim.currentClip);
+        if (frameCount <= 0) {
+            anim.frameIndex = 0;
+            continue;
+        }
 
         if (nextFrameIndex >= frameCount) {
-            if (sprite.provider->IsLooping(anim.currentClip)) {
+            if (provider->IsLooping(anim.currentClip)) {
                 anim.elapsedTime = 0.0f;
                 anim.frameIndex = 0;
             } else {

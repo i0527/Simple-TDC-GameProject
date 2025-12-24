@@ -61,8 +61,11 @@ struct Animation {
 
 /// @brief Spriteコンポーネント（新旧両方のフィールドをサポート）
 struct Sprite {
-  // 新しい定義（Providerポインタベース）
-  Shared::Data::Graphics::IFrameProvider *provider = nullptr; // FrameRef参照提供
+  // 新しい定義（ID参照ベース、推奨）
+  std::string provider_id;  // エンティティIDによる間接参照（FrameProviderManager経由）
+  
+  // 後方互換性のため、古いフィールドは保持（非推奨）
+  Shared::Data::Graphics::IFrameProvider *provider = nullptr; // 非推奨: ダングリングポインタの原因
   
   // 古い定義（後方互換性のため保持）
   std::string texturePath;

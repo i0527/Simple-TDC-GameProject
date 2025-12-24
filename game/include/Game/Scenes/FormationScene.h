@@ -7,10 +7,10 @@
 #include <raylib.h>
 
 #include "Data/DefinitionRegistry.h"
+#include "Data/Graphics/AnimationRenderer.h"
 #include "Game/Managers/FormationManager.h"
 #include "Game/Scenes/IScene.h"
 #include "Game/Graphics/GridSheetProvider.h"
-#include "Game/Graphics/SpriteRenderer.h"
 #include "Game/Graphics/AsepriteJsonAtlasProvider.h"
 
 namespace Game::Scenes {
@@ -58,6 +58,11 @@ private:
     float animTimer = 0.0f;
     int currentFrame = 0;
     bool playingAttack = false;
+    std::string selectedAnimation = "walk"; // 選択されたアニメーション名 ("walk", "attack", "idle", "death")
+    bool dropdownOpen = false; // ドロップダウンの開閉状態
+    bool mirrorH = false; // 水平ミラーリング
+    bool mirrorV = false; // 垂直ミラーリング
+    bool showDebug = false; // デバッグ情報表示フラグ
   };
 
   struct EnhancementState {
@@ -86,7 +91,6 @@ private:
   float candidate_scroll_ = 0.0f;
 
   mutable std::unordered_map<std::string, std::unique_ptr<Game::Graphics::AsepriteJsonAtlasProvider>> provider_cache_;
-  Game::Graphics::SpriteRenderer sprite_renderer_;
   mutable std::unordered_map<std::string, Texture2D> icon_cache_;
 
   void RefreshData();
@@ -102,11 +106,13 @@ private:
   void DrawStatusPanel(const Rectangle &panel, const Shared::Data::EntityDef *def);
   void DrawCharacterPreview(const Rectangle &panel,
                             const Shared::Data::EntityDef *def);
+  void DrawAnimationDropdown(const Rectangle &area);
   void UpdatePreview(float delta_time);
   void StartAttackPreview();
-  void DrawSpriteAnim(const Rectangle &area, Game::Graphics::AsepriteJsonAtlasProvider &provider,
+  void DrawSpriteAnim(const Rectangle &area, Shared::Data::Graphics::IFrameProvider &provider,
                       const std::string &clipName, float elapsed, int current_frame) const;
   bool HasPreviewAnimation() const;
+  std::string GetAnimationClipName(const std::string &displayName) const;
   void TryMockUpgrade();
   Rectangle GetEnhancementArea(const Rectangle &status_panel) const;
 };

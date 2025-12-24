@@ -54,7 +54,7 @@ private:
   Game::Systems::SkillSystem skill_system_;
   Game::Systems::AnimationSystem animation_system_;
   Game::Systems::RenderingSystem rendering_system_;
-  Game::Systems::NewRenderingSystem new_rendering_system_;
+  std::unique_ptr<Game::Systems::NewRenderingSystem> new_rendering_system_;
 
   // Scene
   std::unique_ptr<Game::Scenes::SceneManager> scene_manager_;
@@ -62,11 +62,6 @@ private:
   // ゲーム状態
   bool is_running_;
   float delta_time_;
-  float render_scale_;
-  int viewport_x_;
-  int viewport_y_;
-  int viewport_width_;
-  int viewport_height_;
   bool audio_initialized_ = false;
   bool imgui_initialized_ = false;
   int current_gold_ = 0;
@@ -82,7 +77,6 @@ private:
   // 内部メソッド
   void Update(float delta_time);
   void Render();
-  void HandleResize();
   bool LoadDefinitions(); // legacy (used via SetupGameResources)
   bool SetupGameResources(std::string &message);
   bool SaveToSlot(int slot_id);

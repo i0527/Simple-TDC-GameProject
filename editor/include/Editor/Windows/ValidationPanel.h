@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "Editor/Windows/IEditorWindow.h"
+#include "Editor/Windows/UnitEditorWindow.h"
 
 namespace Editor::Windows { class UnitEditorWindow; }
 

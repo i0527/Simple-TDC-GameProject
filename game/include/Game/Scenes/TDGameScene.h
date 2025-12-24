@@ -167,6 +167,15 @@ private:
   bool debug_ui_wants_input_ = false;
   entt::entity debug_selected_entity_{entt::null};
   int entity_reload_handle_ = 0;
+  
+  // Icon cache for deck UI
+  mutable std::unordered_map<std::string, Texture2D> icon_cache_;
+  
+  // Helper function to resolve icon path
+  std::string ResolveIconPath(const Shared::Data::EntityDef* def) const;
+  
+  // Helper function to draw icon
+  void DrawDeckIcon(const Rectangle& rect, const std::string& entity_id) const;
 };
 
 } // namespace Game::Scenes

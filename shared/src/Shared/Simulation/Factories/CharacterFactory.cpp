@@ -113,8 +113,10 @@ entt::entity CharacterFactory::CreateEntity(entt::registry& registry,
     auto provider = CreateProvider(*entityDef);
     if (provider) {
         registry.emplace<Animation>(entity);
-        registry.emplace<Sprite>(entity, provider.get());
-        // Providerの所有権は別管理想定（TODO）
+        // Spriteコンポーネントを作成（provider_idはSimulationContext::SpawnEntityで設定される）
+        auto& sprite = registry.emplace<Sprite>(entity);
+        sprite.provider = provider.get();  // 後方互換性のため設定（段階的移行）
+        // Providerの所有権はFrameProviderManagerで管理される
         // アクションJSONとミラー既定をAnimationへ反映
         auto &anim = registry.get<Animation>(entity);
         anim.useAtlas = true;

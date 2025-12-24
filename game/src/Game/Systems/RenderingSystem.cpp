@@ -135,6 +135,7 @@ void RenderingSystem::Draw(entt::registry &registry, const Font &font) const {
 
 void RenderingSystem::Shutdown(entt::registry &registry) {
   // Unload textures held by sprites
+  // 注意: providerポインタのクリアは不要（ID参照方式ではFrameProviderManagerが管理）
   registry.view<Components::Sprite>().each(
       [](entt::entity /*entity*/, auto &sprite) {
     if (sprite.loaded && sprite.texture.id != 0) {
@@ -143,7 +144,8 @@ void RenderingSystem::Shutdown(entt::registry &registry) {
       sprite.loaded = false;
     }
   });
-  // Unload cached textures
+  
+  // キャッシュされたテクスチャをアンロード
   for (auto &kv : texture_cache_) {
     if (kv.second.id != 0) {
       UnloadTexture(kv.second);

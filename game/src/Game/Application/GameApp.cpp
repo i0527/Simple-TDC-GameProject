@@ -32,9 +32,7 @@ constexpr float TARGET_FPS = 60.0f;
 namespace Game::Application {
 
 GameApp::GameApp()
-    : is_running_(false), delta_time_(0.0f), render_scale_(1.0f),
-      viewport_x_(0), viewport_y_(0), viewport_width_(SCREEN_WIDTH),
-      viewport_height_(SCREEN_HEIGHT), default_font_{}, owns_font_(false) {}
+    : is_running_(false), delta_time_(0.0f), default_font_{}, owns_font_(false) {}
 
 GameApp::~GameApp() { Shutdown(); }
 
@@ -52,15 +50,17 @@ bool GameApp::Initialize() {
   definitions_ = std::make_unique<Shared::Data::DefinitionRegistry>();
   context_->BindDefinitions(definitions_.get());
   registry_ = &context_->GetSimulation().GetRegistry();
+  
+  // AnimationSystemにFrameProviderManagerへの参照を設定
+  animation_system_.SetFrameProviderManager(&context_->GetSimulation().GetFrameProviderManager());
+  
   user_data_manager_ = std::make_unique<Shared::Data::UserDataManager>();
   if (!user_data_manager_->Initialize("saves")) {
     std::cerr << "[GameApp] Failed to initialize save directory" << std::endl;
   }
 
-  // Raylib初期化
-  SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+  // Raylib初期化 - 固定サイズ、リサイズ不可
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Simple TDC Game");
-  SetWindowMinSize(SCREEN_WIDTH, SCREEN_HEIGHT);
   SetTargetFPS(static_cast<int>(TARGET_FPS));
   // ESC終了のデフォルト挙動を無効化（シーン側で管理）
   SetExitKey(KEY_NULL);
@@ -108,7 +108,6 @@ bool GameApp::Initialize() {
 void GameApp::Run() {
   while (is_running_ && !WindowShouldClose()) {
     delta_time_ = GetFrameTime();
-    HandleResize();
 
     // FileWatcherの変更チェック
     context_->GetFileWatcher().CheckChanges();
@@ -168,7 +167,7 @@ void GameApp::Update(float delta_time) {
           }
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
+                  default_font_, GetScreenWidth(), GetScreenHeight(), &Settings(),
                   user_data_manager_.get(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::FADE);
           return;
@@ -199,7 +198,7 @@ void GameApp::Update(float delta_time) {
         case Game::Scenes::TitleScene::MenuAction::NewGame:
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
+                  default_font_, GetScreenWidth(), GetScreenHeight(),
                   user_data_manager_.get(), &Settings(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::FADE);
           break;
@@ -220,7 +219,7 @@ void GameApp::Update(float delta_time) {
           if (ok) {
             scene_manager_->ReplaceScene(
                 std::make_unique<Game::Scenes::HomeScene>(
-                    default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
+                    default_font_, GetScreenWidth(), GetScreenHeight(),
                     user_data_manager_.get(), &Settings(), bgm_service_.get()),
                 Game::Scenes::SceneManager::TransitionType::FADE);
             return;
@@ -243,7 +242,7 @@ void GameApp::Update(float delta_time) {
         case Game::Scenes::HomeScene::Action::Formation:
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::FormationScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, *definitions_,
+                  default_font_, GetScreenWidth(), GetScreenHeight(), *definitions_,
                   *formation_manager_),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
           return;
@@ -253,7 +252,7 @@ void GameApp::Update(float delta_time) {
           registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
+                  default_font_, GetScreenWidth(), GetScreenHeight(), &Settings(),
                   user_data_manager_.get(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
@@ -266,7 +265,7 @@ void GameApp::Update(float delta_time) {
           registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
+                  default_font_, GetScreenWidth(), GetScreenHeight(), &Settings(),
                   user_data_manager_.get(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
@@ -293,7 +292,7 @@ void GameApp::Update(float delta_time) {
           registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
+                  default_font_, GetScreenWidth(), GetScreenHeight(),
                   user_data_manager_.get(), &Settings(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
@@ -307,7 +306,7 @@ void GameApp::Update(float delta_time) {
             registry_->clear();
             scene_manager_->ReplaceScene(
                 std::make_unique<Game::Scenes::TDGameScene>(
-                    context_->GetSimulation(), rendering_system_, new_rendering_system_,
+                    context_->GetSimulation(), rendering_system_, *new_rendering_system_,
                     *definitions_, Settings(), default_font_, stage_id,
                     formation_manager_.get()),
                 Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
@@ -319,7 +318,7 @@ void GameApp::Update(float delta_time) {
         if (formation->ConsumeReturnHome()) {
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::HomeScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT,
+                  default_font_, GetScreenWidth(), GetScreenHeight(),
                   user_data_manager_.get(), &Settings(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
@@ -330,7 +329,7 @@ void GameApp::Update(float delta_time) {
           registry_->clear();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TitleScene>(
-                  default_font_, SCREEN_WIDTH, SCREEN_HEIGHT, &Settings(),
+                  default_font_, GetScreenWidth(), GetScreenHeight(), &Settings(),
                   user_data_manager_.get(), bgm_service_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_RIGHT);
           return;
@@ -341,7 +340,7 @@ void GameApp::Update(float delta_time) {
           current_stage_id_ = td->GetCurrentStageId();
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TDGameScene>(
-                  context_->GetSimulation(), rendering_system_, new_rendering_system_,
+                  context_->GetSimulation(), rendering_system_, *new_rendering_system_,
                   *definitions_, Settings(), default_font_, td->GetCurrentStageId(),
                   formation_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
@@ -354,7 +353,7 @@ void GameApp::Update(float delta_time) {
           current_stage_id_ = next_stage;
           scene_manager_->ReplaceScene(
               std::make_unique<Game::Scenes::TDGameScene>(
-                  context_->GetSimulation(), rendering_system_, new_rendering_system_,
+                  context_->GetSimulation(), rendering_system_, *new_rendering_system_,
                   *definitions_, Settings(), default_font_, next_stage,
                   formation_manager_.get()),
               Game::Scenes::SceneManager::TransitionType::SLIDE_LEFT);
@@ -395,22 +394,6 @@ void GameApp::Render() {
   }
 
   EndDrawing();
-}
-
-void GameApp::HandleResize() {
-  int current_width = GetScreenWidth();
-  int current_height = GetScreenHeight();
-
-  float scale_x =
-      static_cast<float>(current_width) / static_cast<float>(SCREEN_WIDTH);
-  float scale_y =
-      static_cast<float>(current_height) / static_cast<float>(SCREEN_HEIGHT);
-
-  render_scale_ = std::min(scale_x, scale_y);
-  viewport_width_ = static_cast<int>(SCREEN_WIDTH * render_scale_);
-  viewport_height_ = static_cast<int>(SCREEN_HEIGHT * render_scale_);
-  viewport_x_ = (current_width - viewport_width_) / 2;
-  viewport_y_ = (current_height - viewport_height_) / 2;
 }
 
 bool GameApp::SaveToSlot(int slot_id) {
@@ -565,6 +548,9 @@ bool GameApp::SetupGameResources(std::string &message) {
   formation_manager_ = std::make_unique<Game::Managers::FormationManager>(
       *context_, *definitions_);
   // FormationManager はデータ読み込みのみで初期化
+
+  // NewRenderingSystemを初期化（DefinitionRegistryが必要なため、ここで初期化）
+  new_rendering_system_ = std::make_unique<Game::Systems::NewRenderingSystem>(*definitions_);
 
   message = "Done.";
   return true;

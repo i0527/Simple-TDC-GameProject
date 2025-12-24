@@ -1,6 +1,8 @@
 #include "Game/Scenes/TDGameScene.h"
 #include <algorithm>
 #include <imgui.h>
+#include <filesystem>
+#include <unordered_map>
 
 namespace {
 constexpr float BASE_WIDTH = 110.0f;
@@ -449,6 +451,10 @@ void TDGameScene::SpawnEntity(const Vector2 &pos, Components::Team::Type team,
     registry_.emplace<Components::AttackCooldown>(e);
     registry_.emplace<Components::SkillHolder>(e);
     registry_.emplace<Components::SkillCooldown>(e);
+    // Animationコンポーネントを追加（NewRenderingSystemで必要）
+    registry_.emplace<Components::Animation>(e);
+    // Spriteコンポーネントを追加（後方互換性のため）
+    registry_.emplace<Components::Sprite>(e);
     if (!entity_id.empty()) {
       registry_.emplace<Components::EntityDefId>(e, entity_id);
     }
@@ -1494,6 +1500,86 @@ void TDGameScene::DrawBaseDebugTab() {
 
   draw_base(u8"敵拠点", GetBaseStats(Components::Team::Type::Enemy));
   draw_base(u8"味方拠点", GetBaseStats(Components::Team::Type::Player));
+}
+
+std::string TDGameScene::ResolveIconPath(const Shared::Data::EntityDef* def) const {
+  if (!def) return {};
+  namespace fs = std::filesystem;
+
+  auto exists_path = [](const fs::path& p) { return !p.empty() && fs::exists(p); };
+
+  // 1. display.iconが存在する場合はそれを使用
+  if (exists_path(def->display.icon)) {
+    return fs::path(def->display.icon).lexically_normal().generic_string();
+  }
+
+  // 2. atlas_textureのパスからフォルダ名を取得
+  fs::path hint = def->display.icon.empty() ? fs::path(def->display.atlas_texture) : fs::path(def->display.icon);
+  if (!hint.empty()) {
+    fs::path folder = hint.parent_path().filename();
+    std::string tier = def->type.empty() ? "main" : def->type;
+    fs::path candidate = fs::path("assets/textures/icons/characters") / tier / folder / "icon.png";
+    if (exists_path(candidate)) {
+      return candidate.lexically_normal().generic_string();
+    }
+  }
+
+  // 3. source_pathからフォルダ名を取得（フォールバック）
+  if (!def->source_path.empty()) {
+    fs::path src(def->source_path);
+    fs::path folder = src.parent_path().filename();
+    std::string tier = def->type.empty() ? "main" : def->type;
+    fs::path candidate = fs::path("assets/textures/icons/characters") / tier / folder / "icon.png";
+    if (exists_path(candidate)) {
+      return candidate.lexically_normal().generic_string();
+    }
+    
+    // 4. キャラクターフォルダから直接icon.pngを取得
+    fs::path char_folder = fs::path("assets/characters") / tier / folder;
+    fs::path icon_in_folder = char_folder / "icon.png";
+    if (exists_path(icon_in_folder)) {
+      return icon_in_folder.lexically_normal().generic_string();
+    }
+  }
+
+  return {};
+}
+
+void TDGameScene::DrawDeckIcon(const Rectangle& rect, const std::string& entity_id) const {
+  const auto* def = definitions_.GetEntity(entity_id);
+  if (!def) return;
+
+  const std::string icon_path = ResolveIconPath(def);
+
+  // Try to draw icon first
+  if (!icon_path.empty()) {
+    auto it = icon_cache_.find(entity_id);
+    if (it == icon_cache_.end()) {
+      Texture2D tex = LoadTexture(icon_path.c_str());
+      if (tex.id != 0) {
+        icon_cache_[entity_id] = tex;
+        it = icon_cache_.find(entity_id);
+      }
+    }
+    if (it != icon_cache_.end()) {
+      // 味方（is_enemy == false）の場合は左右反転
+      Rectangle src_rect{0.0f, 0.0f, (float)it->second.width, (float)it->second.height};
+      if (def && !def->is_enemy) {
+        src_rect.width = -src_rect.width; // 左右反転
+      }
+      DrawTexturePro(it->second, 
+                     src_rect, 
+                     rect, 
+                     {0.0f, 0.0f}, 
+                     0.0f, 
+                     WHITE);
+      return;
+    }
+  }
+  
+  // Fallback: draw placeholder rectangle
+  DrawRectangleRec(rect, Color{60, 100, 200, 180});
+  DrawRectangleLinesEx(rect, 2.0f, Color{120, 170, 240, 200});
 }
 
 } // namespace Game::Scenes
