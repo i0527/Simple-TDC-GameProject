@@ -1,0 +1,14 @@
+# このファイルを削除して、実際の移動アニメーション用スプライトシート（move.png）を配置してください
+# 
+# スプライトシートの仕様:
+# - フレームは横方向（左から右）に並べます
+# - 例: 64x64のフレームが8個ある場合、スプライトシートのサイズは 512x64 (64×8) になります
+# 
+# characters.jsonでの設定例:
+# "move": {
+#   "sheet_path": "assets/characters/CharacterName/move.png",
+#   "frame_width": 64,
+#   "frame_height": 64,
+#   "frame_count": 8,
+#   "frame_duration": 0.1
+# }

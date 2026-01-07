@@ -1,0 +1,537 @@
+# Cat Tower Defense - Cursor Development Rules
+
+プロジェクトの運用ルールを簡潔にまとめています。Copilot添付の規約と整合する形で、余計な重複を排除した最小セットです。
+
+---
+## プロジェクト情報
+- 言語: C++17
+- アーキテクチャ: ECS (EnTT)
+- ランタイム: Raylib 5.x + ImGui（エディタ機能は今回統合済み）
+- ビルド: CMake + Visual Studio 2022
+- 解像度/フォント: 1920x1080 固定, assets/fonts/NotoSansJP-Medium.ttf
+
+---
+## 命名規約（プロジェクト標準）
+- クラス/構造体: PascalCase (`GameManager`)
+- 関数/メソッド: PascalCase (`UpdatePosition`)
+- 変数: camelCase、プライベートは末尾にアンダースコア (`playerSpeed`, `registry_`)
+- 定数: UPPER_CASE (`MAX_ENTITIES`)
+- 名前空間: PascalCase (`Components`, `Systems`)
+
+---
+## ヘッダー/実装の書き方
+```cpp
+#pragma once
+
+// 標準ライブラリ
+#include <vector>
+#include <memory>
+#include <string>
+
+// 外部ライブラリ
+#include <entt/entt.hpp>
+#include <raylib.h>
+
+// プロジェクト内
+#include "../core/Types.h"
+
+namespace CatTD {
+
+class GameApp {
+public:
+    GameApp();
+    ~GameApp();
+
+    void Initialize();
+    void Update(float deltaTime);
+    void Render();
+    void Shutdown();
+
+private:
+    std::shared_ptr<ResourceManager> resourceManager_;
+    std::shared_ptr<InputManager> inputManager_;
+    entt::registry& registry_;
+};
+
+} // namespace CatTD
+```
+
+実装ファイルでは対応するヘッダーを最初に include し、名前空間で囲み、ロジックを簡潔に保つ。
+
+---
+## ECS設計
+- コンポーネントはPOD（データのみ）。ロジックは持たせない。
+- システムにロジックを集約し、依存を最小化。実行順序は明示的に管理。
+```cpp
+struct Position { float x; float y; };
+struct Velocity { float dx; float dy; };
+
+class MovementSystem {
+public:
+    explicit MovementSystem(entt::registry& registry) : registry_(registry) {}
+    void Update(float dt) {
+        auto view = registry_.view<Position, Velocity>();
+        for (auto e : view) {
+            auto& pos = view.get<Position>(e);
+            const auto& vel = view.get<Velocity>(e);
+            pos.x += vel.dx * dt;
+            pos.y += vel.dy * dt;
+        }
+    }
+private:
+    entt::registry& registry_;
+};
+```
+
+---
+## JSONパース方針（nlohmann/json）
+必ず try-catch で囲み、parse_error と std::exception を捕捉し、デフォルト値で継続する。
+```cpp
+try {
+    const auto jsonData = nlohmann::json::parse(text);
+    // ... use jsonData ...
+} catch (const nlohmann::json::parse_error& e) {
+    std::cerr << "JSON parse error: " << e.what() << std::endl;
+    // fallback
+} catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    // fallback
+}
+```
+
+---
+## リソース/フォント
+- フォント: assets/fonts/NotoSansJP-Medium.ttf を Raylib と ImGui 双方で使用。
+- 対応文字範囲: ひらがな/カタカナ/ASCII/JIS第一・第二水準。
+- 解像度は 1920x1080 固定。
+
+---
+## ビルド/依存
+- CMake で FetchContent 管理（raylib, EnTT, nlohmann/json, ImGui, rlImGui）。
+- 実行ファイル: CatTDGame（game ディレクトリ配下の統合ソース）。
+- assets/ と data/ は POST_BUILD でバンドル。
+
+### ビルド方法（toolsディレクトリのスクリプトを使用）
+
+**重要**: ビルドは必ず `tools/` ディレクトリのスクリプトを使用してください。直接CMakeを実行しないでください。
+
+#### PowerShell（推奨）
+```powershell
+# デバッグビルド
+.\tools\build.ps1
+
+# リリースビルド
+.\tools\build.ps1 -BuildType Release
+
+# クリーンビルド（ビルドディレクトリを削除して再構築）
+.\tools\build.ps1 -Clean
+
+# ビルドして実行
+.\tools\build.ps1 -Run
+
+# 組み合わせ例
+.\tools\build.ps1 -BuildType Release -Clean -Run
+```
+
+#### コマンドプロンプト
+```batch
+REM デバッグビルド
+tools\build_debug.bat
+
+REM クリーンビルド
+tools\build_debug.bat clean
+
+REM リリースビルド
+tools\build_release.bat
+```
+
+#### ビルド出力先
+- **Debug**: `build_cli/game/CatTDGame.exe`
+- **Release**: `build_release/game/CatTDGame.exe`
+
+**注意**: IDEのビルドディレクトリ (`build/`) とは別のディレクトリを使用します。
+
+詳細は `tools/README.md` を参照してください。
+
+---
+## ディレクトリ構造規則
+- **ヘッダーとソースは同じディレクトリに配置**（案1: 同一ディレクトリ配置）
+- コンポーネントはヘッダーのみ（POD、実装ファイル不要）
+- システムはヘッダーとソースを分離
+- includeパスは相対パスで統一（`#include "../core/Types.h"`）
+- 詳細は `docs/directory_structure.md` を参照
+
+## ルールの適用
+- 複雑なロジックには簡潔なコメントを添える（必要最小限）。
+- 共有コードは `game/` 配下に集約済み。新規コードは既存カテゴリ（core/ecs/managers/scenes/ui/utils/config/main）に配置。
+- 旧 editor/shared/test の依存は追加しない。
+ServiceContainer::getInstance().initialize();
+
+// 使用時
+auto resource_manager = 
+    ServiceContainer::getInstance().getResourceManager();
+
+auto registry = &ServiceContainer::getInstance().getRegistry();
+```
+
+### クラス内での注入
+
+```cpp
+class GameScene {
+public:
+    explicit GameScene(
+        std::shared_ptr<ResourceManager> resource_manager,
+        std::shared_ptr<InputManager> input_manager,
+        entt::registry& registry)
+        : m_resource_manager(resource_manager),
+          m_input_manager(input_manager),
+          m_registry(registry) {}
+    
+private:
+    std::shared_ptr<ResourceManager> m_resource_manager;
+    std::shared_ptr<InputManager> m_input_manager;
+    entt::registry& m_registry;
+};
+
+// 生成時
+auto scene = std::make_shared<GameScene>(
+    ServiceContainer::getInstance().getResourceManager(),
+    ServiceContainer::getInstance().getInputManager(),
+    ServiceContainer::getInstance().getRegistry()
+);
+```
+
+---
+
+## 📝 ログパターン
+
+### ログマクロ使用
+
+```cpp
+#include "../utils/Log.h"
+
+// 情報ログ
+LOG_INFO("Enemy spawned: {}", enemy_type);
+
+// 警告ログ
+LOG_WARN("Health below threshold: {}", current_health);
+
+// エラーログ
+LOG_ERROR("Failed to load texture: {}", file_path);
+
+// デバッグログ
+LOG_DEBUG("Position: ({}, {})", pos.x, pos.y);
+```
+
+### フォーマット
+
+```cpp
+// C++17 の fmt スタイル（spdlog でサポート）
+LOG_INFO("Entity {} created with health {}", entity_id, max_health);
+LOG_INFO("Wave {} spawning {} enemies", wave_id, spawn_count);
+LOG_INFO("Delta time: {:.4f}ms", delta_time * 1000.0f);
+```
+
+---
+
+## ✅ 絶対禁止パターン
+
+### ❌ グローバル変数
+
+```cpp
+// 禁止
+entt::registry g_registry;
+ResourceManager* g_resource_manager = nullptr;
+
+// 理由: テスト困難、状態管理複雑化
+```
+
+**代わりに**: DI / ServiceContainer 使用
+
+```cpp
+// ✅ OK
+class GameApp {
+    entt::registry m_registry;
+    std::shared_ptr<ResourceManager> m_resource_manager;
+};
+```
+
+### ❌ メモリリーク（new/delete）
+
+```cpp
+// 禁止
+auto* entity = new GameObject();
+delete entity;
+
+// 理由: メモリ管理負担
+```
+
+**代わりに**: スマートポインタ
+
+```cpp
+// ✅ OK
+auto entity = std::make_shared<GameObject>();
+// スコープ脱出時に自動削除
+```
+
+### ❌ 複雑なポリモーフィズム
+
+```cpp
+// 禁止
+class Entity {
+public:
+    virtual void update() = 0;
+    virtual void render() = 0;
+};
+
+class Enemy : public Entity {
+    void update() override { ... }
+};
+
+// 理由: ECS で対応可能、継承は不要
+```
+
+**代わりに**: Component + Tag で判別
+
+```cpp
+// ✅ OK
+auto enemies = registry.view<Position, EnemyTag>();
+for (auto entity : enemies) {
+    // 全敵を一括更新
+}
+```
+
+### ❌ 循環参照
+
+```cpp
+// 禁止
+class A {
+    std::shared_ptr<B> m_b;
+};
+
+class B {
+    std::shared_ptr<A> m_a;  // 循環参照 → メモリリーク
+};
+```
+
+**代わりに**: weak_ptr または参照
+
+```cpp
+// ✅ OK
+class A {
+    std::shared_ptr<B> m_b;
+};
+
+class B {
+    std::weak_ptr<A> m_a;  // 循環参照なし
+};
+```
+
+### ❌ Raylib リソースの多重削除
+
+```cpp
+// 禁止
+Texture2D texture = LoadTexture("file.png");
+UnloadTexture(texture);
+UnloadTexture(texture);  // ダブルデリート
+
+// 禁止
+Texture2D texture = LoadTexture("file.png");
+// スコープ脱出時に自動削除されない
+```
+
+**代わりに**: shared_ptr + カスタムデリータ
+
+```cpp
+// ✅ OK
+std::shared_ptr<Texture2D> texture(
+    new Texture2D(LoadTexture("file.png")),
+    [](Texture2D* t) { UnloadTexture(*t); delete t; }
+);
+// スコープ脱出時に自動削除
+```
+
+---
+
+## 📊 Cursor に指示するときのテンプレート
+
+### 新規ファイル作成
+
+```
+「.cursorrules に従って、game/ecs/components/Health.h を作成。
+
+要件:
+- struct Health
+- メンバ: int current, int max
+- メソッド: isAlive() (bool), takeDamage(int damage) (void)
+- デフォルトコンストラクタ
+- コンストラクタ Health(int max_value)
+
+コメント付きで、namespace CatTD::Components で囲んで」
+```
+
+### 関数実装
+
+```
+「.cursorrules に従って、MovementSystem::update の実装を作成。
+
+要件:
+- registry.view<Position, Velocity>() で取得
+- forループで全エンティティ更新
+- pos.x += vel.vx * delta_time
+- pos.y += vel.vy * delta_time
+- delta_time パラメータ受け取り
+
+spdlog でログ出力」
+```
+
+### バグ修正
+
+```
+「このコードが compilation error です:
+
+[エラーコード貼り付け]
+
+.cursorrules に従って修正してください」
+```
+
+---
+
+## 🔍 型安全性チェックリスト
+
+ファイル作成時に確認:
+
+- [ ] include ガード (#pragma once) あり
+- [ ] 前置宣言で循環参照を防いでいるか
+- [ ] メンバ変数は private / public 明記
+- [ ] コンストラクタあり（明示的に default か）
+- [ ] デストラクタ必要か判断した
+- [ ] shared_ptr / unique_ptr で所有権明記
+- [ ] const メソッド（副作用なし）を const 指定
+- [ ] 参照・ポインタの null チェック（できるなら）
+
+---
+
+## 🎮 エンティティ生成・管理パターン
+
+### エンティティ生成（SpawnSystem）
+
+```cpp
+void SpawnSystem::spawnEnemy(
+    const EntityDefinition& definition,
+    float x, float y) {
+    
+    // エンティティ作成
+    auto entity = m_registry.create();
+    
+    // コンポーネント追加
+    m_registry.emplace<Position>(entity, x, y);
+    m_registry.emplace<Health>(entity, definition.maxHealth);
+    m_registry.emplace<Combat>(entity, 
+        definition.attackPower, 
+        definition.attackSpeed);
+    m_registry.emplace<Sprite>(entity, definition.spriteName);
+    m_registry.emplace<EnemyTag>(entity);
+    
+    LOG_INFO("Enemy spawned at ({}, {})", x, y);
+}
+```
+
+### エンティティ削除
+
+```cpp
+// 敵を消す（DeadTag でマーク）
+m_registry.emplace<DeadTag>(entity);
+
+// 別フレームで実際に削除（destroy）
+auto dead_view = m_registry.view<DeadTag>();
+m_registry.destroy(dead_view.begin(), dead_view.end());
+```
+
+---
+
+## ⚡ パフォーマンス指針
+
+### メモリ効率
+
+```cpp
+// ❌ 毎フレーム文字列生成（遅い）
+for (auto entity : view) {
+    std::string log = "Entity " + std::to_string(id) + " updated";
+    // 処理
+}
+
+// ✅ ログはデバッグモードのみ
+#ifdef DEBUG_MODE
+    LOG_DEBUG("Processing entity {}", id);
+#endif
+```
+
+### キャッシュ効率（ECS の利点）
+
+```cpp
+// ✅ 連続メモリ（キャッシュ効率良）
+auto view = m_registry.view<Position, Velocity>();
+for (auto entity : view) {
+    // 同じコンポーネントを持つエンティティを連続処理
+    auto& pos = view.get<Position>(entity);
+}
+```
+
+### フレームレート安全
+
+```cpp
+// ❌ フレームレート依存
+pos.x += 100;  // 毎フレーム 100 ピクセル = FPS で変わる
+
+// ✅ delta_time で正規化
+pos.x += 100 * delta_time;  // 毎秒 100 ピクセル（固定）
+```
+
+---
+
+## 🐛 デバッグテクニック
+
+### ログで状態確認
+
+```cpp
+// システム処理開始・終了をログ
+LOG_INFO("=== Update Start ===");
+LOG_INFO("Active entities: {}", registry.alive());
+
+auto movement_view = registry.view<Position, Velocity>();
+LOG_DEBUG("Entities to move: {}", movement_view.size());
+
+// 処理後
+LOG_INFO("=== Update End ===");
+```
+
+### ImGui でリアルタイム確認
+
+```cpp
+void DebugPanels::render(entt::registry& registry) {
+    ImGui::Begin("Debug");
+    
+    ImGui::Text("Total entities: %d", registry.alive());
+    
+    auto view = registry.view<Position>();
+    ImGui::Text("Entities with Position: %d", view.size());
+    
+    ImGui::End();
+}
+```
+
+---
+
+## 📌 まとめ: Cursor AI を使う際のポイント
+
+1. **ルールを読ませる**: `.cursorrules` をプロジェクトルートに配置
+2. **テンプレートで指示**: 上記の「テンプレート」を参考に指示
+3. **型安全性を強制**: ECS、DI、shared_ptr を一貫して使用
+4. **デバッグ効率化**: spdlog + ImGui で常に状態監視
+5. **メモリ安全**: new/delete 禁止、スマートポインタ必須
+
+---
+
+**Cursor AI がこのルールを理解すれば、品質を保ちながら高速開発できます！** 🚀
+

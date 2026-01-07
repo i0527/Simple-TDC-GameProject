@@ -1,0 +1,14 @@
+# このファイルを削除して、実際の攻撃アニメーション用スプライトシート（attack.png）を配置してください
+# 
+# スプライトシートの仕様:
+# - フレームは横方向（左から右）に並べます
+# - 例: 64x64のフレームが6個ある場合、スプライトシートのサイズは 384x64 (64×6) になります
+# 
+# characters.jsonでの設定例:
+# "attack": {
+#   "sheet_path": "assets/characters/CharacterName/attack.png",
+#   "frame_width": 64,
+#   "frame_height": 64,
+#   "frame_count": 6,
+#   "frame_duration": 0.1
+# }

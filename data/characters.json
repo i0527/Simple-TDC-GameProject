@@ -1,0 +1,332 @@
+{
+  "characters": [
+    {
+      "id": "char_sub_hatslime_001",
+      "name": "帽子スライム",
+      "description": "帽子をかぶったスライム",
+      "rarity": 1,
+      "rarity_name": "N",
+      "status": {
+        "level": 1,
+        "hp": 70,
+        "attack": 18,
+        "defense": 0,
+        "move_speed": 50.0,
+        "attack_span": 0.833
+      },
+      "attack": {
+        "type": "single",
+        "size": [100.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/sub/HatSlime/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/sub/HatSlime/dev/walk/walk.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 8,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/sub/HatSlime/dev/attack/attack.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 6,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 140,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_orca_001",
+      "name": "シャチ",
+      "description": "凶暴な海の捕食者",
+      "rarity": 3,
+      "rarity_name": "SR",
+      "status": {
+        "level": 1,
+        "hp": 150,
+        "attack": 45,
+        "defense": 0,
+        "move_speed": 55.0,
+        "attack_span": 1.0
+      },
+      "attack": {
+        "type": "single",
+        "size": [140.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/sub/Orca/icons/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/sub/Orca/Orca.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 8,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/sub/Orca/Orca.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 6,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 280,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_seahorse_001",
+      "name": "タツノオトシゴ",
+      "description": "優雅な海の生物",
+      "rarity": 1,
+      "rarity_name": "N",
+      "status": {
+        "level": 1,
+        "hp": 80,
+        "attack": 15,
+        "defense": 0,
+        "move_speed": 35.0,
+        "attack_span": 1.111
+      },
+      "attack": {
+        "type": "single",
+        "size": [120.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/sub/SeaHorse/icons/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/sub/SeaHorse/SeaHorse.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 8,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/sub/SeaHorse/SeaHorse.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 6,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 120,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_whale_001",
+      "name": "クジラ",
+      "description": "大型の海の生物",
+      "rarity": 2,
+      "rarity_name": "R",
+      "status": {
+        "level": 1,
+        "hp": 180,
+        "attack": 25,
+        "defense": 0,
+        "move_speed": 40.0,
+        "attack_span": 1.25
+      },
+      "attack": {
+        "type": "single",
+        "size": [150.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/sub/Whale/icons/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/sub/Whale/Whale.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 8,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/sub/Whale/Whale.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 6,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 200,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_rainbow_001",
+      "name": "虹",
+      "description": "色彩の幻想生物",
+      "rarity": 3,
+      "rarity_name": "SR",
+      "status": {
+        "level": 1,
+        "hp": 95,
+        "attack": 35,
+        "defense": 0,
+        "move_speed": 65.0,
+        "attack_span": 0.714
+      },
+      "attack": {
+        "type": "single",
+        "size": [120.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/sub/Rainbow/icons/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/sub/Rainbow/Rainbow.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 8,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/sub/Rainbow/Rainbow.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 6,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 250,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_lanterfish_001",
+      "name": "提灯メンダコアンコウ",
+      "description": "光を放つ深海の生物",
+      "rarity": 2,
+      "rarity_name": "R",
+      "status": {
+        "level": 1,
+        "hp": 110,
+        "attack": 28,
+        "defense": 0,
+        "move_speed": 42.0,
+        "attack_span": 1.111
+      },
+      "attack": {
+        "type": "single",
+        "size": [140.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/sub/LanterfishAnglerfish/icons/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/sub/LanterfishAnglerfish/LanterfishAnglerfish.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 8,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/sub/LanterfishAnglerfish/LanterfishAnglerfish.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 6,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 190,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_yodarehaki_001",
+      "name": "ヨダレハキ",
+      "description": "奇妙な深海生物",
+      "rarity": 2,
+      "rarity_name": "R",
+      "status": {
+        "level": 1,
+        "hp": 100,
+        "attack": 30,
+        "defense": 0,
+        "move_speed": 45.0,
+        "attack_span": 0.909
+      },
+      "attack": {
+        "type": "single",
+        "size": [130.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/sub/YodarehakiDragonfish/icons/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/sub/YodarehakiDragonfish/YodarehakiDragonfish.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 8,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/sub/YodarehakiDragonfish/YodarehakiDragonfish.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 6,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 220,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_longtailedtit_001",
+      "name": "シマエナガ",
+      "description": "小さな野鳥",
+      "rarity": 1,
+      "rarity_name": "N",
+      "status": {
+        "level": 1,
+        "hp": 60,
+        "attack": 20,
+        "defense": 0,
+        "move_speed": 70.0,
+        "attack_span": 0.769
+      },
+      "attack": {
+        "type": "single",
+        "size": [100.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/sub/LongTailedTit/icons/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/sub/LongTailedTit/LongTailedTit.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 8,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/sub/LongTailedTit/LongTailedTit.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 6,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 100,
+      "is_discovered": true
+    }
+  ]
+}
