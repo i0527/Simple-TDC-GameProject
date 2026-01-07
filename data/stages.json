@@ -1,0 +1,296 @@
+{
+  "stages": [
+    {
+      "id": "stage_debug",
+      "domain": "World1",
+      "subdomain": 1,
+      "castle_hp": {
+        "player_castle_hp": 1000,
+        "enemy_castle_hp": 6000
+      },
+      "lanes": [
+        {
+          "index": 0,
+          "y": 360,
+          "startX": 120,
+          "endX": 1800
+        }
+      ],
+      "waves": [
+        "wave_debug",
+        "wave_broken"
+      ],
+      "playerLife": 18,
+      "startingCost": 200,
+      "baseArrivalDamage": 1,
+      "killReward": 8,
+      "minGap": 76,
+      "frontlineIterations": 3
+    },
+    {
+      "id": "stage_debug_2",
+      "domain": "World1",
+      "subdomain": 2,
+      "castle_hp": {
+        "player_castle_hp": 1000,
+        "enemy_castle_hp": 8000
+      },
+      "lanes": [
+        {
+          "index": 0,
+          "y": 380,
+          "startX": 140,
+          "endX": 1780
+        }
+      ],
+      "waves": [
+        "wave_debug"
+      ],
+      "playerLife": 16,
+      "startingCost": 180,
+      "baseArrivalDamage": 1,
+      "killReward": 8,
+      "minGap": 70,
+      "frontlineIterations": 3
+    },
+    {
+      "id": "stage_debug_3",
+      "domain": "World1",
+      "subdomain": 3,
+      "castle_hp": {
+        "player_castle_hp": 1000,
+        "enemy_castle_hp": 10000
+      },
+      "lanes": [
+        {
+          "index": 0,
+          "y": 340,
+          "startX": 100,
+          "endX": 1840
+        }
+      ],
+      "waves": [
+        "wave_broken",
+        "wave_debug"
+      ],
+      "playerLife": 14,
+      "startingCost": 220,
+      "baseArrivalDamage": 1,
+      "killReward": 10,
+      "minGap": 72,
+      "frontlineIterations": 3
+    },
+    {
+      "id": "stage_sample",
+      "lanes": [
+        {
+          "index": 0,
+          "y": 360,
+          "startX": 120,
+          "endX": 1800
+        }
+      ],
+      "waves": [
+        "wave_1",
+        "wave_2",
+        "wave_3"
+      ],
+      "playerLife": 12,
+      "startingCost": 120,
+      "baseArrivalDamage": 1,
+      "killReward": 6,
+      "minGap": 72,
+      "frontlineIterations": 3
+    },
+    {
+      "id": "stage_horde_1",
+      "name": "Horde Test 1",
+      "description": "大量スライムのラッシュにオーガが追随するデバッグ用ステージ",
+      "domain": "WorldHorde",
+      "subdomain": 1,
+      "difficulty": 2,
+      "environment": {
+        "background_image": "",
+        "bgm_id": "",
+        "scroll_speed": 0.0
+      },
+      "castle_hp": {
+        "player_castle_hp": 1000,
+        "enemy_castle_hp": 9000
+      },
+      "wave_ids": [
+        "wave_horde_a"
+      ],
+      "rewards": {
+        "gold": 150,
+        "exp": 80
+      },
+      "tags": [
+        "horde",
+        "debug"
+      ]
+    },
+    {
+      "id": "stage_horde_2",
+      "name": "Horde Test 2",
+      "description": "ラッシュ2フェーズ構成。スライムとオーガ混成の長時間ウェーブ",
+      "domain": "WorldHorde",
+      "subdomain": 2,
+      "difficulty": 3,
+      "environment": {
+        "background_image": "",
+        "bgm_id": "",
+        "scroll_speed": 0.0
+      },
+      "castle_hp": {
+        "player_castle_hp": 1000,
+        "enemy_castle_hp": 11000
+      },
+      "wave_ids": [
+        "wave_horde_a",
+        "wave_horde_b"
+      ],
+      "rewards": {
+        "gold": 200,
+        "exp": 120
+      },
+      "tags": [
+        "horde",
+        "debug",
+        "phase2"
+      ]
+    },
+    {
+      "id": "1",
+      "waves": [
+        {"type": "goblin", "count": 5, "interval": 0.5},
+        {"type": "goblin", "count": 8, "interval": 0.3},
+        {"type": "goblin", "count": 10, "interval": 0.2},
+        {"type": "goblin", "count": 15, "interval": 0.2},
+        {"type": "goblin_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 120
+    },
+    {
+      "id": "2",
+      "waves": [
+        {"type": "goblin", "count": 8, "interval": 0.4},
+        {"type": "goblin", "count": 10, "interval": 0.3},
+        {"type": "goblin", "count": 12, "interval": 0.2},
+        {"type": "goblin", "count": 18, "interval": 0.2},
+        {"type": "goblin_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 120
+    },
+    {
+      "id": "3",
+      "waves": [
+        {"type": "goblin", "count": 10, "interval": 0.4},
+        {"type": "goblin", "count": 12, "interval": 0.3},
+        {"type": "goblin", "count": 15, "interval": 0.2},
+        {"type": "goblin", "count": 20, "interval": 0.2},
+        {"type": "goblin_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 120
+    },
+    {
+      "id": "4",
+      "waves": [
+        {"type": "goblin", "count": 12, "interval": 0.3},
+        {"type": "goblin", "count": 15, "interval": 0.2},
+        {"type": "goblin", "count": 18, "interval": 0.2},
+        {"type": "goblin", "count": 25, "interval": 0.15},
+        {"type": "goblin_boss", "count": 2, "interval": 0.5}
+      ],
+      "timeLimit": 120
+    },
+    {
+      "id": "5",
+      "waves": [
+        {"type": "ogre", "count": 5, "interval": 0.5},
+        {"type": "ogre", "count": 8, "interval": 0.4},
+        {"type": "ogre", "count": 10, "interval": 0.3},
+        {"type": "ogre", "count": 12, "interval": 0.2},
+        {"type": "ogre_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 150
+    },
+    {
+      "id": "6",
+      "waves": [
+        {"type": "ogre", "count": 8, "interval": 0.4},
+        {"type": "ogre", "count": 10, "interval": 0.3},
+        {"type": "ogre", "count": 12, "interval": 0.2},
+        {"type": "ogre", "count": 15, "interval": 0.2},
+        {"type": "ogre_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 150
+    },
+    {
+      "id": "7",
+      "waves": [
+        {"type": "ogre", "count": 10, "interval": 0.4},
+        {"type": "ogre", "count": 12, "interval": 0.3},
+        {"type": "ogre", "count": 15, "interval": 0.2},
+        {"type": "ogre", "count": 18, "interval": 0.2},
+        {"type": "ogre_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 150
+    },
+    {
+      "id": "8",
+      "waves": [
+        {"type": "ogre", "count": 12, "interval": 0.3},
+        {"type": "ogre", "count": 15, "interval": 0.2},
+        {"type": "ogre", "count": 18, "interval": 0.2},
+        {"type": "ogre", "count": 20, "interval": 0.15},
+        {"type": "ogre_boss", "count": 2, "interval": 0.5}
+      ],
+      "timeLimit": 150
+    },
+    {
+      "id": "9",
+      "waves": [
+        {"type": "dragon", "count": 5, "interval": 0.6},
+        {"type": "dragon", "count": 8, "interval": 0.5},
+        {"type": "dragon", "count": 10, "interval": 0.4},
+        {"type": "dragon", "count": 12, "interval": 0.3},
+        {"type": "dragon_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 180
+    },
+    {
+      "id": "10",
+      "waves": [
+        {"type": "dragon", "count": 8, "interval": 0.5},
+        {"type": "dragon", "count": 10, "interval": 0.4},
+        {"type": "dragon", "count": 12, "interval": 0.3},
+        {"type": "dragon", "count": 15, "interval": 0.3},
+        {"type": "dragon_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 180
+    },
+    {
+      "id": "11",
+      "waves": [
+        {"type": "dragon", "count": 10, "interval": 0.5},
+        {"type": "dragon", "count": 12, "interval": 0.4},
+        {"type": "dragon", "count": 15, "interval": 0.3},
+        {"type": "dragon", "count": 18, "interval": 0.3},
+        {"type": "dragon_boss", "count": 1, "interval": 0.0}
+      ],
+      "timeLimit": 180
+    },
+    {
+      "id": "12",
+      "waves": [
+        {"type": "dragon", "count": 12, "interval": 0.4},
+        {"type": "dragon", "count": 15, "interval": 0.3},
+        {"type": "dragon", "count": 18, "interval": 0.3},
+        {"type": "dragon", "count": 20, "interval": 0.25},
+        {"type": "dragon_boss", "count": 3, "interval": 1.0}
+      ],
+      "timeLimit": 180
+    }
+  ]
+}
