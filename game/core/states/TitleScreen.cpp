@@ -1,6 +1,7 @@
 #include "TitleScreen.hpp"
 #include "../../utils/Log.h"
 #include "../system/OverlayManager.hpp"
+#include "../ui/OverlayColors.hpp"
 #include <raylib.h>
 
 namespace game {
@@ -27,6 +28,8 @@ TitleScreen::~TitleScreen() {
 }
 
 bool TitleScreen::Initialize(BaseSystemAPI* systemAPI, SharedContext* ctx) {
+    LOG_INFO("TitleScreen::Initialize() called");
+    
     if (isInitialized_) {
         LOG_ERROR("TitleScreen already initialized");
         return false;
@@ -42,6 +45,7 @@ bool TitleScreen::Initialize(BaseSystemAPI* systemAPI, SharedContext* ctx) {
         return false;
     }
 
+    LOG_INFO("TitleScreen: Setting member variables...");
     systemAPI_ = systemAPI;
     sharedContext_ = ctx;
     overlayManager_ = ctx->overlayManager;
@@ -51,11 +55,13 @@ bool TitleScreen::Initialize(BaseSystemAPI* systemAPI, SharedContext* ctx) {
         return false;
     }
 
+    LOG_INFO("TitleScreen: Setting flags...");
     isInitialized_ = true;
     hasTransitionRequest_ = false;
     requestQuit_ = false;
 
     // ========== UI要素初期化 ==========
+    LOG_INFO("TitleScreen: Initializing UI elements...");
     
     // 画面中央X座標
     const float centerX = 1920.0f / 2.0f;  // 960.0f
@@ -93,13 +99,15 @@ bool TitleScreen::Initialize(BaseSystemAPI* systemAPI, SharedContext* ctx) {
     menu_items_[QUIT].y = 975.0f;
     menu_items_[QUIT].label = "ゲーム終了";
     
+    LOG_INFO("TitleScreen: UI elements initialized, loading background...");
+    
     // 背景読み込み試行
     if (!LoadBackgroundImage()) {
         LOG_WARN("Background image not found. Using fallback gradient.");
         has_background_ = false;
     }
     
-    LOG_INFO("TitleScreen initialized");
+    LOG_INFO("TitleScreen initialized successfully");
     return true;
 }
 
@@ -215,9 +223,9 @@ void TitleScreen::RenderBackground() {
 }
 
 void TitleScreen::DrawGradientBackground() {
-    // グラデーション背景（垂直グラデーション）
-    Color top_color = {10, 20, 40, 255};      // 暗青
-    Color bottom_color = {20, 40, 80, 255};   // 薄青
+    // GitHubダークテーマグラデーション背景（垂直グラデーション）
+    Color top_color = ui::OverlayColors::PANEL_BG_GITHUB;      // 控えめ紺黒
+    Color bottom_color = ui::OverlayColors::MAIN_BG;           // 完璧な黒
     
     systemAPI_->DrawRectangleGradientV(
         0, 0,
@@ -237,15 +245,15 @@ void TitleScreen::RenderTitle() {
         title_text_.c_str(),
         titleX, titleY,
         TITLE_FONT_SIZE,
-        WHITE
+        ui::OverlayColors::TEXT_MAIN_GITHUB
     );
 }
 
 void TitleScreen::RenderStartButton() {
-    // ボタン背景
+    // ボタン背景 - GitHubダークテーマ
     Color button_color = start_button_.is_hovered ? 
-        Color{255, 180, 60, 255} :    // ホバー時: 明るい
-        Color{240, 160, 40, 255};     // 通常: オレンジ
+        ui::OverlayColors::ACCENT_PRIMARY :  // ホバー時: GitHubブルー
+        ui::OverlayColors::CARD_BG_GITHUB;   // 通常: 微光沢黒
     
     systemAPI_->DrawRectangle(
         static_cast<int>(start_button_.x),
@@ -255,14 +263,14 @@ void TitleScreen::RenderStartButton() {
         button_color
     );
     
-    // ボタン枠線
+    // ボタン枠線 - GitHubブルー
     systemAPI_->DrawRectangleLines(
         static_cast<int>(start_button_.x),
         static_cast<int>(start_button_.y),
         static_cast<int>(start_button_.width),
         static_cast<int>(start_button_.height),
         2.0f,
-        Color{200, 170, 100, 255}  // ゴールド枠
+        ui::OverlayColors::ACCENT_PRIMARY
     );
     
     // ボタンテキスト
@@ -274,16 +282,16 @@ void TitleScreen::RenderStartButton() {
         start_button_.label.c_str(),
         textX, textY,
         BUTTON_FONT_SIZE,
-        WHITE
+        ui::OverlayColors::TEXT_MAIN_GITHUB
     );
 }
 
 void TitleScreen::RenderFooterMenu() {
     for (int i = 0; i < 3; ++i) {
-        // ボタン背景（ゲーム開始ボタンより控えめな色）
+        // ボタン背景 - 茶色系に統一（ゲーム開始ボタンより控えめな色）
         Color button_color = menu_items_[i].is_hovered ? 
-            Color{100, 120, 180, 200} :    // ホバー時: 明るい青（半透明）
-            Color{60, 80, 120, 150};      // 通常: 暗い青（半透明）
+            ui::OverlayColors::BUTTON_SECONDARY_HOVER :  // ホバー時: 中間の茶色
+            ui::OverlayColors::BUTTON_SECONDARY;         // 通常: 暗めの茶色
         
         systemAPI_->DrawRectangle(
             static_cast<int>(menu_items_[i].x),
@@ -293,10 +301,10 @@ void TitleScreen::RenderFooterMenu() {
             button_color
         );
         
-        // ボタン枠線
+        // ボタン枠線 - 茶色系に統一
         Color border_color = menu_items_[i].is_hovered ? 
-            Color{150, 170, 220, 255} :  // ホバー時: 明るい枠
-            Color{100, 120, 160, 255};   // 通常: 暗い枠
+            ui::OverlayColors::BORDER_HOVER :   // ホバー時: ゴールド
+            ui::OverlayColors::BORDER_DEFAULT;  // 通常: 明るめの茶色
         systemAPI_->DrawRectangleLines(
             static_cast<int>(menu_items_[i].x),
             static_cast<int>(menu_items_[i].y),

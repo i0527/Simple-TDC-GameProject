@@ -1,6 +1,7 @@
 #include "TabBarManager.hpp"
 #include "../../../api/BaseSystemAPI.hpp"
 #include "../../../../utils/Log.h"
+#include "../../../ui/OverlayColors.hpp"
 #include <raylib.h>
 
 namespace game {
@@ -72,7 +73,7 @@ void TabBarManager::Render(BaseSystemAPI* systemAPI) {
     }
     
     // タブバー背景
-    systemAPI->DrawRectangle(0, 990, 1920, 90, Color{40, 40, 40, 255});
+    systemAPI->DrawRectangle(0, 990, 1920, 90, ui::OverlayColors::PANEL_BG);
     
     // 各タブボタンを描画
     for (auto& tab : tabs_) {
@@ -81,29 +82,35 @@ void TabBarManager::Render(BaseSystemAPI* systemAPI) {
         // タブボタンの背景色
         Color bgColor;
         if (tab.is_selected) {
-            bgColor = Color{100, 150, 200, 255};  // 選択時: 青系
+            bgColor = ui::OverlayColors::CARD_BG_SELECTED;  // 選択時: 明るい背景
         } else if (hovered_tab_index_ >= 0 && 
                    static_cast<int>(tab.tab_id) == hovered_tab_index_) {
-            bgColor = Color{60, 60, 60, 255};  // ホバー時: グレー
+            bgColor = ui::OverlayColors::CARD_BG_NORMAL;  // ホバー時: 通常背景
         } else {
-            bgColor = Color{50, 50, 50, 255};  // 通常時: ダークグレー
+            bgColor = ui::OverlayColors::SLOT_ORANGE_EMPTY;  // 通常時: ダーク背景
         }
         
         // タブボタン背景
         systemAPI->DrawRectangle(tab.x, tab.y, tab.width, tab.height, bgColor);
         
         // タブボタンの枠線
-        Color borderColor = tab.is_selected ? Color{150, 200, 255, 255} : Color{80, 80, 80, 255};
-        systemAPI->DrawRectangleLines(tab.x, tab.y, tab.width, tab.height, 2.0f, borderColor);
+        Color borderColor = tab.is_selected ? ui::OverlayColors::BORDER_GOLD : ui::OverlayColors::BORDER_DEFAULT;
+        float borderWidth = tab.is_selected ? 3.0f : 2.0f;  // 選択時は太めの枠線
+        systemAPI->DrawRectangleLines(tab.x, tab.y, tab.width, tab.height, borderWidth, borderColor);
+        
+        // 選択中のタブの上部にアクセントラインを追加
+        if (tab.is_selected) {
+            systemAPI->DrawLine(tab.x, tab.y, tab.x + tab.width, tab.y, 3.0f, ui::OverlayColors::ACCENT_GOLD);
+        }
         
         // テキスト描画（中央揃え）
         float textX = tab.x + tab.width / 2.0f;
         float textY = tab.y + tab.height / 2.0f;
         
-        Color textColor = tab.is_selected ? Color{255, 255, 255, 255} : Color{200, 200, 200, 255};
+        Color textColor = tab.is_selected ? ui::OverlayColors::TEXT_PRIMARY : ui::OverlayColors::TEXT_SECONDARY;
         
         // テキストサイズ計算
-        float fontSize = 24.0f;
+        float fontSize = 28.0f;
         Vector2 textSize = systemAPI->MeasureTextDefault(tab.label, fontSize, 1.0f);
         
         // 中央揃えで描画

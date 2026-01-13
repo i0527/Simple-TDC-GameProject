@@ -205,8 +205,8 @@ list(APPEND GAME_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/StageSelectOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/FormationOverlay.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/FormationOverlay.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/EnhancementOverlay.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/EnhancementOverlay.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CharacterEnhancementOverlay.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CharacterEnhancementOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CodexOverlay.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CodexOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/SettingsOverlay.cpp"
@@ -215,6 +215,8 @@ list(APPEND GAME_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/GachaOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/LicenseOverlay.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/LicenseOverlay.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/BattleResultOverlay.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/BattleResultOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/IOverlay.hpp"
     # UIコンポーネント
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ui/IUIComponent.hpp"
@@ -247,11 +249,22 @@ list(APPEND GAME_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/Character.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/CharacterManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/CharacterManager.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/ItemPassiveManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/ItemPassiveManager.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/StageManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/StageManager.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/CharacterToECS.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/EntityCreationData.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/animation/AnimationData.hpp"
+    # GameScene and components
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/GameScene.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/GameScene.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/game/FieldManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/game/FieldManager.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/game/InputHandler.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/game/InputHandler.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ui/HUDRenderer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ui/HUDRenderer.hpp"
 )
 
 # main.cppがエントリポイントであることを確認（必須）

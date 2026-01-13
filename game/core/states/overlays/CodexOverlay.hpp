@@ -8,6 +8,12 @@
 namespace game {
 namespace core {
 
+/// @brief アニメーションタイプ
+enum class AnimationType {
+    Move,   // 移動アニメーション
+    Attack  // 攻撃アニメーション
+};
+
 /// @brief 図鑑オーバーレイ
 ///
 /// 3パネルレイアウトの図鑑画面を表示するオーバーレイ。
@@ -51,6 +57,7 @@ private:
         float animation_timer = 0.0f;
         int animation_frame = 0;
         float animation_speed = 0.1f;
+        AnimationType current_animation = AnimationType::Move;
         bool has_error = false;
         std::string error_message;
     };
@@ -60,16 +67,16 @@ private:
         float width = 740.0f, height = 430.0f;  // 中央下部: ステータス
         float margin_right = 20.0f;
         float padding = 20.0f;
-        float line_height = 28.0f;
-        int font_size = 16;
+        float line_height = 40.0f;
+        int font_size = 24;
     };
     
     struct InfoPanel {
         float x = 1140.0f, y = 10.0f;
         float width = 730.0f, height = 880.0f;  // 右パネル: 情報
         float padding = 20.0f;
-        float line_height = 24.0f;
-        int font_size = 15;
+        float line_height = 36.0f;
+        int font_size = 22;
     };
     
     // ========== UI 要素 ==========

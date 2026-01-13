@@ -20,6 +20,14 @@ int Character::GetTotalHP() const {
     return total;
 }
 
+int Character::GetTotalDefense() const {
+    int total = defense;
+    for (const auto& eq : equipment) {
+        total += static_cast<int>(eq.defense_bonus);
+    }
+    return total;
+}
+
 } // namespace entities
 } // namespace core
 } // namespace game

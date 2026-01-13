@@ -20,16 +20,16 @@
         "effect_type": "normal"
       },
       "sprites": {
-        "icon_path": "assets/characters/sub/HatSlime/icon.png",
+        "icon_path": "assets/characters/HatSlime/icon.png",
         "move": {
-          "sheet_path": "assets/characters/sub/HatSlime/dev/walk/walk.png",
+          "sheet_path": "assets/characters/HatSlime/move.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 8,
           "frame_duration": 0.1
         },
         "attack": {
-          "sheet_path": "assets/characters/sub/HatSlime/dev/attack/attack.png",
+          "sheet_path": "assets/characters/HatSlime/attack.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 6,
@@ -61,16 +61,16 @@
         "effect_type": "normal"
       },
       "sprites": {
-        "icon_path": "assets/characters/sub/Orca/icons/icon.png",
+        "icon_path": "assets/characters/Orca/icon.png",
         "move": {
-          "sheet_path": "assets/characters/sub/Orca/Orca.png",
+          "sheet_path": "assets/characters/Orca/move.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 8,
           "frame_duration": 0.1
         },
         "attack": {
-          "sheet_path": "assets/characters/sub/Orca/Orca.png",
+          "sheet_path": "assets/characters/Orca/attack.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 6,
@@ -102,16 +102,16 @@
         "effect_type": "normal"
       },
       "sprites": {
-        "icon_path": "assets/characters/sub/SeaHorse/icons/icon.png",
+        "icon_path": "assets/characters/SeaHorse/icon.png",
         "move": {
-          "sheet_path": "assets/characters/sub/SeaHorse/SeaHorse.png",
+          "sheet_path": "assets/characters/SeaHorse/move.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 8,
           "frame_duration": 0.1
         },
         "attack": {
-          "sheet_path": "assets/characters/sub/SeaHorse/SeaHorse.png",
+          "sheet_path": "assets/characters/SeaHorse/attack.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 6,
@@ -121,47 +121,6 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 120,
-      "is_discovered": true
-    },
-    {
-      "id": "char_sub_whale_001",
-      "name": "クジラ",
-      "description": "大型の海の生物",
-      "rarity": 2,
-      "rarity_name": "R",
-      "status": {
-        "level": 1,
-        "hp": 180,
-        "attack": 25,
-        "defense": 0,
-        "move_speed": 40.0,
-        "attack_span": 1.25
-      },
-      "attack": {
-        "type": "single",
-        "size": [150.0, 20.0],
-        "effect_type": "normal"
-      },
-      "sprites": {
-        "icon_path": "assets/characters/sub/Whale/icons/icon.png",
-        "move": {
-          "sheet_path": "assets/characters/sub/Whale/Whale.png",
-          "frame_width": 64,
-          "frame_height": 64,
-          "frame_count": 8,
-          "frame_duration": 0.1
-        },
-        "attack": {
-          "sheet_path": "assets/characters/sub/Whale/Whale.png",
-          "frame_width": 64,
-          "frame_height": 64,
-          "frame_count": 6,
-          "frame_duration": 0.1
-        }
-      },
-      "passive_skills": [],
-      "equipment": [],
-      "cost": 200,
       "is_discovered": true
     },
     {
@@ -184,16 +143,16 @@
         "effect_type": "normal"
       },
       "sprites": {
-        "icon_path": "assets/characters/sub/Rainbow/icons/icon.png",
+        "icon_path": "assets/characters/Rainbow/icon.png",
         "move": {
-          "sheet_path": "assets/characters/sub/Rainbow/Rainbow.png",
+          "sheet_path": "assets/characters/Rainbow/move.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 8,
           "frame_duration": 0.1
         },
         "attack": {
-          "sheet_path": "assets/characters/sub/Rainbow/Rainbow.png",
+          "sheet_path": "assets/characters/Rainbow/attack.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 6,
@@ -225,19 +184,19 @@
         "effect_type": "normal"
       },
       "sprites": {
-        "icon_path": "assets/characters/sub/LanterfishAnglerfish/icons/icon.png",
+        "icon_path": "assets/characters/LanterfishAnglerfish/icon.png",
         "move": {
-          "sheet_path": "assets/characters/sub/LanterfishAnglerfish/LanterfishAnglerfish.png",
-          "frame_width": 64,
-          "frame_height": 64,
-          "frame_count": 8,
+          "sheet_path": "assets/characters/LanterfishAnglerfish/move.png",
+          "frame_width": 128,
+          "frame_height": 128,
+          "frame_count": 5,
           "frame_duration": 0.1
         },
         "attack": {
-          "sheet_path": "assets/characters/sub/LanterfishAnglerfish/LanterfishAnglerfish.png",
-          "frame_width": 64,
-          "frame_height": 64,
-          "frame_count": 6,
+          "sheet_path": "assets/characters/LanterfishAnglerfish/attack.png",
+          "frame_width": 128,
+          "frame_height": 128,
+          "frame_count": 5,
           "frame_duration": 0.1
         }
       },
@@ -266,16 +225,16 @@
         "effect_type": "normal"
       },
       "sprites": {
-        "icon_path": "assets/characters/sub/YodarehakiDragonfish/icons/icon.png",
+        "icon_path": "assets/characters/YodarehakiDragonfish/icon.png",
         "move": {
-          "sheet_path": "assets/characters/sub/YodarehakiDragonfish/YodarehakiDragonfish.png",
+          "sheet_path": "assets/characters/YodarehakiDragonfish/move.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 8,
           "frame_duration": 0.1
         },
         "attack": {
-          "sheet_path": "assets/characters/sub/YodarehakiDragonfish/YodarehakiDragonfish.png",
+          "sheet_path": "assets/characters/YodarehakiDragonfish/attack.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 6,
@@ -307,16 +266,16 @@
         "effect_type": "normal"
       },
       "sprites": {
-        "icon_path": "assets/characters/sub/LongTailedTit/icons/icon.png",
+        "icon_path": "assets/characters/LongTailedTit/icon.png",
         "move": {
-          "sheet_path": "assets/characters/sub/LongTailedTit/LongTailedTit.png",
+          "sheet_path": "assets/characters/LongTailedTit/move.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 8,
           "frame_duration": 0.1
         },
         "attack": {
-          "sheet_path": "assets/characters/sub/LongTailedTit/LongTailedTit.png",
+          "sheet_path": "assets/characters/LongTailedTit/attack.png",
           "frame_width": 64,
           "frame_height": 64,
           "frame_count": 6,

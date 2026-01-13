@@ -36,7 +36,9 @@ struct PassiveSkill {
 struct Equipment {
     std::string id;           // 装備ID
     std::string name;         // 装備名
+    std::string description;  // 装備説明
     float attack_bonus;       // 攻撃力ボーナス
+    float defense_bonus;      // 防御力ボーナス
     float hp_bonus;           // HP ボーナス
 };
 
@@ -98,6 +100,9 @@ struct Character {
     
     // 総HPを計算（装備ボーナス込み）
     int GetTotalHP() const;
+
+    // 総防御力を計算（装備ボーナス込み）
+    int GetTotalDefense() const;
 
     // アニメーション総フレーム数取得
     int GetMoveFrameCount() const { return move_sprite.frame_count; }

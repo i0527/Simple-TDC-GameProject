@@ -30,6 +30,7 @@ namespace game {
             , bgmVolume_(1.0f)
             , currentMusic_(nullptr)
             , currentMusicName_("")
+            , fpsDisplayEnabled_(false)
             , logInitialized_(false)
             , logDirectory_("logs")
             , logFileName_("game.log")
@@ -338,8 +339,19 @@ namespace game {
                 return it->second.get();
             }
 
-            // ファイルパスを構築（data/assets/textures/ を想定）
-            std::string path = "data/assets/textures/" + name + ".png";
+            // ファイルパスを構築
+            // nameがassets/で始まる場合は、data/をプレフィックスとして追加
+            // nameが既に.pngで終わっている場合は追加しない
+            std::string path;
+            if (name.length() >= 7 && name.substr(0, 7) == "assets/") {
+                path = "data/" + name;
+            } else {
+                // 旧形式のサポート（data/assets/textures/ を想定）
+                path = "data/assets/textures/" + name;
+            }
+            if (name.length() < 4 || name.substr(name.length() - 4) != ".png") {
+                path += ".png";
+            }
 
             // テクスチャを読み込み
             Texture2D texture = ::LoadTexture(path.c_str());
@@ -1793,6 +1805,32 @@ namespace game {
 
         bool BaseSystemAPI::IsWindowReady() {
             return ::IsWindowReady();
+        }
+
+        bool BaseSystemAPI::IsFullscreen() const {
+            return ::IsWindowFullscreen();
+        }
+
+        void BaseSystemAPI::ToggleFullscreen() {
+            ::ToggleFullscreen();
+            LOG_DEBUG("BaseSystemAPI: Fullscreen toggled");
+        }
+
+        void BaseSystemAPI::SetFullscreen(bool fullscreen) {
+            bool current = ::IsWindowFullscreen();
+            if (current != fullscreen) {
+                ::ToggleFullscreen();
+                LOG_DEBUG("BaseSystemAPI: Fullscreen set to {}", fullscreen);
+            }
+        }
+
+        bool BaseSystemAPI::IsFPSDisplayEnabled() const {
+            return fpsDisplayEnabled_;
+        }
+
+        void BaseSystemAPI::SetFPSDisplayEnabled(bool enabled) {
+            fpsDisplayEnabled_ = enabled;
+            LOG_DEBUG("BaseSystemAPI: FPS display set to {}", enabled);
         }
 
         // ========== 衝突判定 ==========

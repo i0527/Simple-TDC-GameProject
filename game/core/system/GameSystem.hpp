@@ -10,7 +10,10 @@
 #include "../init/ResourceInitializer.hpp"
 #include "../states/TitleScreen.hpp"
 #include "../states/HomeScreen.hpp"
+#include "../states/GameScene.hpp"
 #include "../entities/CharacterManager.hpp"
+#include "../entities/ItemPassiveManager.hpp"
+#include "../entities/StageManager.hpp"
 #include <memory>
 
 namespace game {
@@ -67,7 +70,10 @@ private:
   std::unique_ptr<ResourceInitializer> resourceInitializer_;
   std::unique_ptr<TitleScreen> titleScreen_;
   std::unique_ptr<states::HomeScreen> homeScreen_;
+  std::unique_ptr<states::GameScene> gameScene_;
   std::unique_ptr<entities::CharacterManager> characterManager_;
+  std::unique_ptr<entities::ItemPassiveManager> itemPassiveManager_;
+  std::unique_ptr<entities::StageManager> stageManager_;
   SharedContext sharedContext_;
   GameState currentState_;
   bool requestShutdown_;

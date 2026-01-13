@@ -111,7 +111,9 @@ bool CharacterManager::LoadFromJSON(const std::string& json_path) {
                 Equipment eq;
                 eq.id = eq_json["id"].get<std::string>();
                 eq.name = eq_json["name"].get<std::string>();
+                eq.description = eq_json.value("description", "");
                 eq.attack_bonus = eq_json.value("attack_bonus", 0.0f);
+                eq.defense_bonus = eq_json.value("defense_bonus", 0.0f);
                 eq.hp_bonus = eq_json.value("hp_bonus", 0.0f);
                 ch.equipment.push_back(eq);
             }
@@ -173,7 +175,9 @@ void CharacterManager::InitializeHardcodedData() {
     Equipment eq;
     eq.id = "eq_sword_001";
     eq.name = "鋼の剣";
+    eq.description = "標準的な鋼鉄製の剣。攻撃力が少し上がる。";
     eq.attack_bonus = 15.0f;
+    eq.defense_bonus = 0.0f;
     eq.hp_bonus = 0.0f;
     cat.equipment.push_back(eq);
     

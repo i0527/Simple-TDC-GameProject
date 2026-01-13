@@ -35,8 +35,9 @@ bool GachaOverlay::Initialize(BaseSystemAPI *systemAPI) {
 
   panel_ = std::make_shared<ui::Panel>();
   panel_->SetId("gacha_panel");
-  panel_->SetPosition(0.0f, 0.0f); // ImGuiウィンドウ内の相対座標
+  panel_->SetPosition(marginLeft, marginTop); // 画面内の絶対座標
   panel_->SetSize(contentWidth, contentHeight);
+  panel_->SetRoot(true); // ルートパネルとして設定
   panel_->Initialize();
 
   gachaButton_ = std::make_shared<ui::Button>();

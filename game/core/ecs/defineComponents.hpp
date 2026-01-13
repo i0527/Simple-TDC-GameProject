@@ -14,6 +14,7 @@
 #include "components/Sprite.hpp"
 #include "components/Animation.hpp"
 #include "components/CharacterId.hpp"
+#include "components/Team.hpp"
 
 namespace game {
     namespace core {

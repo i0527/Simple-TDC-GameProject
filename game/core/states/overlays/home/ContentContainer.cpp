@@ -4,8 +4,10 @@
 #include "../StageSelectOverlay.hpp"
 #include "../CodexOverlay.hpp"
 #include "../EnhancementOverlay.hpp"
+#include "../CharacterEnhancementOverlay.hpp"
 #include "../SettingsOverlay.hpp"
 #include "../../../entities/CharacterManager.hpp"
+#include "../../../ui/OverlayColors.hpp"
 #include "../../../../utils/Log.h"
 #include <raylib.h>
 
@@ -64,10 +66,7 @@ std::unique_ptr<IOverlay> ContentContainer::CreateOverlay(HomeTab tab,
             overlay = std::make_unique<FormationOverlay>();
             break;
         case HomeTab::Unit:
-            // TODO: UnitOverlayを実装するまで、一旦FormationOverlayを使用
-            // または、空のオーバレイを返す
-            LOG_WARN("ContentContainer: UnitOverlay not implemented yet, using FormationOverlay as placeholder");
-            overlay = std::make_unique<FormationOverlay>();
+            overlay = std::make_unique<CharacterEnhancementOverlay>();
             break;
         case HomeTab::Enhancement:
             overlay = std::make_unique<EnhancementOverlay>();
@@ -113,18 +112,8 @@ void ContentContainer::Update(float deltaTime, SharedContext& ctx) {
 }
 
 void ContentContainer::Render(SharedContext& ctx) {
-    // コンテンツ領域を確保（y: 90, height: 900）
-    
-    // コンテンツ領域の背景（BaseSystemAPI経由）
-    if (systemAPI_) {
-        systemAPI_->DrawRectangle(0, 90, 1920, 900, Color{20, 20, 20, 255});
-    }
-    
-    // 注意: オーバレイの描画は行わない
-    // オーバレイは既存の実装でImGuiを使用しているため、
-    // EndFrame()内でImGuiフレームが開始された後に描画する必要があります
-    // オーバレイの描画は、GameSystemのoverlayManager_->Render()で行われるか、
-    // または別の方法でImGuiフレーム内で描画する必要があります
+    // 各オーバーレイが自身の背景を描画するため、ここでは何も描画しない
+    // (以前は y: 90, height: 900 で背景を描画していたが、二重パネルの原因になるため削除)
 }
 
 void ContentContainer::Shutdown() {

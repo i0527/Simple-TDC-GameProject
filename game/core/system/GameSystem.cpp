@@ -28,11 +28,28 @@ int GameSystem::Initialize() {
     LOG_INFO("CharacterManager initialized with {} characters", characterManager_->GetCharacterCount());
   }
 
+  // ItemPassiveManagerの初期化
+  itemPassiveManager_ = std::make_unique<entities::ItemPassiveManager>();
+  if (!itemPassiveManager_->Initialize("data/item_passive.json")) {
+    LOG_WARN("ItemPassiveManager initialization failed, continuing with hardcoded data");
+  }
+
+  // StageManagerの初期化
+  stageManager_ = std::make_unique<entities::StageManager>();
+  if (!stageManager_->Initialize("data/stages.json")) {
+    LOG_WARN("StageManager initialization failed, using default stages");
+  } else {
+    LOG_INFO("StageManager initialized with {} stages", stageManager_->GetStageCount());
+  }
+
   // SharedContextの設定
   sharedContext_.systemAPI = systemAPI_.get();
   sharedContext_.gameAPI = gameAPI_.get();
   sharedContext_.characterManager = characterManager_.get();
+  sharedContext_.itemPassiveManager = itemPassiveManager_.get();
+  sharedContext_.stageManager = stageManager_.get();
   sharedContext_.overlayManager = overlayManager_.get();
+  sharedContext_.currentStageId = "";  // 初期状態では空
 
   // RaylibのESCキーによる終了を無効化
   systemAPI_->SetExitKey(0);
@@ -58,6 +75,9 @@ int GameSystem::Initialize() {
   
   // HomeScreenの作成（まだ初期化しない、遷移時に初期化）
   homeScreen_ = std::make_unique<states::HomeScreen>();
+  
+  // GameSceneの作成（まだ初期化しない、遷移時に初期化）
+  gameScene_ = std::make_unique<states::GameScene>();
 
   LOG_INFO("Game initialization completed successfully");
   return 0;
@@ -149,16 +169,25 @@ int GameSystem::Run() {
       break;
 
     case GameState::Game:
-      // ゲーム画面の更新処理（将来実装）
-      moduleSystem_->Update(sharedContext_, deltaTime);
-      overlayManager_->Update(sharedContext_, deltaTime);
-      
-      // P0: オーバーレイによる遷移リクエスト処理
-      if (overlayManager_->HasTransitionRequest()) {
-        GameState next = overlayManager_->GetRequestedTransition();
-        overlayManager_->PopAllOverlays();
-        transitionTo(next);
-        overlayManager_->ClearTransitionRequest();
+      if (gameScene_) {
+        gameScene_->SetSharedContext(&sharedContext_);
+        gameScene_->Update(deltaTime);
+        moduleSystem_->Update(sharedContext_, deltaTime);
+        overlayManager_->Update(sharedContext_, deltaTime);
+        
+        // P0: オーバーレイによる遷移リクエスト処理
+        if (overlayManager_->HasTransitionRequest()) {
+          GameState next = overlayManager_->GetRequestedTransition();
+          overlayManager_->PopAllOverlays();
+          transitionTo(next);
+          overlayManager_->ClearTransitionRequest();
+        }
+        
+        // GameSceneからの遷移リクエスト処理
+        GameState nextState;
+        if (gameScene_->RequestTransition(nextState)) {
+          transitionTo(nextState);
+        }
       }
       break;
     }
@@ -189,7 +218,9 @@ int GameSystem::Run() {
       break;
 
     case GameState::Game:
-      // ゲーム画面の描画処理（将来実装）
+      if (gameScene_) {
+        gameScene_->Render();
+      }
       moduleSystem_->Render(sharedContext_);
       overlayManager_->Render(sharedContext_);
       break;
@@ -261,7 +292,9 @@ void GameSystem::cleanupCurrentState() {
     break;
 
   case GameState::Game:
-    // ゲーム画面のクリーンアップ（将来実装）
+    if (gameScene_) {
+      gameScene_->Shutdown();
+    }
     overlayManager_->PopAllOverlays();
     break;
   }
@@ -274,9 +307,14 @@ bool GameSystem::initializeState(GameState state) {
     return true;
 
   case GameState::Title:
+    LOG_INFO("Initializing Title state...");
     if (titleScreen_) {
-      return titleScreen_->Initialize(systemAPI_.get(), &sharedContext_);
+      LOG_INFO("TitleScreen object exists, calling Initialize()...");
+      bool result = titleScreen_->Initialize(systemAPI_.get(), &sharedContext_);
+      LOG_INFO("TitleScreen::Initialize() returned: {}", result);
+      return result;
     }
+    LOG_ERROR("TitleScreen object is null!");
     return false;
 
   case GameState::Home:
@@ -292,9 +330,16 @@ bool GameSystem::initializeState(GameState state) {
     return false;
 
   case GameState::Game:
-    // ゲーム画面の初期化（将来実装）
-    LOG_INFO("Game state initialized (placeholder)");
-    return true;
+    if (gameScene_) {
+      if (!gameScene_->Initialize(systemAPI_.get())) {
+        LOG_ERROR("Failed to initialize GameScene");
+        return false;
+      }
+      gameScene_->SetSharedContext(&sharedContext_);
+      LOG_INFO("Game state initialized");
+      return true;
+    }
+    return false;
   }
   return false;
 }
@@ -316,6 +361,12 @@ void GameSystem::Shutdown() {
     homeScreen_->Shutdown();
     homeScreen_.reset();
   }
+  
+  // GameSceneのクリーンアップ
+  if (gameScene_) {
+    gameScene_->Shutdown();
+    gameScene_.reset();
+  }
 
   // ResourceInitializerのクリーンアップ
   if (resourceInitializer_) {
@@ -327,6 +378,12 @@ void GameSystem::Shutdown() {
   if (characterManager_) {
     characterManager_->Shutdown();
     characterManager_.reset();
+  }
+
+  // ItemPassiveManagerのクリーンアップ
+  if (itemPassiveManager_) {
+    itemPassiveManager_->Shutdown();
+    itemPassiveManager_.reset();
   }
 
   // オーバーレイのシャットダウン

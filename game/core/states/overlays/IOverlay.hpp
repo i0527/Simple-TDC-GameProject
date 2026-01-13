@@ -32,6 +32,10 @@ public:
     /// @param ctx 共有コンテキスト
     virtual void Render(SharedContext& ctx) = 0;
 
+    /// @brief ImGuiを使用したオーバーレイかどうか
+    /// @return ImGuiを使用する場合true
+    virtual bool IsImGuiOverlay() const { return false; }
+
     /// @brief オーバーレイのクリーンアップ
     virtual void Shutdown() = 0;
 

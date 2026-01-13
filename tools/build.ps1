@@ -3,7 +3,7 @@
     Simple-TDC-GameProject ビルドスクリプト (PowerShell版)
 
 .DESCRIPTION
-    VS2026 Build Tools を使用してプロジェクトをビルドします。
+    Visual Studio 2022 (VS17) Build Tools を使用してプロジェクトをビルドします。
 
 .PARAMETER BuildType
     ビルドタイプ: Debug または Release (デフォルト: Debug)
@@ -40,23 +40,23 @@ Write-Host " Cat TD Game - $BuildType Build (PowerShell)" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
-# VS2026を検索
+# Visual Studio を検索
 $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 
 if (-not (Test-Path $vsWhere)) {
     Write-Host "[ERROR] vswhere.exe が見つかりません" -ForegroundColor Red
-    Write-Host "Visual Studio 2026 または Build Tools をインストールしてください"
+    Write-Host "Visual Studio 2022 または Build Tools をインストールしてください"
     exit 1
 }
 
-# VS2026を優先的に検索（バージョン19.0以上）、見つからない場合は最新版を使用
-$vsPath = & $vsWhere -version "[19.0,20.0)" -latest -property installationPath
+# VS2022を優先的に検索（バージョン17.x）、見つからない場合は最新版を使用
+$vsPath = & $vsWhere -version "[17.0,18.0)" -latest -property installationPath
 if (-not $vsPath) {
     $vsPath = & $vsWhere -latest -property installationPath
 }
 
 if (-not $vsPath) {
-    Write-Host "[ERROR] Visual Studio 2026 が見つかりません" -ForegroundColor Red
+    Write-Host "[ERROR] Visual Studio が見つかりません" -ForegroundColor Red
     exit 1
 }
 
@@ -107,7 +107,7 @@ if ($ninja) {
     $generatorArgs = @()
 } else {
     Write-Host "[WARNING] Ninja が見つかりません。Visual Studio ジェネレータを使用します" -ForegroundColor Yellow
-    $generator = "Visual Studio 19 2026"
+    $generator = "Visual Studio 17 2022"
     $generatorArgs = @("-A", "x64")
 }
 

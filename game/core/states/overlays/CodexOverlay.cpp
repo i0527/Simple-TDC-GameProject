@@ -3,6 +3,7 @@
 #include "../../api/BaseSystemAPI.hpp"
 #include "../../entities/Character.hpp"
 #include "../../entities/CharacterManager.hpp"
+#include "../../ui/OverlayColors.hpp"
 #include <raylib.h>
 #include <algorithm>
 #include <regex>
@@ -74,11 +75,33 @@ void CodexOverlay::Update(SharedContext& ctx, float deltaTime) {
     }
 
     // アニメーション更新
-    if (!character_viewport_.has_error) {
-        character_viewport_.animation_timer += deltaTime;
-        if (character_viewport_.animation_timer >= character_viewport_.animation_speed) {
-            character_viewport_.animation_frame++;
-            character_viewport_.animation_timer = 0.0f;
+    const entities::Character* selected = GetSelectedCharacter();
+    if (selected && !character_viewport_.has_error) {
+        const entities::Character::SpriteInfo* sprite_info = nullptr;
+        if (character_viewport_.current_animation == AnimationType::Move) {
+            sprite_info = &selected->move_sprite;
+        } else {
+            sprite_info = &selected->attack_sprite;
+        }
+        
+        if (sprite_info && sprite_info->frame_count > 0) {
+            character_viewport_.animation_timer += deltaTime;
+            if (character_viewport_.animation_timer >= sprite_info->frame_duration) {
+                character_viewport_.animation_frame++;
+                character_viewport_.animation_timer = 0.0f;
+                
+                // フレーム数チェック
+                if (character_viewport_.animation_frame >= sprite_info->frame_count) {
+                    if (character_viewport_.current_animation == AnimationType::Attack) {
+                        // 攻撃アニメーション終了 → 移動アニメーションに戻る
+                        character_viewport_.current_animation = AnimationType::Move;
+                        character_viewport_.animation_frame = 0;
+                    } else {
+                        // 移動アニメーション：ループ
+                        character_viewport_.animation_frame = 0;
+                    }
+                }
+            }
         }
     }
 
@@ -98,6 +121,17 @@ void CodexOverlay::Update(SharedContext& ctx, float deltaTime) {
         if (relative_x < 0.0f || relative_x >= 1880.0f || 
             relative_y < 0.0f || relative_y >= 900.0f) {
             return;
+        }
+        
+        // ビューポート内のクリック判定
+        if (relative_x >= character_viewport_.x && 
+            relative_x < character_viewport_.x + character_viewport_.width &&
+            relative_y >= character_viewport_.y && 
+            relative_y < character_viewport_.y + character_viewport_.height) {
+            // 攻撃アニメーションに切り替え
+            character_viewport_.current_animation = AnimationType::Attack;
+            character_viewport_.animation_frame = 0;
+            character_viewport_.animation_timer = 0.0f;
         }
         
         // リスト項目クリック判定
@@ -220,14 +254,12 @@ void CodexOverlay::RenderListPanel() {
             );
         }
         
-        // テキスト: ID + 名前
-        std::string label = entry->id + " " + entry->name;
-        
-        Color text_color = entry->is_discovered ? WHITE : GRAY;
+        // テキスト: 日本語名のみ
+        Color text_color = entry->is_discovered ? ui::OverlayColors::TEXT_PRIMARY : ui::OverlayColors::TEXT_MUTED;
         systemAPI_->DrawTextDefault(
-            label,
+            entry->name,
             list_panel_.x + 10.0f, item_y + 10.0f,
-            16.0f, text_color
+            20.0f, text_color
         );
     }
 }
@@ -261,17 +293,47 @@ void CodexOverlay::RenderCharacterViewport() {
         if (selected) {
             // テクスチャ読み込み試行（エラーハンドリング付き）
             try {
-                if (!selected->icon_path.empty()) {
-                    void* texture = systemAPI_->GetTexture(selected->icon_path);
-                    if (texture) {
-                        // テクスチャ描画（将来的に実装）
-                        // 今はテキスト表示
-                        systemAPI_->DrawTextDefault(
-                            selected->name + " Sprite",
-                            character_viewport_.x + character_viewport_.width / 2.0f - 100.0f,
-                            character_viewport_.y + character_viewport_.height / 2.0f - 20.0f,
-                            20.0f, LIGHTGRAY
-                        );
+                const entities::Character::SpriteInfo* sprite_info = nullptr;
+                if (character_viewport_.current_animation == AnimationType::Move) {
+                    sprite_info = &selected->move_sprite;
+                } else {
+                    sprite_info = &selected->attack_sprite;
+                }
+                
+                if (sprite_info && !sprite_info->sheet_path.empty() && sprite_info->frame_count > 0) {
+                    void* texturePtr = systemAPI_->GetTexture(sprite_info->sheet_path);
+                    if (texturePtr) {
+                        Texture2D* texture = static_cast<Texture2D*>(texturePtr);
+                        
+                        // 現在のフレームのソース矩形を計算
+                        int frame_x = character_viewport_.animation_frame * sprite_info->frame_width;
+                        Rectangle sourceRect = {
+                            static_cast<float>(frame_x),
+                            0.0f,
+                            static_cast<float>(sprite_info->frame_width),
+                            static_cast<float>(sprite_info->frame_height)
+                        };
+                        
+                        // ビューポートに収まるようにスケールを計算（アスペクト比を維持、ウィンドウ内ギリギリまで大きく）
+                        // 小さなマージン（5%）を確保して、完全に収まるようにする
+                        float scaleX = (character_viewport_.width * 0.95f) / sprite_info->frame_width;
+                        float scaleY = (character_viewport_.height * 0.95f) / sprite_info->frame_height;
+                        float scale = std::min(scaleX, scaleY);
+                        
+                        float scaledWidth = sprite_info->frame_width * scale;
+                        float scaledHeight = sprite_info->frame_height * scale;
+                        
+                        // 描画先矩形（ビューポートの中央）
+                        Rectangle destRect = {
+                            character_viewport_.x + (character_viewport_.width - scaledWidth) / 2.0f,
+                            character_viewport_.y + (character_viewport_.height - scaledHeight) / 2.0f,
+                            scaledWidth,
+                            scaledHeight
+                        };
+                        
+                        // スプライトシートのフレームを描画（DrawTextureProでスケール適用）
+                        Vector2 origin = { 0.0f, 0.0f };  // 左上を原点とする
+                        systemAPI_->DrawTexturePro(*texture, sourceRect, destRect, origin, 0.0f, WHITE);
                     } else {
                         character_viewport_.has_error = true;
                         character_viewport_.error_message = "テクスチャが見つかりません";
@@ -301,7 +363,7 @@ void CodexOverlay::RenderStatusPanel() {
     systemAPI_->DrawRectangle(
         status_panel_.x, status_panel_.y,
         status_panel_.width, status_panel_.height,
-        {140, 110, 80, 255}
+        ui::OverlayColors::PANEL_BG_BROWN
     );
     
     // 枠線
@@ -309,7 +371,7 @@ void CodexOverlay::RenderStatusPanel() {
         status_panel_.x, status_panel_.y,
         status_panel_.width, status_panel_.height,
         2.0f,
-        {200, 170, 100, 255}
+        ui::OverlayColors::BORDER_GOLD
     );
     
     // ステータス表示
@@ -356,7 +418,8 @@ void CodexOverlay::RenderStatusPanel() {
         systemAPI_->DrawTextDefault(
             stat.first,
             x, line_y,
-            static_cast<float>(status_panel_.font_size), LIGHTGRAY
+            static_cast<float>(status_panel_.font_size),
+            ui::OverlayColors::TEXT_SECONDARY
         );
         
         // 値（右寄せ）
@@ -365,7 +428,8 @@ void CodexOverlay::RenderStatusPanel() {
             stat.second,
             x + status_panel_.width - status_panel_.padding * 2.0f - text_size.x,
             line_y,
-            static_cast<float>(status_panel_.font_size), WHITE
+            static_cast<float>(status_panel_.font_size),
+            ui::OverlayColors::TEXT_PRIMARY
         );
     }
 }
@@ -430,6 +494,7 @@ void CodexOverlay::RenderInfoPanel() {
 void CodexOverlay::OnListItemClick(int index) {
     if (index >= 0 && index < static_cast<int>(list_panel_.entries.size())) {
         list_panel_.selected_index = index;
+        character_viewport_.current_animation = AnimationType::Move;
         character_viewport_.animation_timer = 0.0f;
         character_viewport_.animation_frame = 0;
         character_viewport_.has_error = false;

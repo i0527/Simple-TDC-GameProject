@@ -27,6 +27,8 @@ enum class OverlayState {
   Settings = 5,
   Gacha = 6,
   License = 7,
+  BattleVictory = 8,
+  BattleDefeat = 9,
 };
 
 } // namespace core

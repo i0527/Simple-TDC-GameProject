@@ -26,6 +26,7 @@ public:
     void Shutdown() override;
 
     OverlayState GetState() const override { return OverlayState::Gacha; }
+    bool IsImGuiOverlay() const override { return true; }
     bool RequestClose() const override;
     bool RequestTransition(GameState& nextState) const override;
 

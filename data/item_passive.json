@@ -1,0 +1,138 @@
+{
+  "passive_skills": [
+    {
+      "id": "skill_atk_up_1",
+      "name": "攻撃アップ I",
+      "description": "攻撃力が 5% 上昇します。",
+      "value": 0.05
+    },
+    {
+      "id": "skill_atk_up_2",
+      "name": "攻撃アップ II",
+      "description": "攻撃力が 10% 上昇します。",
+      "value": 0.10
+    },
+    {
+      "id": "skill_def_up_1",
+      "name": "防御アップ I",
+      "description": "防御力が 10% 上昇します。",
+      "value": 0.10
+    },
+    {
+      "id": "skill_def_up_2",
+      "name": "防御アップ II",
+      "description": "防御力が 20% 上昇します。",
+      "value": 0.20
+    },
+    {
+      "id": "skill_hp_up_1",
+      "name": "HPアップ I",
+      "description": "最大HPが 10% 上昇します。",
+      "value": 0.10
+    },
+    {
+      "id": "skill_hp_up_2",
+      "name": "HPアップ II",
+      "description": "最大HPが 20% 上昇します。",
+      "value": 0.20
+    },
+    {
+      "id": "skill_speed_up_1",
+      "name": "俊足 I",
+      "description": "移動速度が 10% 上昇します。",
+      "value": 0.10
+    },
+    {
+      "id": "skill_speed_up_2",
+      "name": "俊足 II",
+      "description": "移動速度が 20% 上昇します。",
+      "value": 0.20
+    },
+    {
+      "id": "skill_crit_up_1",
+      "name": "会心 I",
+      "description": "クリティカル率が 5% 上昇します。",
+      "value": 0.05
+    },
+    {
+      "id": "skill_range_up_1",
+      "name": "遠見 I",
+      "description": "攻撃射程が 10% 上昇します。",
+      "value": 0.10
+    }
+  ],
+  "equipment": [
+    {
+      "id": "eq_sword_001",
+      "name": "鋼の剣",
+      "description": "標準的な鋼鉄製の剣。攻撃力が少し上がる。",
+      "attack_bonus": 15.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_sword_002",
+      "name": "猫の爪",
+      "description": "鋭く研ぎ澄まされた爪。攻撃力が大幅に上がる。",
+      "attack_bonus": 35.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_staff_001",
+      "name": "魔導の杖",
+      "description": "魔力が込められた杖。攻撃力が上がるが、防御が少し下がる。",
+      "attack_bonus": 25.0,
+      "defense_bonus": -5.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_shield_001",
+      "name": "木の盾",
+      "description": "木製の簡素な盾。防御力が上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 10.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_shield_002",
+      "name": "鉄の盾",
+      "description": "頑丈な鉄製の盾。防御力とHPが上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 25.0,
+      "hp_bonus": 50.0
+    },
+    {
+      "id": "eq_helmet_001",
+      "name": "鉄の兜",
+      "description": "頭部を守る鉄の兜。防御力が上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 15.0,
+      "hp_bonus": 20.0
+    },
+    {
+      "id": "eq_armor_001",
+      "name": "革の鎧",
+      "description": "軽量で動きやすい革の鎧。HPと防御力が少し上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 12.0,
+      "hp_bonus": 30.0
+    },
+    {
+      "id": "eq_ring_001",
+      "name": "勇気の指輪",
+      "description": "勇気が湧いてくる不思議な指輪。全ステータスがわずかに上がる。",
+      "attack_bonus": 5.0,
+      "defense_bonus": 5.0,
+      "hp_bonus": 10.0
+    },
+    {
+      "id": "eq_ring_002",
+      "name": "命の腕輪",
+      "description": "生命力を高める魔法の腕輪。最大HPが大幅に上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 150.0
+    }
+  ]
+}
