@@ -12,6 +12,56 @@
 
 namespace game {
     namespace core {
+        namespace {
+            std::string NormalizeSlashes(std::string s) {
+                std::replace(s.begin(), s.end(), '\\', '/');
+                return s;
+            }
+
+            bool StartsWith(const std::string& s, const std::string& prefix) {
+                return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
+            }
+
+            // テクスチャキーの正規化:
+            // - '\' -> '/'
+            // - "data/" プレフィックスは除去
+            // - "assets/" 系は拡張子が無ければ .png を補う
+            std::string NormalizeTextureKey(std::string key) {
+                key = NormalizeSlashes(std::move(key));
+
+                // 余計な "./" を除去
+                if (StartsWith(key, "./")) {
+                    key = key.substr(2);
+                }
+
+                // data/ プレフィックスを除去（呼び出し側が data/assets/... を渡しても許容）
+                if (StartsWith(key, "data/")) {
+                    key = key.substr(5);
+                }
+
+                // assets/ 配下の拡張子補完（"assets/..../move" のような入力を許容）
+                if (StartsWith(key, "assets/")) {
+                    const std::filesystem::path p(key);
+                    if (!p.has_extension()) {
+                        key += ".png";
+                    }
+                }
+
+                return key;
+            }
+
+            // data/ を基準にした相対パス（例: data/assets/characters/A/move.png -> assets/characters/A/move.png）
+            std::string MakeAssetsRelativeKey(const std::filesystem::path& fullPath) {
+                try {
+                    std::filesystem::path rel = std::filesystem::relative(fullPath, std::filesystem::path("data"));
+                    return rel.generic_string();
+                } catch (...) {
+                    // relative が失敗した場合はフォールバック（スラッシュ正規化のみ）
+                    return NormalizeSlashes(fullPath.string());
+                }
+            }
+        } // namespace
+
         // ========== コンストラクタ・デストラクタ ==========
 
         BaseSystemAPI::BaseSystemAPI()
@@ -30,6 +80,7 @@ namespace game {
             , bgmVolume_(1.0f)
             , currentMusic_(nullptr)
             , currentMusicName_("")
+            , fpsDisplayEnabled_(false)
             , logInitialized_(false)
             , logDirectory_("logs")
             , logFileName_("game.log")
@@ -332,14 +383,27 @@ namespace game {
         // ========== リソース管理：テクスチャ ==========
 
         void* BaseSystemAPI::GetTexture(const std::string& name) {
+            const std::string key = NormalizeTextureKey(name);
+
             // キャッシュから検索
-            auto it = textures_.find(name);
+            auto it = textures_.find(key);
             if (it != textures_.end()) {
                 return it->second.get();
             }
 
-            // ファイルパスを構築（data/assets/textures/ を想定）
-            std::string path = "data/assets/textures/" + name + ".png";
+            // ファイルパスを構築
+            // nameがassets/で始まる場合は、data/をプレフィックスとして追加
+            // nameが既に.pngで終わっている場合は追加しない
+            std::string path;
+            if (key.length() >= 7 && key.substr(0, 7) == "assets/") {
+                path = "data/" + key;
+            } else {
+                // 旧形式のサポート（data/assets/textures/ を想定）
+                path = "data/assets/textures/" + key;
+            }
+            if (path.length() < 4 || path.substr(path.length() - 4) != ".png") {
+                path += ".png";
+            }
 
             // テクスチャを読み込み
             Texture2D texture = ::LoadTexture(path.c_str());
@@ -362,12 +426,13 @@ namespace game {
                 });
 
             // キャッシュに追加
-            textures_[name] = texturePtr;
+            textures_[key] = texturePtr;
             return texturePtr.get();
         }
 
         bool BaseSystemAPI::HasTexture(const std::string& name) const {
-            return textures_.find(name) != textures_.end();
+            const std::string key = NormalizeTextureKey(name);
+            return textures_.find(key) != textures_.end();
         }
 
         // ========== リソース管理：サウンド・ミュージック ==========
@@ -859,6 +924,12 @@ namespace game {
                     callback(progress);
                 }
 
+                // 最後のリソースを読み込んだタイミングで診断ログを出す
+                if (currentResourceIndex_ >= resourceFileList_.size()) {
+                    LOG_INFO("BaseSystemAPI: Resource loading completed. textures={}, sounds={}, musics={}, fonts={}",
+                             textures_.size(), sounds_.size(), musics_.size(), fonts_.size());
+                }
+
                 return true;
             } catch (const std::exception& e) {
                 LOG_WARN("BaseSystemAPI: Failed to load resource {}: {}", fileInfo.path, e.what());
@@ -922,8 +993,16 @@ namespace game {
                         if (std::find(extensions.begin(), extensions.end(), ext) != extensions.end()) {
                             ResourceFileInfo info;
                             info.type = type;
-                            info.path = entry.path().string();
-                            info.name = entry.path().stem().string();
+                            // パスは OS 依存区切りを避けるため generic_string() を使用
+                            info.path = entry.path().generic_string();
+
+                            // テクスチャは実利用キー（assets/.../file.png）に合わせて相対キーを使う
+                            if (type == ResourceType::Texture) {
+                                info.name = MakeAssetsRelativeKey(entry.path());
+                                info.name = NormalizeTextureKey(info.name);
+                            } else {
+                                info.name = entry.path().stem().string();
+                            }
                             resourceFileList_.push_back(info);
                         }
                     }
@@ -948,8 +1027,15 @@ namespace game {
                         if (std::find(extensions.begin(), extensions.end(), ext) != extensions.end()) {
                             ResourceFileInfo info;
                             info.type = type;
-                            info.path = entry.path().string();
-                            info.name = entry.path().stem().string();
+                            info.path = entry.path().generic_string();
+
+                            // テクスチャは実利用キー（assets/.../file.png）に合わせて相対キーを使う
+                            if (type == ResourceType::Texture) {
+                                info.name = MakeAssetsRelativeKey(entry.path());
+                                info.name = NormalizeTextureKey(info.name);
+                            } else {
+                                info.name = entry.path().stem().string();
+                            }
                             resourceFileList_.push_back(info);
                         }
                     }
@@ -965,8 +1051,10 @@ namespace game {
         }
 
         void BaseSystemAPI::LoadTexture(const std::string& path, const std::string& name) {
+            const std::string key = NormalizeTextureKey(name);
+
             // 既にキャッシュにある場合はスキップ
-            if (textures_.find(name) != textures_.end()) {
+            if (textures_.find(key) != textures_.end()) {
                 return;
             }
 
@@ -985,7 +1073,26 @@ namespace game {
                     delete t;
                 });
 
-            textures_[name] = texturePtr;
+            textures_[key] = texturePtr;
+
+            // 互換: assets/textures 配下のみ、旧形式（stem / filename）でも引けるように別名キーを登録
+            if (StartsWith(key, "assets/textures/")) {
+                const std::filesystem::path p(key);
+                const std::string filename = p.filename().generic_string(); // e.g. foo.png
+                const std::string stem = p.stem().string();                 // e.g. foo
+
+                if (!stem.empty() && textures_.find(stem) == textures_.end()) {
+                    textures_[stem] = texturePtr;
+                } else if (!stem.empty()) {
+                    LOG_DEBUG("BaseSystemAPI: texture alias collision (stem): {}", stem);
+                }
+
+                if (!filename.empty() && textures_.find(filename) == textures_.end()) {
+                    textures_[filename] = texturePtr;
+                } else if (!filename.empty()) {
+                    LOG_DEBUG("BaseSystemAPI: texture alias collision (filename): {}", filename);
+                }
+            }
         }
 
         void BaseSystemAPI::LoadSound(const std::string& path, const std::string& name) {
@@ -1793,6 +1900,32 @@ namespace game {
 
         bool BaseSystemAPI::IsWindowReady() {
             return ::IsWindowReady();
+        }
+
+        bool BaseSystemAPI::IsFullscreen() const {
+            return ::IsWindowFullscreen();
+        }
+
+        void BaseSystemAPI::ToggleFullscreen() {
+            ::ToggleFullscreen();
+            LOG_DEBUG("BaseSystemAPI: Fullscreen toggled");
+        }
+
+        void BaseSystemAPI::SetFullscreen(bool fullscreen) {
+            bool current = ::IsWindowFullscreen();
+            if (current != fullscreen) {
+                ::ToggleFullscreen();
+                LOG_DEBUG("BaseSystemAPI: Fullscreen set to {}", fullscreen);
+            }
+        }
+
+        bool BaseSystemAPI::IsFPSDisplayEnabled() const {
+            return fpsDisplayEnabled_;
+        }
+
+        void BaseSystemAPI::SetFPSDisplayEnabled(bool enabled) {
+            fpsDisplayEnabled_ = enabled;
+            LOG_DEBUG("BaseSystemAPI: FPS display set to {}", enabled);
         }
 
         // ========== 衝突判定 ==========

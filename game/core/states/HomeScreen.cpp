@@ -3,6 +3,7 @@
 #include "overlays/home/ResourceHeader.hpp"
 #include "overlays/home/ContentContainer.hpp"
 #include "../entities/CharacterManager.hpp"
+#include "../ui/OverlayColors.hpp"
 #include "../../utils/Log.h"
 #include <raylib.h>
 #include <imgui.h>
@@ -92,10 +93,18 @@ void HomeScreen::Update(float deltaTime) {
     // コンテンツ更新
     if (content_ && sharedContext_) {
         content_->Update(deltaTime, *sharedContext_);
+        
+        // ContentContainer内のオーバーレイからの遷移リクエストをチェック
+        auto* overlay = content_->GetCurrentOverlay();
+        if (overlay) {
+            GameState nextState;
+            if (overlay->RequestTransition(nextState)) {
+                request_transition_ = true;
+                next_state_ = nextState;
+                LOG_INFO("HomeScreen: Transition request from overlay to state {}", static_cast<int>(nextState));
+            }
+        }
     }
-    
-    // StageSelectOverlay からのゲーム開始リクエストをチェック
-    // （ContentContainer内のオーバレイが遷移リクエストを出す場合、ここで処理）
 }
 
 void HomeScreen::Render() {
@@ -103,9 +112,8 @@ void HomeScreen::Render() {
         return;
     }
     
-    // 背景を描画（BaseSystemAPI経由）
-    // BeginRender()で既にWHITEでクリアされているので、その上に背景色を描画
-    systemAPI_->DrawRectangle(0, 0, 1920, 1080, Color{20, 20, 30, 255});
+    // 背景を描画（Tokyo Night風ダークテーマ）
+    systemAPI_->DrawRectangle(0, 0, 1920, 1080, ui::OverlayColors::MAIN_BG);
     
     // ヘッダー描画 (y: 0-90)
     if (header_) {
@@ -115,6 +123,12 @@ void HomeScreen::Render() {
     // コンテンツ描画 (y: 90-990)
     if (content_ && sharedContext_) {
         content_->Render(*sharedContext_);
+        
+        // オーバーレイの描画（現在のタブに関連付けられたもの）
+        auto* overlay = content_->GetCurrentOverlay();
+        if (overlay && !overlay->IsImGuiOverlay()) {
+            overlay->Render(*sharedContext_);
+        }
     }
     
     // タブバー描画 (y: 990-1080)
@@ -149,41 +163,11 @@ void HomeScreen::HandleMouseInput() {
 }
 
 void HomeScreen::RenderImGui() {
-    // ImGuiフレーム内でオーバレイを描画
+    // ImGuiフレーム内での描画が必要な要素があればここに追加
     if (content_ && sharedContext_) {
         auto* overlay = content_->GetCurrentOverlay();
-        if (overlay) {
-            // 描画領域を制限（ヘッダーとタブバーの間、左右に余白）
-            const float marginLeft = 20.0f;
-            const float marginRight = 20.0f;
-            const float marginTop = 90.0f;   // ヘッダーの下
-            const float marginBottom = 90.0f; // タブバーの上
-            
-            const float contentX = marginLeft;
-            const float contentY = marginTop;
-            const float contentWidth = 1920.0f - marginLeft - marginRight;
-            const float contentHeight = 1080.0f - marginTop - marginBottom;
-            
-            // ImGuiのウィンドウを使用して描画領域を制限
-            ImGui::SetNextWindowPos(ImVec2(contentX, contentY), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(ImVec2(contentWidth, contentHeight), ImGuiCond_Always);
-            ImGui::SetNextWindowBgAlpha(0.0f); // 背景を透明に
-            
-            ImGuiWindowFlags flags = 
-                ImGuiWindowFlags_NoTitleBar |
-                ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoScrollbar |
-                ImGuiWindowFlags_NoScrollWithMouse |
-                ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoNav |
-                ImGuiWindowFlags_NoDecoration;
-            
-            if (ImGui::Begin("HomeScreenOverlay", nullptr, flags)) {
-                // オーバレイの描画（ウィンドウ内で描画されるため、相対座標で描画される）
-                overlay->Render(*sharedContext_);
-            }
-            ImGui::End();
+        if (overlay && overlay->IsImGuiOverlay()) {
+            overlay->Render(*sharedContext_);
         }
     }
 }

@@ -1,0 +1,223 @@
+{
+  "characters": {
+    "char_sub_hatslime_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_lanterfish_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_longtailedtit_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_orca_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_rainbow_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_seahorse_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_yodarehaki_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    }
+  },
+  "formation": {
+    "slots": [
+      {
+        "character_id": "char_sub_rainbow_001",
+        "slot": 0
+      },
+      {
+        "character_id": "char_sub_yodarehaki_001",
+        "slot": 1
+      },
+      {
+        "character_id": "char_sub_longtailedtit_001",
+        "slot": 2
+      },
+      {
+        "character_id": "char_sub_orca_001",
+        "slot": 5
+      },
+      {
+        "character_id": "char_sub_lanterfish_001",
+        "slot": 6
+      },
+      {
+        "character_id": "char_sub_seahorse_001",
+        "slot": 7
+      },
+      {
+        "character_id": "char_sub_hatslime_001",
+        "slot": 8
+      }
+    ]
+  },
+  "inventory": {
+    "equipment": {
+      "eq_armor_001": 1,
+      "eq_helmet_001": 1,
+      "eq_ring_001": 1,
+      "eq_ring_002": 1,
+      "eq_shield_001": 1,
+      "eq_shield_002": 1,
+      "eq_staff_001": 1,
+      "eq_sword_001": 1,
+      "eq_sword_002": 1
+    },
+    "passives": {
+      "skill_atk_up_1": 1,
+      "skill_atk_up_2": 1,
+      "skill_crit_up_1": 1,
+      "skill_def_up_1": 1,
+      "skill_def_up_2": 1,
+      "skill_hp_up_1": 1,
+      "skill_hp_up_2": 1,
+      "skill_range_up_1": 1,
+      "skill_speed_up_1": 1,
+      "skill_speed_up_2": 1
+    }
+  },
+  "version": 1
+}

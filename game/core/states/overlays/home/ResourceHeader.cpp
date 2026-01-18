@@ -1,5 +1,6 @@
 #include "ResourceHeader.hpp"
 #include "../../../api/BaseSystemAPI.hpp"
+#include "../../../ui/OverlayColors.hpp"
 #include "../../../../utils/Log.h"
 #include <raylib.h>
 
@@ -62,12 +63,12 @@ void ResourceHeader::Render(BaseSystemAPI* systemAPI) {
     }
     
     // ヘッダー背景
-    systemAPI->DrawRectangle(0, 0, 1920, HEADER_HEIGHT, Color{30, 30, 30, 255});
+    systemAPI->DrawRectangle(0, 0, 1920, HEADER_HEIGHT, ui::OverlayColors::HEADER_BG);
     
     // ヘッダー下部の境界線
-    systemAPI->DrawLine(0, HEADER_HEIGHT, 1920, HEADER_HEIGHT, 2.0f, Color{80, 80, 80, 255});
+    systemAPI->DrawLine(0, HEADER_HEIGHT, 1920, HEADER_HEIGHT, 2.0f, ui::OverlayColors::BORDER_DEFAULT);
     
-    float fontSize = 28.0f;
+    float fontSize = 32.0f;
     
     // 左側: Gold, Gems
     float xPos = 40.0f;
@@ -76,19 +77,19 @@ void ResourceHeader::Render(BaseSystemAPI* systemAPI) {
     // Gold表示
     std::string goldText = "💰 Gold: " + std::to_string(static_cast<int>(gold_display_current_));
     Vector2 goldSize = systemAPI->MeasureTextDefault(goldText, fontSize, 1.0f);
-    systemAPI->DrawTextDefault(goldText, xPos, yPos - goldSize.y / 2.0f, fontSize, Color{255, 215, 0, 255});
-    
+    systemAPI->DrawTextDefault(goldText, xPos, yPos - goldSize.y / 2.0f, fontSize, ui::OverlayColors::TEXT_GOLD);
+
     // Gems表示
-    xPos += goldSize.x + 60.0f;
+    xPos += goldSize.x + 80.0f;
     std::string gemsText = "💎 Gems: " + std::to_string(static_cast<int>(gems_display_current_));
     Vector2 gemsSize = systemAPI->MeasureTextDefault(gemsText, fontSize, 1.0f);
-    systemAPI->DrawTextDefault(gemsText, xPos, yPos - gemsSize.y / 2.0f, fontSize, Color{255, 20, 147, 255});
-    
+    systemAPI->DrawTextDefault(gemsText, xPos, yPos - gemsSize.y / 2.0f, fontSize, ui::OverlayColors::TEXT_ACCENT);
+
     // 右側: Tickets
     std::string ticketText = "🎫 Tickets: " + std::to_string(resources_.tickets) + " / " + std::to_string(resources_.max_tickets);
     Vector2 ticketSize = systemAPI->MeasureTextDefault(ticketText, fontSize, 1.0f);
     float ticketX = 1920.0f - ticketSize.x - 40.0f;
-    systemAPI->DrawTextDefault(ticketText, ticketX, yPos - ticketSize.y / 2.0f, fontSize, Color{144, 238, 144, 255});
+    systemAPI->DrawTextDefault(ticketText, ticketX, yPos - ticketSize.y / 2.0f, fontSize, ui::OverlayColors::TEXT_SUCCESS);
 }
 
 } // namespace home

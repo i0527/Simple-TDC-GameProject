@@ -14,6 +14,9 @@
 #include "components/Sprite.hpp"
 #include "components/Animation.hpp"
 #include "components/CharacterId.hpp"
+#include "components/Team.hpp"
+#include "components/Equipment.hpp"
+#include "components/PassiveSkills.hpp"
 
 namespace game {
     namespace core {

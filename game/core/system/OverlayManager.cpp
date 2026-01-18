@@ -2,11 +2,13 @@
 #include "GameSystem.hpp"
 #include "../states/overlays/StageSelectOverlay.hpp"
 #include "../states/overlays/FormationOverlay.hpp"
-#include "../states/overlays/EnhancementOverlay.hpp"
+#include "../states/overlays/CharacterEnhancementOverlay.hpp"
 #include "../states/overlays/CodexOverlay.hpp"
 #include "../states/overlays/SettingsOverlay.hpp"
 #include "../states/overlays/GachaOverlay.hpp"
 #include "../states/overlays/LicenseOverlay.hpp"
+#include "../states/overlays/BattleResultOverlay.hpp"
+#include "../states/overlays/PauseOverlay.hpp"
 #include "../../utils/Log.h"
 #include "../api/BaseSystemAPI.hpp"
 
@@ -151,7 +153,7 @@ std::unique_ptr<IOverlay> OverlayManager::CreateOverlay(OverlayState state, Base
         return std::make_unique<FormationOverlay>();
     
     case OverlayState::Enhancement:
-        return std::make_unique<EnhancementOverlay>();
+        return std::make_unique<CharacterEnhancementOverlay>();
     
     case OverlayState::Codex:
         return std::make_unique<CodexOverlay>();
@@ -164,6 +166,15 @@ std::unique_ptr<IOverlay> OverlayManager::CreateOverlay(OverlayState state, Base
     
     case OverlayState::License:
         return std::make_unique<LicenseOverlay>();
+
+    case OverlayState::BattleVictory:
+        return std::make_unique<BattleResultOverlay>(true);
+
+    case OverlayState::BattleDefeat:
+        return std::make_unique<BattleResultOverlay>(false);
+
+    case OverlayState::Pause:
+        return std::make_unique<PauseOverlay>();
     
     case OverlayState::None:
     default:

@@ -1,0 +1,526 @@
+{
+  "passive_skills": [
+    {
+      "id": "skill_atk_up_1",
+      "name": "攻撃アップ I",
+      "description": "攻撃力が 5% 上昇します。",
+      "value": 0.05,
+      "effect_type": "percentage",
+      "target_stat": "attack"
+    },
+    {
+      "id": "skill_atk_up_2",
+      "name": "攻撃アップ II",
+      "description": "攻撃力が 10% 上昇します。",
+      "value": 0.10,
+      "effect_type": "percentage",
+      "target_stat": "attack"
+    },
+    {
+      "id": "skill_def_up_1",
+      "name": "防御アップ I",
+      "description": "防御力が 10% 上昇します。",
+      "value": 0.10,
+      "effect_type": "percentage",
+      "target_stat": "defense"
+    },
+    {
+      "id": "skill_def_up_2",
+      "name": "防御アップ II",
+      "description": "防御力が 20% 上昇します。",
+      "value": 0.20,
+      "effect_type": "percentage",
+      "target_stat": "defense"
+    },
+    {
+      "id": "skill_hp_up_1",
+      "name": "HPアップ I",
+      "description": "最大HPが 10% 上昇します。",
+      "value": 0.10,
+      "effect_type": "percentage",
+      "target_stat": "hp"
+    },
+    {
+      "id": "skill_hp_up_2",
+      "name": "HPアップ II",
+      "description": "最大HPが 20% 上昇します。",
+      "value": 0.20,
+      "effect_type": "percentage",
+      "target_stat": "hp"
+    },
+    {
+      "id": "skill_speed_up_1",
+      "name": "俊足 I",
+      "description": "移動速度が 10% 上昇します。",
+      "value": 0.10,
+      "effect_type": "percentage",
+      "target_stat": "move_speed"
+    },
+    {
+      "id": "skill_speed_up_2",
+      "name": "俊足 II",
+      "description": "移動速度が 20% 上昇します。",
+      "value": 0.20,
+      "effect_type": "percentage",
+      "target_stat": "move_speed"
+    },
+    {
+      "id": "skill_crit_up_1",
+      "name": "会心 I",
+      "description": "クリティカル率が 5% 上昇します。",
+      "value": 0.05,
+      "effect_type": "percentage",
+      "target_stat": "crit_chance"
+    },
+    {
+      "id": "skill_range_up_1",
+      "name": "遠見 I",
+      "description": "攻撃射程が 10% 上昇します。",
+      "value": 0.10,
+      "effect_type": "percentage",
+      "target_stat": "range"
+    },
+    {
+      "id": "skill_range_up_2",
+      "name": "遠見 II",
+      "description": "攻撃射程が 20% 上昇します。",
+      "value": 0.20,
+      "effect_type": "percentage",
+      "target_stat": "range"
+    },
+    {
+      "id": "skill_range_up_3",
+      "name": "遠見 III",
+      "description": "攻撃射程が 30% 上昇します。",
+      "value": 0.30,
+      "effect_type": "percentage",
+      "target_stat": "range"
+    },
+    {
+      "id": "skill_range_up_4",
+      "name": "遠見 IV",
+      "description": "攻撃射程が 40% 上昇します。",
+      "value": 0.40,
+      "effect_type": "percentage",
+      "target_stat": "range"
+    },
+    {
+      "id": "skill_range_up_5",
+      "name": "遠見 V",
+      "description": "攻撃射程が 50% 上昇します。",
+      "value": 0.50,
+      "effect_type": "percentage",
+      "target_stat": "range"
+    },
+    {
+      "id": "skill_speed_up_3",
+      "name": "俊足 III",
+      "description": "移動速度が 30% 上昇します。",
+      "value": 0.30,
+      "effect_type": "percentage",
+      "target_stat": "move_speed"
+    },
+    {
+      "id": "skill_speed_up_4",
+      "name": "俊足 IV",
+      "description": "移動速度が 40% 上昇します。",
+      "value": 0.40,
+      "effect_type": "percentage",
+      "target_stat": "move_speed"
+    },
+    {
+      "id": "skill_speed_up_5",
+      "name": "俊足 V",
+      "description": "移動速度が 50% 上昇します。",
+      "value": 0.50,
+      "effect_type": "percentage",
+      "target_stat": "move_speed"
+    },
+    {
+      "id": "skill_atk_up_3",
+      "name": "攻撃アップ III",
+      "description": "攻撃力が 15% 上昇します。",
+      "value": 0.15,
+      "effect_type": "percentage",
+      "target_stat": "attack"
+    },
+    {
+      "id": "skill_atk_up_4",
+      "name": "攻撃アップ IV",
+      "description": "攻撃力が 20% 上昇します。",
+      "value": 0.20,
+      "effect_type": "percentage",
+      "target_stat": "attack"
+    },
+    {
+      "id": "skill_atk_up_5",
+      "name": "攻撃アップ V",
+      "description": "攻撃力が 30% 上昇します。",
+      "value": 0.30,
+      "effect_type": "percentage",
+      "target_stat": "attack"
+    },
+    {
+      "id": "skill_def_up_3",
+      "name": "防御アップ III",
+      "description": "防御力が 30% 上昇します。",
+      "value": 0.30,
+      "effect_type": "percentage",
+      "target_stat": "defense"
+    },
+    {
+      "id": "skill_def_up_4",
+      "name": "防御アップ IV",
+      "description": "防御力が 40% 上昇します。",
+      "value": 0.40,
+      "effect_type": "percentage",
+      "target_stat": "defense"
+    },
+    {
+      "id": "skill_def_up_5",
+      "name": "防御アップ V",
+      "description": "防御力が 50% 上昇します。",
+      "value": 0.50,
+      "effect_type": "percentage",
+      "target_stat": "defense"
+    },
+    {
+      "id": "skill_hp_up_3",
+      "name": "HPアップ III",
+      "description": "最大HPが 30% 上昇します。",
+      "value": 0.30,
+      "effect_type": "percentage",
+      "target_stat": "hp"
+    },
+    {
+      "id": "skill_hp_up_4",
+      "name": "HPアップ IV",
+      "description": "最大HPが 40% 上昇します。",
+      "value": 0.40,
+      "effect_type": "percentage",
+      "target_stat": "hp"
+    },
+    {
+      "id": "skill_hp_up_5",
+      "name": "HPアップ V",
+      "description": "最大HPが 50% 上昇します。",
+      "value": 0.50,
+      "effect_type": "percentage",
+      "target_stat": "hp"
+    },
+    {
+      "id": "skill_atk_flat_1",
+      "name": "攻撃固定 +10",
+      "description": "攻撃力が 10 上昇します。",
+      "value": 10.0,
+      "effect_type": "flat",
+      "target_stat": "attack"
+    },
+    {
+      "id": "skill_def_flat_1",
+      "name": "防御固定 +10",
+      "description": "防御力が 10 上昇します。",
+      "value": 10.0,
+      "effect_type": "flat",
+      "target_stat": "defense"
+    },
+    {
+      "id": "skill_hp_flat_1",
+      "name": "HP固定 +50",
+      "description": "最大HPが 50 上昇します。",
+      "value": 50.0,
+      "effect_type": "flat",
+      "target_stat": "hp"
+    },
+    {
+      "id": "skill_speed_flat_1",
+      "name": "速度固定 +10",
+      "description": "移動速度が 10 上昇します。",
+      "value": 10.0,
+      "effect_type": "flat",
+      "target_stat": "move_speed"
+    },
+    {
+      "id": "skill_range_flat_1",
+      "name": "射程固定 +20",
+      "description": "攻撃射程が 20 上昇します。",
+      "value": 20.0,
+      "effect_type": "flat",
+      "target_stat": "range"
+    },
+    {
+      "id": "skill_atkspd_up_1",
+      "name": "攻撃速度 I",
+      "description": "攻撃速度が 10% 上昇します。",
+      "value": 0.10,
+      "effect_type": "percentage",
+      "target_stat": "attack_speed"
+    },
+    {
+      "id": "skill_atkspd_up_2",
+      "name": "攻撃速度 II",
+      "description": "攻撃速度が 20% 上昇します。",
+      "value": 0.20,
+      "effect_type": "percentage",
+      "target_stat": "attack_speed"
+    },
+    {
+      "id": "skill_atkspd_flat_1",
+      "name": "攻撃間隔短縮 +0.05s",
+      "description": "攻撃間隔が 0.05 秒短縮されます。",
+      "value": 0.05,
+      "effect_type": "flat",
+      "target_stat": "attack_speed"
+    },
+    {
+      "id": "skill_atkspd_flat_2",
+      "name": "攻撃間隔短縮 +0.10s",
+      "description": "攻撃間隔が 0.10 秒短縮されます。",
+      "value": 0.10,
+      "effect_type": "flat",
+      "target_stat": "attack_speed"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "eq_sword_001",
+      "name": "鋼の剣",
+      "description": "標準的な鋼鉄製の剣。攻撃力が少し上がる。",
+      "attack_bonus": 15.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_sword_002",
+      "name": "猫の爪",
+      "description": "鋭く研ぎ澄まされた爪。攻撃力が大幅に上がる。",
+      "attack_bonus": 35.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_staff_001",
+      "name": "魔導の杖",
+      "description": "魔力が込められた杖。攻撃力が上がるが、防御が少し下がる。",
+      "attack_bonus": 25.0,
+      "defense_bonus": -5.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_shield_001",
+      "name": "木の盾",
+      "description": "木製の簡素な盾。防御力が上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 10.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_shield_002",
+      "name": "鉄の盾",
+      "description": "頑丈な鉄製の盾。防御力とHPが上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 25.0,
+      "hp_bonus": 50.0
+    },
+    {
+      "id": "eq_helmet_001",
+      "name": "鉄の兜",
+      "description": "頭部を守る鉄の兜。防御力が上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 15.0,
+      "hp_bonus": 20.0
+    },
+    {
+      "id": "eq_armor_001",
+      "name": "革の鎧",
+      "description": "軽量で動きやすい革の鎧。HPと防御力が少し上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 12.0,
+      "hp_bonus": 30.0
+    },
+    {
+      "id": "eq_ring_001",
+      "name": "勇気の指輪",
+      "description": "勇気が湧いてくる不思議な指輪。全ステータスがわずかに上がる。",
+      "attack_bonus": 5.0,
+      "defense_bonus": 5.0,
+      "hp_bonus": 10.0
+    },
+    {
+      "id": "eq_ring_002",
+      "name": "命の腕輪",
+      "description": "生命力を高める魔法の腕輪。最大HPが大幅に上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 150.0
+    },
+    {
+      "id": "eq_sword_003",
+      "name": "切れ味の良い剣",
+      "description": "よく研がれた剣。攻撃力が上がる。",
+      "attack_bonus": 20.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_sword_004",
+      "name": "騎士の剣",
+      "description": "騎士が携える剣。攻撃と防御が少し上がる。",
+      "attack_bonus": 18.0,
+      "defense_bonus": 8.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_sword_005",
+      "name": "呪いの剣",
+      "description": "攻撃力は上がるがHPが下がる。",
+      "attack_bonus": 45.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": -40.0
+    },
+    {
+      "id": "eq_sword_006",
+      "name": "伝説の刃",
+      "description": "圧倒的な攻撃力を持つ刃。",
+      "attack_bonus": 70.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_shield_003",
+      "name": "硬い甲羅盾",
+      "description": "硬い素材の盾。防御が上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 35.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_shield_004",
+      "name": "守護の盾",
+      "description": "守護の力を宿す盾。防御とHPが上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 20.0,
+      "hp_bonus": 80.0
+    },
+    {
+      "id": "eq_shield_005",
+      "name": "軽量バックラー",
+      "description": "軽い盾。防御は少し、攻撃も少し上がる。",
+      "attack_bonus": 8.0,
+      "defense_bonus": 12.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_shield_006",
+      "name": "脆い盾",
+      "description": "防御は上がるが、攻撃が下がる。",
+      "attack_bonus": -8.0,
+      "defense_bonus": 18.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_armor_002",
+      "name": "鉄の鎧",
+      "description": "頑丈な鎧。防御とHPが上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 28.0,
+      "hp_bonus": 60.0
+    },
+    {
+      "id": "eq_armor_003",
+      "name": "重装甲",
+      "description": "とても重い鎧。防御とHPが大きく上がるが攻撃が下がる。",
+      "attack_bonus": -10.0,
+      "defense_bonus": 55.0,
+      "hp_bonus": 120.0
+    },
+    {
+      "id": "eq_armor_004",
+      "name": "魔法のローブ",
+      "description": "魔力で身を守る。HPが上がるが防御が少し下がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": -6.0,
+      "hp_bonus": 90.0
+    },
+    {
+      "id": "eq_helmet_002",
+      "name": "硬化ヘルム",
+      "description": "頭をしっかり守る。防御が上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 22.0,
+      "hp_bonus": 10.0
+    },
+    {
+      "id": "eq_helmet_003",
+      "name": "俊敏の頭巾",
+      "description": "軽い頭巾。攻撃が少し上がるが防御が少し下がる。",
+      "attack_bonus": 6.0,
+      "defense_bonus": -4.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_ring_003",
+      "name": "力の指輪",
+      "description": "力を増す指輪。攻撃が上がる。",
+      "attack_bonus": 14.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_ring_004",
+      "name": "守りの指輪",
+      "description": "守りを固める指輪。防御が上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 14.0,
+      "hp_bonus": 0.0
+    },
+    {
+      "id": "eq_ring_005",
+      "name": "活力の指輪",
+      "description": "活力が湧く。HPが上がる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 80.0
+    },
+    {
+      "id": "eq_ring_006",
+      "name": "代償の指輪",
+      "description": "攻撃と防御は上がるがHPが下がる。",
+      "attack_bonus": 12.0,
+      "defense_bonus": 12.0,
+      "hp_bonus": -60.0
+    },
+    {
+      "id": "eq_boots_001",
+      "name": "革のブーツ",
+      "description": "軽いブーツ。少し丈夫になる。",
+      "attack_bonus": 0.0,
+      "defense_bonus": 6.0,
+      "hp_bonus": 20.0
+    },
+    {
+      "id": "eq_boots_002",
+      "name": "突撃ブーツ",
+      "description": "突撃に適したブーツ。攻撃が上がる。",
+      "attack_bonus": 10.0,
+      "defense_bonus": 0.0,
+      "hp_bonus": 10.0
+    },
+    {
+      "id": "eq_amulet_001",
+      "name": "護符",
+      "description": "小さな護符。全体的に少し上がる。",
+      "attack_bonus": 6.0,
+      "defense_bonus": 6.0,
+      "hp_bonus": 25.0
+    },
+    {
+      "id": "eq_amulet_002",
+      "name": "呪いの護符",
+      "description": "攻撃は上がるが防御が下がる。",
+      "attack_bonus": 24.0,
+      "defense_bonus": -12.0,
+      "hp_bonus": 0.0
+    }
+  ]
+}

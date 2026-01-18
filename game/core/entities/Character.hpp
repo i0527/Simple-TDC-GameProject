@@ -24,19 +24,44 @@ enum class EffectType {
     Heal,       // 回復エフェクト
 };
 
+// パッシブ効果タイプ
+enum class PassiveEffectType {
+    Percentage, // 割合（例: +10% => value=0.10）
+    Flat        // 固定値（例: +15 => value=15）
+};
+
+// パッシブ対象ステータス
+enum class PassiveTargetStat {
+    Attack,      // 攻撃力
+    Defense,     // 防御力
+    Hp,          // 最大HP
+    MoveSpeed,   // 移動速度
+    AttackSpeed, // 攻撃速度（attack_spanに反映）
+    Range,       // 攻撃射程（attack_size.xに反映）
+    CritChance,  // クリティカル率（未接続: 将来拡張用）
+    CritDamage,  // クリティカルダメージ（未接続: 将来拡張用）
+    GoldGain,    // ゴールド獲得（未接続: 将来拡張用）
+    ExpGain      // 経験値獲得（未接続: 将来拡張用）
+};
+
 // パッシブスキル定義
 struct PassiveSkill {
     std::string id;           // スキルID
     std::string name;         // スキル名
     std::string description;  // スキル説明
     float value;              // パラメータ値（加算 or 乗算）
+    PassiveEffectType effect_type = PassiveEffectType::Percentage; // 効果タイプ
+    PassiveTargetStat target_stat = PassiveTargetStat::Attack;     // 対象ステータス
+    int rarity = 1;           // レアリティ (1-5)
 };
 
 // 装備定義
 struct Equipment {
     std::string id;           // 装備ID
     std::string name;         // 装備名
+    std::string description;  // 装備説明
     float attack_bonus;       // 攻撃力ボーナス
+    float defense_bonus;      // 防御力ボーナス
     float hp_bonus;           // HP ボーナス
 };
 
@@ -98,6 +123,9 @@ struct Character {
     
     // 総HPを計算（装備ボーナス込み）
     int GetTotalHP() const;
+
+    // 総防御力を計算（装備ボーナス込み）
+    int GetTotalDefense() const;
 
     // アニメーション総フレーム数取得
     int GetMoveFrameCount() const { return move_sprite.frame_count; }

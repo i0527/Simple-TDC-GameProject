@@ -45,12 +45,17 @@ public:
     const std::string& GetId() const override;
     void SetId(const std::string& id) override;
 
+    /// @brief ルートパネル（親ウィンドウを持たない）かどうかを設定
+    void SetRoot(bool isRoot) { isRoot_ = isRoot; }
+    bool IsRoot() const { return isRoot_; }
+
 private:
     Rect bounds_;
     Margin margin_;
     std::vector<std::shared_ptr<IUIComponent>> children_;
     bool visible_;
     bool enabled_;
+    bool isRoot_ = false;
     std::string id_;
 };
 

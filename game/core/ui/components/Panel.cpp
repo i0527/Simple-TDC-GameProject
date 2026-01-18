@@ -40,17 +40,20 @@ void Panel::Render() {
     // Panel::Render()が呼ばれる時点では、親ウィンドウがBegin()されている状態なので、
     // ImGui::GetWindowPos()は親ウィンドウの位置を返す
     ImVec2 absolutePos;
-    ImVec2 parentPos = ImGui::GetWindowPos();
-    // 親ウィンドウが存在する場合（位置が(0,0)でない場合）、親ウィンドウの位置を基準に絶対座標を計算
-    if (parentPos.x != 0.0f || parentPos.y != 0.0f) {
-        absolutePos = ImVec2(
-            bounds_.x + margin_.left + parentPos.x,
-            bounds_.y + margin_.top + parentPos.y
-        );
-    } else {
-        // 親ウィンドウが存在しない場合、絶対座標を使用
-        absolutePos = ImVec2(bounds_.x + margin_.left, bounds_.y + margin_.top);
+    ImVec2 parentPos(0.0f, 0.0f);
+    
+    // ルートパネルでない場合のみ親ウィンドウの位置を取得
+    if (!isRoot_) {
+        // 安全のためにコンテキストと現在のウィンドウをチェック（内部的にはCurrentWindowをチェック）
+        // ただし、ルートパネルでないという指定がある場合は親が存在することを期待する
+        parentPos = ImGui::GetWindowPos();
     }
+
+    // 親ウィンドウの位置を基準に絶対座標を計算
+    absolutePos = ImVec2(
+        bounds_.x + margin_.left + parentPos.x,
+        bounds_.y + margin_.top + parentPos.y
+    );
 
     ImGui::SetNextWindowPos(absolutePos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(bounds_.width, bounds_.height), ImGuiCond_Always);

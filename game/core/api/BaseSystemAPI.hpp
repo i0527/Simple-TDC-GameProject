@@ -659,6 +659,21 @@ namespace game {
             
             /// @brief ウィンドウが準備完了か
             bool IsWindowReady();
+            
+            /// @brief フルスクリーンかどうか
+            bool IsFullscreen() const;
+            
+            /// @brief フルスクリーンを切り替え
+            void ToggleFullscreen();
+            
+            /// @brief フルスクリーン状態を設定
+            void SetFullscreen(bool fullscreen);
+            
+            /// @brief FPS表示が有効かどうか
+            bool IsFPSDisplayEnabled() const;
+            
+            /// @brief FPS表示を有効/無効にする
+            void SetFPSDisplayEnabled(bool enabled);
 
             // ========== 衝突判定 ==========
 
@@ -768,6 +783,9 @@ namespace game {
             Music* currentMusic_;               // 現在再生中のMusic（重複不可のため1つのみ）
             std::string currentMusicName_;      // 現在再生中のMusic名
             std::unordered_map<std::string, Sound*> playingSounds_;  // 再生中のSound管理（重複可能）
+            
+            // ウィンドウ設定
+            bool fpsDisplayEnabled_;            // FPS表示が有効かどうか
 
             // 入力状態管理
             struct InputState {

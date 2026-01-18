@@ -1,18 +1,32 @@
 #pragma once
 
 #include "IOverlay.hpp"
-#include "../../ui/components/Tile.hpp"
-#include "../../ui/components/Button.hpp"
-#include "../../ui/components/Panel.hpp"
+#include "../../entities/StageManager.hpp"
 #include <memory>
+#include <vector>
+#include <string>
+#include <map>
 
 namespace game {
 namespace core {
 
+// StageDataはStageManager.hppで定義されているため、entities名前空間から使用
+using StageData = entities::StageData;
+
+/// @brief カードレイアウト情報
+struct CardLayout {
+    int gridX;
+    int gridY;
+    float screenX;
+    float screenY;
+    float width;
+    float height;
+};
+
 /// @brief ステージ選択オーバーレイ
 ///
 /// ステージ選択画面を表示するオーバーレイ。
-/// Tileコンポーネントを使用してステージ一覧を表示します。
+/// カードベースのUIでステージ一覧を表示します。
 class StageSelectOverlay : public IOverlay {
 public:
     StageSelectOverlay();
@@ -35,10 +49,34 @@ private:
     mutable bool hasTransitionRequest_;
     mutable GameState requestedNextState_;
 
-    // UIコンポーネント
-    std::shared_ptr<ui::Panel> panel_;
-    std::shared_ptr<ui::Tile> tileGrid_;
-    std::shared_ptr<ui::Button> closeButton_;
+    // ステージデータ
+    std::vector<StageData> stages_;
+    
+    // UI状態
+    int selectedStage_;
+    int hoveredStage_;
+    float scrollPosition_;
+    float targetScroll_;
+    
+    // アニメーション
+    float animationTime_;
+    std::map<int, float> cardScales_;
+    std::map<int, float> cardAlphas_;
+    float panelFadeAlpha_;
+    
+    // レイアウト
+    std::vector<CardLayout> cardLayouts_;
+    
+    // 内部メソッド
+    void LoadStageData(SharedContext& ctx);
+    void CalculateCardLayouts();
+    void RenderCards();
+    void RenderDetailPanel();
+    void UpdateAnimations(float deltaTime);
+    void HandleCardSelection(int stageNumber, SharedContext& ctx);
+    void HandleMouseInput(SharedContext& ctx);
+    void HandleKeyboardInput(SharedContext& ctx);
+    void HandleScrollInput();
 };
 
 } // namespace core

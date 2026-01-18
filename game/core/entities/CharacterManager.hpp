@@ -37,6 +37,12 @@ public:
         return masters_;
     }
 
+    /// @brief 図鑑/解放フラグを更新（セーブ反映用）
+    bool SetCharacterDiscovered(const std::string& character_id, bool discovered);
+
+    /// @brief レベルを更新（セーブ反映用）
+    bool SetCharacterLevel(const std::string& character_id, int level);
+
     // 終了処理
     void Shutdown();
 

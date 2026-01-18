@@ -1,6 +1,7 @@
 #include "LicenseOverlay.hpp"
 #include "../../../utils/Log.h"
 #include "../../api/BaseSystemAPI.hpp"
+#include "../../ui/OverlayColors.hpp"
 #include <raylib.h>
 
 namespace game {
@@ -131,7 +132,7 @@ void LicenseOverlay::Render(SharedContext& ctx) {
         static_cast<int>(windowY),
         static_cast<int>(windowWidth),
         static_cast<int>(windowHeight),
-        Color{30, 30, 40, 240}
+        ui::OverlayColors::OVERLAY_BG
     );
     
     // ウィンドウ枠線
@@ -141,7 +142,7 @@ void LicenseOverlay::Render(SharedContext& ctx) {
         static_cast<int>(windowWidth),
         static_cast<int>(windowHeight),
         2.0f,
-        Color{100, 100, 120, 255}
+        ui::OverlayColors::BORDER_DEFAULT
     );
     
     // タイトル
@@ -150,7 +151,7 @@ void LicenseOverlay::Render(SharedContext& ctx) {
     Vector2 titleSize = systemAPI_->MeasureTextDefault(titleText, titleFontSize, 1.0f);
     float titleX = windowX + (windowWidth - titleSize.x) / 2.0f;
     float titleY = windowY + 20.0f;
-    systemAPI_->DrawTextDefault(titleText, titleX, titleY, titleFontSize, WHITE);
+    systemAPI_->DrawTextDefault(titleText, titleX, titleY, titleFontSize, ui::OverlayColors::TEXT_PRIMARY);
     
     // コンテンツ領域
     const float contentAreaX = windowX + 40.0f;
@@ -180,13 +181,12 @@ void LicenseOverlay::Render(SharedContext& ctx) {
     float buttonY = windowY + windowHeight - buttonHeight - 30.0f;
     
     // ボタン背景
-    Color buttonColor = Color{80, 100, 150, 255};
     systemAPI_->DrawRectangle(
         static_cast<int>(buttonX),
         static_cast<int>(buttonY),
         static_cast<int>(buttonWidth),
         static_cast<int>(buttonHeight),
-        buttonColor
+        ui::OverlayColors::BUTTON_BLUE
     );
     
     // ボタン枠線
@@ -196,7 +196,7 @@ void LicenseOverlay::Render(SharedContext& ctx) {
         static_cast<int>(buttonWidth),
         static_cast<int>(buttonHeight),
         2.0f,
-        Color{120, 140, 180, 255}
+        ui::OverlayColors::BUTTON_BLUE_HOVER
     );
     
     // ボタンテキスト
@@ -205,7 +205,7 @@ void LicenseOverlay::Render(SharedContext& ctx) {
     Vector2 buttonTextSize = systemAPI_->MeasureTextDefault(buttonText, buttonFontSize, 1.0f);
     float buttonTextX = buttonX + (buttonWidth - buttonTextSize.x) / 2.0f;
     float buttonTextY = buttonY + (buttonHeight - buttonFontSize) / 2.0f;
-    systemAPI_->DrawTextDefault(buttonText, buttonTextX, buttonTextY, buttonFontSize, WHITE);
+    systemAPI_->DrawTextDefault(buttonText, buttonTextX, buttonTextY, buttonFontSize, ui::OverlayColors::TEXT_PRIMARY);
 }
 
 void LicenseOverlay::Shutdown() {
@@ -289,7 +289,7 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     const char* projectTitle = "=== Cat Tower Defense (MIT License) ===";
     float titleFontSize = 24.0f;
     Vector2 titleSize = systemAPI_->MeasureTextDefault(projectTitle, titleFontSize, 1.0f);
-    systemAPI_->DrawTextDefault(projectTitle, contentX, currentY, titleFontSize, Color{255, 200, 100, 255});
+    systemAPI_->DrawTextDefault(projectTitle, contentX, currentY, titleFontSize, ui::OverlayColors::TEXT_GOLD);
     currentY += titleSize.y + 10.0f;
     
     const char* projectLicense[] = {
@@ -317,7 +317,7 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     };
     
     for (size_t i = 0; i < sizeof(projectLicense) / sizeof(projectLicense[0]); ++i) {
-        systemAPI_->DrawTextDefault(projectLicense[i], contentX, currentY, textFontSize, Color{220, 220, 220, 255});
+        systemAPI_->DrawTextDefault(projectLicense[i], contentX, currentY, textFontSize, ui::OverlayColors::TEXT_SECONDARY);
         currentY += lineHeight;
     }
     
@@ -597,7 +597,7 @@ void LicenseOverlay::RenderScrollbar(float windowX, float windowY, float windowW
         static_cast<int>(scrollbarY),
         static_cast<int>(scrollbarWidth),
         static_cast<int>(scrollbarHeight),
-        Color{50, 50, 60, 255}
+        ui::OverlayColors::SLOT_EMPTY
     );
     
     // スクロール可能な場合のみスクロールバーを描画
@@ -608,8 +608,8 @@ void LicenseOverlay::RenderScrollbar(float windowX, float windowY, float windowW
         
         // つまみの色（ドラッグ中は明るく）
         Color thumbColor = isDraggingScrollbar_ ? 
-            Color{150, 150, 170, 255} :  // ドラッグ中
-            Color{120, 120, 140, 255};   // 通常
+            ui::OverlayColors::SLOT_HOVER :  // ドラッグ中
+            ui::OverlayColors::BORDER_DEFAULT;   // 通常
         
         // スクロールバーのつまみ
         systemAPI_->DrawRectangle(
@@ -627,7 +627,7 @@ void LicenseOverlay::RenderScrollbar(float windowX, float windowY, float windowW
             static_cast<int>(scrollbarWidth - 4),
             static_cast<int>(thumbHeight),
             1.0f,
-            Color{160, 160, 180, 255}
+            ui::OverlayColors::BORDER_DEFAULT
         );
     }
 }
