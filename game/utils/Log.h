@@ -1,10 +1,15 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include <string>
+
+#if !defined(EMSCRIPTEN) && !defined(__EMSCRIPTEN__)
+#include <spdlog/spdlog.h>
+#endif
 
 // ログマクロ（spdlogベース）
 // BaseSystemAPIによって初期化されたspdlogを使用します
+
+#if !defined(EMSCRIPTEN) && !defined(__EMSCRIPTEN__)
 
 #define LOG_TRACE(...) \
     spdlog::trace(__VA_ARGS__)
@@ -86,3 +91,25 @@ namespace game {
     }
 }
 
+#else
+
+#define LOG_TRACE(...) ((void)0)
+#define LOG_DEBUG(...) ((void)0)
+#define LOG_INFO(...) ((void)0)
+#define LOG_WARN(...) ((void)0)
+#define LOG_ERROR(...) ((void)0)
+#define LOG_CRITICAL(...) ((void)0)
+
+namespace game {
+    namespace utils {
+        /// @brief ログユーティリティクラス（Webビルド用・無効化）
+        class Log {
+        public:
+            static void Initialize() {}
+            static void Shutdown() {}
+            static void SetLevel(const std::string&) {}
+        };
+    }
+}
+
+#endif

@@ -1,166 +1,6 @@
 {
   "stages": [
     {
-      "id": "stage_debug",
-      "domain": "World1",
-      "subdomain": 1,
-      "castle_hp": {
-        "player_castle_hp": 1000,
-        "enemy_castle_hp": 6000
-      },
-      "lanes": [
-        {
-          "index": 0,
-          "y": 360,
-          "startX": 120,
-          "endX": 1800
-        }
-      ],
-      "waves": [
-        "wave_debug",
-        "wave_broken"
-      ],
-      "playerLife": 18,
-      "startingCost": 200,
-      "baseArrivalDamage": 1,
-      "killReward": 8,
-      "minGap": 76,
-      "frontlineIterations": 3
-    },
-    {
-      "id": "stage_debug_2",
-      "domain": "World1",
-      "subdomain": 2,
-      "castle_hp": {
-        "player_castle_hp": 1000,
-        "enemy_castle_hp": 8000
-      },
-      "lanes": [
-        {
-          "index": 0,
-          "y": 380,
-          "startX": 140,
-          "endX": 1780
-        }
-      ],
-      "waves": [
-        "wave_debug"
-      ],
-      "playerLife": 16,
-      "startingCost": 180,
-      "baseArrivalDamage": 1,
-      "killReward": 8,
-      "minGap": 70,
-      "frontlineIterations": 3
-    },
-    {
-      "id": "stage_debug_3",
-      "domain": "World1",
-      "subdomain": 3,
-      "castle_hp": {
-        "player_castle_hp": 1000,
-        "enemy_castle_hp": 10000
-      },
-      "lanes": [
-        {
-          "index": 0,
-          "y": 340,
-          "startX": 100,
-          "endX": 1840
-        }
-      ],
-      "waves": [
-        "wave_broken",
-        "wave_debug"
-      ],
-      "playerLife": 14,
-      "startingCost": 220,
-      "baseArrivalDamage": 1,
-      "killReward": 10,
-      "minGap": 72,
-      "frontlineIterations": 3
-    },
-    {
-      "id": "stage_sample",
-      "lanes": [
-        {
-          "index": 0,
-          "y": 360,
-          "startX": 120,
-          "endX": 1800
-        }
-      ],
-      "waves": [
-        "wave_1",
-        "wave_2",
-        "wave_3"
-      ],
-      "playerLife": 12,
-      "startingCost": 120,
-      "baseArrivalDamage": 1,
-      "killReward": 6,
-      "minGap": 72,
-      "frontlineIterations": 3
-    },
-    {
-      "id": "stage_horde_1",
-      "name": "Horde Test 1",
-      "description": "大量スライムのラッシュにオーガが追随するデバッグ用ステージ",
-      "domain": "WorldHorde",
-      "subdomain": 1,
-      "difficulty": 2,
-      "environment": {
-        "background_image": "",
-        "bgm_id": "",
-        "scroll_speed": 0.0
-      },
-      "castle_hp": {
-        "player_castle_hp": 1000,
-        "enemy_castle_hp": 9000
-      },
-      "wave_ids": [
-        "wave_horde_a"
-      ],
-      "rewards": {
-        "gold": 150,
-        "exp": 80
-      },
-      "tags": [
-        "horde",
-        "debug"
-      ]
-    },
-    {
-      "id": "stage_horde_2",
-      "name": "Horde Test 2",
-      "description": "ラッシュ2フェーズ構成。スライムとオーガ混成の長時間ウェーブ",
-      "domain": "WorldHorde",
-      "subdomain": 2,
-      "difficulty": 3,
-      "environment": {
-        "background_image": "",
-        "bgm_id": "",
-        "scroll_speed": 0.0
-      },
-      "castle_hp": {
-        "player_castle_hp": 1000,
-        "enemy_castle_hp": 11000
-      },
-      "wave_ids": [
-        "wave_horde_a",
-        "wave_horde_b"
-      ],
-      "rewards": {
-        "gold": 200,
-        "exp": 120
-      },
-      "tags": [
-        "horde",
-        "debug",
-        "phase2"
-      ]
-    },
-    {
       "id": "1",
       "stageNumber": 1,
       "chapter": 1,
@@ -170,18 +10,17 @@
       "isBoss": false,
       "isLocked": false,
       "rewardGold": 100,
-      "waveCount": 5,
+      "waveCount": 2,
       "recommendedLevel": 10,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 450,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "goblin", "count": 5, "interval": 0.5},
-        {"type": "goblin", "count": 8, "interval": 0.3},
-        {"type": "goblin", "count": 10, "interval": 0.2},
-        {"type": "goblin", "count": 15, "interval": 0.2},
-        {"type": "goblin_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_hatslime_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
       ],
+      "unlockOnClear": ["2"],
       "timeLimit": 120
     },
     {
@@ -192,20 +31,19 @@
       "stageName": "砦への道 2",
       "difficulty": 1,
       "isBoss": false,
-      "isLocked": true,
-      "rewardGold": 200,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 150,
+      "waveCount": 2,
       "recommendedLevel": 15,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 450,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "goblin", "count": 8, "interval": 0.4},
-        {"type": "goblin", "count": 10, "interval": 0.3},
-        {"type": "goblin", "count": 12, "interval": 0.2},
-        {"type": "goblin", "count": 18, "interval": 0.2},
-        {"type": "goblin_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_seahorse_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
       ],
+      "unlockOnClear": ["3"],
       "timeLimit": 120
     },
     {
@@ -216,20 +54,19 @@
       "stageName": "砦への道 3",
       "difficulty": 2,
       "isBoss": false,
-      "isLocked": true,
-      "rewardGold": 300,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 220,
+      "waveCount": 2,
       "recommendedLevel": 20,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 450,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "goblin", "count": 10, "interval": 0.4},
-        {"type": "goblin", "count": 12, "interval": 0.3},
-        {"type": "goblin", "count": 15, "interval": 0.2},
-        {"type": "goblin", "count": 20, "interval": 0.2},
-        {"type": "goblin_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_orca_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
       ],
+      "unlockOnClear": ["4"],
       "timeLimit": 120
     },
     {
@@ -240,21 +77,20 @@
       "stageName": "砦への道 4",
       "difficulty": 2,
       "isBoss": true,
-      "isLocked": true,
-      "rewardGold": 400,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 300,
+      "waveCount": 2,
       "recommendedLevel": 25,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 500,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "goblin", "count": 12, "interval": 0.3},
-        {"type": "goblin", "count": 15, "interval": 0.2},
-        {"type": "goblin", "count": 18, "interval": 0.2},
-        {"type": "goblin", "count": 25, "interval": 0.15},
-        {"type": "goblin_boss", "count": 2, "interval": 0.5}
+        {"type": "char_sub_longtailedtit_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_chainsword_001", "count": 1, "interval": 0.5, "level": 1}
       ],
-      "timeLimit": 120
+      "unlockOnClear": ["5"],
+      "timeLimit": 130
     },
     {
       "id": "5",
@@ -264,20 +100,19 @@
       "stageName": "学園の試練 1",
       "difficulty": 2,
       "isBoss": false,
-      "isLocked": true,
-      "rewardGold": 150,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 180,
+      "waveCount": 2,
       "recommendedLevel": 25,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 500,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "ogre", "count": 5, "interval": 0.5},
-        {"type": "ogre", "count": 8, "interval": 0.4},
-        {"type": "ogre", "count": 10, "interval": 0.3},
-        {"type": "ogre", "count": 12, "interval": 0.2},
-        {"type": "ogre_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_hatslime_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
       ],
+      "unlockOnClear": ["6"],
       "timeLimit": 150
     },
     {
@@ -288,20 +123,19 @@
       "stageName": "学園の試練 2",
       "difficulty": 2,
       "isBoss": false,
-      "isLocked": true,
-      "rewardGold": 300,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 260,
+      "waveCount": 2,
       "recommendedLevel": 30,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 520,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "ogre", "count": 8, "interval": 0.4},
-        {"type": "ogre", "count": 10, "interval": 0.3},
-        {"type": "ogre", "count": 12, "interval": 0.2},
-        {"type": "ogre", "count": 15, "interval": 0.2},
-        {"type": "ogre_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_seahorse_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_yodarehaki_001", "count": 1, "interval": 0.5, "level": 1}
       ],
+      "unlockOnClear": ["7"],
       "timeLimit": 150
     },
     {
@@ -312,20 +146,19 @@
       "stageName": "学園の試練 3",
       "difficulty": 3,
       "isBoss": false,
-      "isLocked": true,
-      "rewardGold": 450,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 340,
+      "waveCount": 2,
       "recommendedLevel": 35,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 520,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "ogre", "count": 10, "interval": 0.4},
-        {"type": "ogre", "count": 12, "interval": 0.3},
-        {"type": "ogre", "count": 15, "interval": 0.2},
-        {"type": "ogre", "count": 18, "interval": 0.2},
-        {"type": "ogre_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_orca_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
       ],
+      "unlockOnClear": ["8"],
       "timeLimit": 150
     },
     {
@@ -336,21 +169,20 @@
       "stageName": "学園の試練 4",
       "difficulty": 3,
       "isBoss": true,
-      "isLocked": true,
-      "rewardGold": 600,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 450,
+      "waveCount": 2,
       "recommendedLevel": 40,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 540,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "ogre", "count": 12, "interval": 0.3},
-        {"type": "ogre", "count": 15, "interval": 0.2},
-        {"type": "ogre", "count": 18, "interval": 0.2},
-        {"type": "ogre", "count": 20, "interval": 0.15},
-        {"type": "ogre_boss", "count": 2, "interval": 0.5}
+        {"type": "char_sub_longtailedtit_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_chainsword_001", "count": 1, "interval": 0.5, "level": 1}
       ],
-      "timeLimit": 150
+      "unlockOnClear": ["9"],
+      "timeLimit": 160
     },
     {
       "id": "9",
@@ -360,21 +192,20 @@
       "stageName": "竜の領域 1",
       "difficulty": 3,
       "isBoss": false,
-      "isLocked": true,
-      "rewardGold": 200,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 300,
+      "waveCount": 2,
       "recommendedLevel": 40,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 560,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "dragon", "count": 5, "interval": 0.6},
-        {"type": "dragon", "count": 8, "interval": 0.5},
-        {"type": "dragon", "count": 10, "interval": 0.4},
-        {"type": "dragon", "count": 12, "interval": 0.3},
-        {"type": "dragon_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_rainbow_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
       ],
-      "timeLimit": 180
+      "unlockOnClear": ["10"],
+      "timeLimit": 170
     },
     {
       "id": "10",
@@ -384,21 +215,20 @@
       "stageName": "竜の領域 2",
       "difficulty": 3,
       "isBoss": false,
-      "isLocked": true,
-      "rewardGold": 400,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 420,
+      "waveCount": 2,
       "recommendedLevel": 45,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 580,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "dragon", "count": 8, "interval": 0.5},
-        {"type": "dragon", "count": 10, "interval": 0.4},
-        {"type": "dragon", "count": 12, "interval": 0.3},
-        {"type": "dragon", "count": 15, "interval": 0.3},
-        {"type": "dragon_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_seahorse_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_yodarehaki_001", "count": 1, "interval": 0.5, "level": 1}
       ],
-      "timeLimit": 180
+      "unlockOnClear": ["11"],
+      "timeLimit": 170
     },
     {
       "id": "11",
@@ -408,20 +238,19 @@
       "stageName": "竜の領域 3",
       "difficulty": 4,
       "isBoss": false,
-      "isLocked": true,
-      "rewardGold": 600,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 560,
+      "waveCount": 2,
       "recommendedLevel": 50,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 600,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "dragon", "count": 10, "interval": 0.5},
-        {"type": "dragon", "count": 12, "interval": 0.4},
-        {"type": "dragon", "count": 15, "interval": 0.3},
-        {"type": "dragon", "count": 18, "interval": 0.3},
-        {"type": "dragon_boss", "count": 1, "interval": 0.0}
+        {"type": "char_sub_orca_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_chainsword_001", "count": 1, "interval": 0.5, "level": 1}
       ],
+      "unlockOnClear": ["12"],
       "timeLimit": 180
     },
     {
@@ -432,19 +261,17 @@
       "stageName": "竜の領域 4",
       "difficulty": 5,
       "isBoss": true,
-      "isLocked": true,
-      "rewardGold": 800,
-      "waveCount": 5,
+      "isLocked": false,
+      "rewardGold": 700,
+      "waveCount": 2,
       "recommendedLevel": 55,
       "previewImageId": "",
       "playerLife": 100,
-      "startingCost": 500,
+      "startingCost": 620,
+      "enemyLevel": 1,
       "waves": [
-        {"type": "dragon", "count": 12, "interval": 0.4},
-        {"type": "dragon", "count": 15, "interval": 0.3},
-        {"type": "dragon", "count": 18, "interval": 0.3},
-        {"type": "dragon", "count": 20, "interval": 0.25},
-        {"type": "dragon_boss", "count": 3, "interval": 1.0}
+        {"type": "char_sub_longtailedtit_001", "count": 1, "interval": 0.5, "level": 1},
+        {"type": "char_sub_chainsword_001", "count": 1, "interval": 0.5, "level": 1}
       ],
       "timeLimit": 180
     }

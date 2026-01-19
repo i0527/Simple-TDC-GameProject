@@ -1,8 +1,29 @@
 #include "LicenseOverlay.hpp"
 #include "../../../utils/Log.h"
 #include "../../api/BaseSystemAPI.hpp"
+#include "../../api/InputSystemAPI.hpp"
 #include "../../ui/OverlayColors.hpp"
-#include <raylib.h>
+#include "../../ui/UiAssetKeys.hpp"
+#include <sstream>
+#include <vector>
+
+namespace {
+    std::vector<std::string> SplitLines(const std::string& text) {
+        std::vector<std::string> lines;
+        std::stringstream stream(text);
+        std::string line;
+        while (std::getline(stream, line)) {
+            if (!line.empty() && line.back() == '\r') {
+                line.pop_back();
+            }
+            lines.push_back(line);
+        }
+        if (lines.empty()) {
+            lines.push_back("");
+        }
+        return lines;
+    }
+}
 
 namespace game {
 namespace core {
@@ -22,7 +43,7 @@ LicenseOverlay::LicenseOverlay()
 {
 }
 
-bool LicenseOverlay::Initialize(BaseSystemAPI* systemAPI) {
+bool LicenseOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     if (isInitialized_) {
         LOG_ERROR("LicenseOverlay already initialized");
         return false;
@@ -38,7 +59,7 @@ bool LicenseOverlay::Initialize(BaseSystemAPI* systemAPI) {
     hasTransitionRequest_ = false;
     scrollY_ = 0.0f;
 
-    // コンテンツの高さを計算
+    // コンチE��チE�E高さを計箁E
     totalContentHeight_ = CalculateTotalContentHeight();
 
     isInitialized_ = true;
@@ -50,67 +71,69 @@ void LicenseOverlay::Update(SharedContext& ctx, float deltaTime) {
     if (!isInitialized_) {
         return;
     }
+    InputSystemAPI* inputAPI = ctx.inputAPI;
 
-    // ESCキーで閉じる
-    if (systemAPI_->IsKeyPressed(256)) {  // ESCキー
+    // ESCキーで閉じめE
+    if (inputAPI && inputAPI->IsEscapePressed()) {  // ESCキー
         requestClose_ = true;
     }
     
-    // スクロール処理
+    // スクロール処琁E
     const float windowX = 200.0f;
     const float windowY = 150.0f;
     const float windowWidth = 1520.0f;
     const float windowHeight = 780.0f;
-    const float contentAreaY = windowY + 100.0f;  // タイトル下
-    const float contentAreaHeight = windowHeight - 180.0f;  // タイトルとボタンの間
+    const float contentAreaY = windowY + 100.0f;  // タイトル丁E
+    const float contentAreaHeight = windowHeight - 180.0f;  // タイトルとボタンの閁E
     visibleContentHeight_ = contentAreaHeight;
     
     // マウスホイールでスクロール
-    float wheelMove = systemAPI_->GetMouseWheelMove();
+    float wheelMove = inputAPI ? inputAPI->GetMouseWheelMove() : 0.0f;
     if (wheelMove != 0.0f) {
-        Vector2 mouse = systemAPI_->GetMousePosition();
-        // ウィンドウ内でマウスがある場合のみスクロール
+        auto mouse = inputAPI ? inputAPI->GetMousePosition()
+                               : Vec2{0.0f, 0.0f};
+        // ウィンドウ冁E��マウスがある場合�Eみスクロール
         if (mouse.x >= windowX && mouse.x <= windowX + windowWidth &&
             mouse.y >= contentAreaY && mouse.y <= contentAreaY + contentAreaHeight) {
             scrollY_ -= wheelMove * 30.0f;  // スクロール速度調整
         }
     }
     
-    // キーボードでスクロール
-    if (systemAPI_->IsKeyPressed(KEY_UP)) {
+    // キーボ�Eドでスクロール
+    if (inputAPI && inputAPI->IsUpPressed()) {
         scrollY_ -= 30.0f;
     }
-    if (systemAPI_->IsKeyPressed(KEY_DOWN)) {
+    if (inputAPI && inputAPI->IsDownPressed()) {
         scrollY_ += 30.0f;
     }
-    if (systemAPI_->IsKeyPressed(KEY_PAGE_UP)) {
+    if (inputAPI && inputAPI->IsPageUpPressed()) {
         scrollY_ -= contentAreaHeight * 0.8f;
     }
-    if (systemAPI_->IsKeyPressed(KEY_PAGE_DOWN)) {
+    if (inputAPI && inputAPI->IsPageDownPressed()) {
         scrollY_ += contentAreaHeight * 0.8f;
     }
     
-    // スクロールバーのマウス操作処理
-    HandleScrollbarInteraction(windowX, windowY, windowWidth, windowHeight);
+    // スクロールバ�Eのマウス操作�E琁E
+    HandleScrollbarInteraction(inputAPI, windowX, windowY, windowWidth, windowHeight);
     
-    // スクロール位置をクランプ
+    // スクロール位置をクランチE
     float maxScroll = std::max(0.0f, totalContentHeight_ - visibleContentHeight_);
     scrollY_ = std::max(0.0f, std::min(scrollY_, maxScroll));
     
-    // マウスクリックで閉じるボタンをチェック
-    if (systemAPI_->IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        Vector2 mouse = systemAPI_->GetMousePosition();
+    // マウスクリチE��で閉じる�EタンをチェチE��
+    if (inputAPI && inputAPI->IsLeftClickPressed()) {
+        auto mouse = inputAPI->GetMousePosition();
         
         const float buttonWidth = 150.0f;
         const float buttonHeight = 40.0f;
         float buttonX = windowX + windowWidth - buttonWidth - 40.0f;
         float buttonY = windowY + windowHeight - buttonHeight - 30.0f;
         
-        // ボタン内にマウスがあるか判定
+        // ボタン冁E��マウスがあるか判宁E
         if (mouse.x >= buttonX && mouse.x <= buttonX + buttonWidth &&
             mouse.y >= buttonY && mouse.y <= buttonY + buttonHeight) {
             requestClose_ = true;
-            systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+            inputAPI->ConsumeLeftClick();
         }
     }
 }
@@ -126,40 +149,30 @@ void LicenseOverlay::Render(SharedContext& ctx) {
     const float windowWidth = 1520.0f;
     const float windowHeight = 780.0f;
     
-    // ウィンドウ背景（半透明の暗い背景）
-    systemAPI_->DrawRectangle(
-        static_cast<int>(windowX),
-        static_cast<int>(windowY),
-        static_cast<int>(windowWidth),
-        static_cast<int>(windowHeight),
-        ui::OverlayColors::OVERLAY_BG
-    );
-    
-    // ウィンドウ枠線
-    systemAPI_->DrawRectangleLines(
-        static_cast<int>(windowX),
-        static_cast<int>(windowY),
-        static_cast<int>(windowWidth),
-        static_cast<int>(windowHeight),
-        2.0f,
-        ui::OverlayColors::BORDER_DEFAULT
-    );
+    Rectangle windowRect = {windowX, windowY, windowWidth, windowHeight};
+    systemAPI_->Render().DrawUiNineSlice(ui::UiAssetKeys::PanelBackground,
+                                         windowRect, 8, 8, 8, 8, WHITE);
+    systemAPI_->Render().DrawUiNineSlice(ui::UiAssetKeys::PanelBorder, windowRect,
+                                         8, 8, 8, 8, WHITE);
     
     // タイトル
     const char* titleText = "ライセンス";
     float titleFontSize = 36.0f;
-    Vector2 titleSize = systemAPI_->MeasureTextDefault(titleText, titleFontSize, 1.0f);
+    Vector2 titleSize =
+        systemAPI_->Render().MeasureTextDefault(titleText, titleFontSize, 1.0f);
     float titleX = windowX + (windowWidth - titleSize.x) / 2.0f;
     float titleY = windowY + 20.0f;
-    systemAPI_->DrawTextDefault(titleText, titleX, titleY, titleFontSize, ui::OverlayColors::TEXT_PRIMARY);
+    systemAPI_->Render().DrawTextDefault(titleText, titleX, titleY,
+                                         titleFontSize,
+                                         ui::OverlayColors::TEXT_DARK);
     
-    // コンテンツ領域
+    // コンチE��チE��域
     const float contentAreaX = windowX + 40.0f;
     const float contentAreaY = windowY + 100.0f;
-    const float contentAreaWidth = windowWidth - 100.0f;  // スクロールバー用の余白
-    const float contentAreaHeight = windowHeight - 180.0f;  // タイトルとボタンの間
+    const float contentAreaWidth = windowWidth - 100.0f;  // スクロールバ�E用の余白
+    const float contentAreaHeight = windowHeight - 180.0f;  // タイトルとボタンの閁E
     
-    // スクロール可能なコンテンツを描画（ScissorModeでクリッピング）
+    // スクロール可能なコンチE��チE��描画�E�EcissorModeでクリチE��ング�E�E
     BeginScissorMode(
         static_cast<int>(contentAreaX),
         static_cast<int>(contentAreaY),
@@ -171,41 +184,36 @@ void LicenseOverlay::Render(SharedContext& ctx) {
     
     EndScissorMode();
     
-    // スクロールバーを描画
+    // スクロールバ�Eを描画
     RenderScrollbar(windowX, windowY, windowWidth, windowHeight);
     
-    // 閉じるボタン
+    // 閉じる�Eタン
     const float buttonWidth = 150.0f;
     const float buttonHeight = 40.0f;
     float buttonX = windowX + windowWidth - buttonWidth - 40.0f;
     float buttonY = windowY + windowHeight - buttonHeight - 30.0f;
     
-    // ボタン背景
-    systemAPI_->DrawRectangle(
-        static_cast<int>(buttonX),
-        static_cast<int>(buttonY),
-        static_cast<int>(buttonWidth),
-        static_cast<int>(buttonHeight),
-        ui::OverlayColors::BUTTON_BLUE
-    );
-    
-    // ボタン枠線
-    systemAPI_->DrawRectangleLines(
-        static_cast<int>(buttonX),
-        static_cast<int>(buttonY),
-        static_cast<int>(buttonWidth),
-        static_cast<int>(buttonHeight),
-        2.0f,
-        ui::OverlayColors::BUTTON_BLUE_HOVER
-    );
+    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
+                              : Vec2{0.0f, 0.0f};
+    bool isButtonHovered = (mouse.x >= buttonX && mouse.x <= buttonX + buttonWidth &&
+                            mouse.y >= buttonY && mouse.y <= buttonY + buttonHeight);
+    const char* buttonTexture = isButtonHovered
+        ? ui::UiAssetKeys::ButtonPrimaryHover
+        : ui::UiAssetKeys::ButtonPrimaryNormal;
+    Rectangle buttonRect = {buttonX, buttonY, buttonWidth, buttonHeight};
+    systemAPI_->Render().DrawUiNineSlice(buttonTexture, buttonRect, 8, 8, 8, 8,
+                                         WHITE);
     
     // ボタンテキスト
     const char* buttonText = "閉じる";
     float buttonFontSize = 24.0f;
-    Vector2 buttonTextSize = systemAPI_->MeasureTextDefault(buttonText, buttonFontSize, 1.0f);
+    Vector2 buttonTextSize = systemAPI_->Render().MeasureTextDefault(
+        buttonText, buttonFontSize, 1.0f);
     float buttonTextX = buttonX + (buttonWidth - buttonTextSize.x) / 2.0f;
     float buttonTextY = buttonY + (buttonHeight - buttonFontSize) / 2.0f;
-    systemAPI_->DrawTextDefault(buttonText, buttonTextX, buttonTextY, buttonFontSize, ui::OverlayColors::TEXT_PRIMARY);
+    systemAPI_->Render().DrawTextDefault(
+        buttonText, buttonTextX, buttonTextY, buttonFontSize,
+        systemAPI_->Render().GetReadableTextColor(buttonTexture));
 }
 
 void LicenseOverlay::Shutdown() {
@@ -244,7 +252,7 @@ float LicenseOverlay::CalculateTotalContentHeight() {
     
     // プロジェクトライセンス
     currentHeight += titleFontSize + 10.0f;  // タイトル
-    currentHeight += 22 * lineHeight;  // ライセンステキスト（21行 + 空行）
+    currentHeight += 22 * lineHeight;  // ライセンスチE��スト！E1衁E+ 空行！E
     currentHeight += sectionSpacing;
     
     // raylib
@@ -275,7 +283,22 @@ float LicenseOverlay::CalculateTotalContentHeight() {
     // rlImGui
     currentHeight += titleFontSize + 10.0f;
     currentHeight += 17 * lineHeight;
-    
+    currentHeight += sectionSpacing;
+
+    // Kenney assets
+    std::vector<AssetLicenseEntry> assetLicenses;
+    if (systemAPI_) {
+        assetLicenses = systemAPI_->Resource().GetAssetLicenses();
+    }
+    for (size_t i = 0; i < assetLicenses.size(); ++i) {
+        currentHeight += titleFontSize + 10.0f;
+        const auto lines = SplitLines(assetLicenses[i].licenseText);
+        currentHeight += static_cast<float>(lines.size()) * lineHeight;
+        if (i + 1 < assetLicenses.size()) {
+            currentHeight += sectionSpacing;
+        }
+    }
+
     return currentHeight;
 }
 
@@ -284,12 +307,17 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     float lineHeight = textFontSize + 4.0f;
     float sectionSpacing = 40.0f;
     float currentY = contentY;
+    const Color titleColor = ui::OverlayColors::TEXT_DARK;
+    const Color bodyColor = ui::OverlayColors::TEXT_DARK;
     
-    // プロジェクトライセンス（MIT License）
-    const char* projectTitle = "=== Cat Tower Defense (MIT License) ===";
+    // プロジェクトライセンス�E�EIT License�E�E
+    const char* projectTitle = "=== tower of defense (MIT License) ===";
     float titleFontSize = 24.0f;
-    Vector2 titleSize = systemAPI_->MeasureTextDefault(projectTitle, titleFontSize, 1.0f);
-    systemAPI_->DrawTextDefault(projectTitle, contentX, currentY, titleFontSize, ui::OverlayColors::TEXT_GOLD);
+    Vector2 titleSize =
+        systemAPI_->Render().MeasureTextDefault(projectTitle, titleFontSize, 1.0f);
+    systemAPI_->Render().DrawTextDefault(projectTitle, contentX, currentY,
+                                         titleFontSize,
+                                         titleColor);
     currentY += titleSize.y + 10.0f;
     
     const char* projectLicense[] = {
@@ -317,7 +345,9 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     };
     
     for (size_t i = 0; i < sizeof(projectLicense) / sizeof(projectLicense[0]); ++i) {
-        systemAPI_->DrawTextDefault(projectLicense[i], contentX, currentY, textFontSize, ui::OverlayColors::TEXT_SECONDARY);
+        systemAPI_->Render().DrawTextDefault(
+            projectLicense[i], contentX, currentY, textFontSize,
+            bodyColor);
         currentY += lineHeight;
     }
     
@@ -325,8 +355,11 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     
     // raylib (zlib/libpng license)
     const char* raylibTitle = "=== raylib (zlib/libpng License) ===";
-    Vector2 raylibTitleSize = systemAPI_->MeasureTextDefault(raylibTitle, titleFontSize, 1.0f);
-    systemAPI_->DrawTextDefault(raylibTitle, contentX, currentY, titleFontSize, Color{255, 200, 100, 255});
+    Vector2 raylibTitleSize =
+        systemAPI_->Render().MeasureTextDefault(raylibTitle, titleFontSize, 1.0f);
+    systemAPI_->Render().DrawTextDefault(raylibTitle, contentX, currentY,
+                                         titleFontSize,
+                                         titleColor);
     currentY += raylibTitleSize.y + 10.0f;
     
     const char* raylibLicense[] = {
@@ -350,7 +383,9 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     };
     
     for (size_t i = 0; i < sizeof(raylibLicense) / sizeof(raylibLicense[0]); ++i) {
-        systemAPI_->DrawTextDefault(raylibLicense[i], contentX, currentY, textFontSize, Color{220, 220, 220, 255});
+        systemAPI_->Render().DrawTextDefault(
+            raylibLicense[i], contentX, currentY, textFontSize,
+            bodyColor);
         currentY += lineHeight;
     }
     
@@ -358,8 +393,11 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     
     // ImGui (MIT License)
     const char* imguiTitle = "=== ImGui (MIT License) ===";
-    Vector2 imguiTitleSize = systemAPI_->MeasureTextDefault(imguiTitle, titleFontSize, 1.0f);
-    systemAPI_->DrawTextDefault(imguiTitle, contentX, currentY, titleFontSize, Color{255, 200, 100, 255});
+    Vector2 imguiTitleSize =
+        systemAPI_->Render().MeasureTextDefault(imguiTitle, titleFontSize, 1.0f);
+    systemAPI_->Render().DrawTextDefault(imguiTitle, contentX, currentY,
+                                         titleFontSize,
+                                         titleColor);
     currentY += imguiTitleSize.y + 10.0f;
     
     const char* imguiLicense[] = {
@@ -383,7 +421,9 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     };
     
     for (size_t i = 0; i < sizeof(imguiLicense) / sizeof(imguiLicense[0]); ++i) {
-        systemAPI_->DrawTextDefault(imguiLicense[i], contentX, currentY, textFontSize, Color{220, 220, 220, 255});
+        systemAPI_->Render().DrawTextDefault(
+            imguiLicense[i], contentX, currentY, textFontSize,
+            bodyColor);
         currentY += lineHeight;
     }
     
@@ -391,8 +431,11 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     
     // EnTT (MIT License)
     const char* enttTitle = "=== EnTT (MIT License) ===";
-    Vector2 enttTitleSize = systemAPI_->MeasureTextDefault(enttTitle, titleFontSize, 1.0f);
-    systemAPI_->DrawTextDefault(enttTitle, contentX, currentY, titleFontSize, Color{255, 200, 100, 255});
+    Vector2 enttTitleSize =
+        systemAPI_->Render().MeasureTextDefault(enttTitle, titleFontSize, 1.0f);
+    systemAPI_->Render().DrawTextDefault(enttTitle, contentX, currentY,
+                                         titleFontSize,
+                                         titleColor);
     currentY += enttTitleSize.y + 10.0f;
     
     const char* enttLicense[] = {
@@ -416,7 +459,9 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     };
     
     for (size_t i = 0; i < sizeof(enttLicense) / sizeof(enttLicense[0]); ++i) {
-        systemAPI_->DrawTextDefault(enttLicense[i], contentX, currentY, textFontSize, Color{220, 220, 220, 255});
+        systemAPI_->Render().DrawTextDefault(
+            enttLicense[i], contentX, currentY, textFontSize,
+            bodyColor);
         currentY += lineHeight;
     }
     
@@ -424,8 +469,11 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     
     // nlohmann/json (MIT License)
     const char* jsonTitle = "=== nlohmann/json (MIT License) ===";
-    Vector2 jsonTitleSize = systemAPI_->MeasureTextDefault(jsonTitle, titleFontSize, 1.0f);
-    systemAPI_->DrawTextDefault(jsonTitle, contentX, currentY, titleFontSize, Color{255, 200, 100, 255});
+    Vector2 jsonTitleSize =
+        systemAPI_->Render().MeasureTextDefault(jsonTitle, titleFontSize, 1.0f);
+    systemAPI_->Render().DrawTextDefault(jsonTitle, contentX, currentY,
+                                         titleFontSize,
+                                         titleColor);
     currentY += jsonTitleSize.y + 10.0f;
     
     const char* jsonLicense[] = {
@@ -449,7 +497,9 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     };
     
     for (size_t i = 0; i < sizeof(jsonLicense) / sizeof(jsonLicense[0]); ++i) {
-        systemAPI_->DrawTextDefault(jsonLicense[i], contentX, currentY, textFontSize, Color{220, 220, 220, 255});
+        systemAPI_->Render().DrawTextDefault(
+            jsonLicense[i], contentX, currentY, textFontSize,
+            bodyColor);
         currentY += lineHeight;
     }
     
@@ -457,8 +507,11 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     
     // spdlog (MIT License)
     const char* spdlogTitle = "=== spdlog (MIT License) ===";
-    Vector2 spdlogTitleSize = systemAPI_->MeasureTextDefault(spdlogTitle, titleFontSize, 1.0f);
-    systemAPI_->DrawTextDefault(spdlogTitle, contentX, currentY, titleFontSize, Color{255, 200, 100, 255});
+    Vector2 spdlogTitleSize =
+        systemAPI_->Render().MeasureTextDefault(spdlogTitle, titleFontSize, 1.0f);
+    systemAPI_->Render().DrawTextDefault(spdlogTitle, contentX, currentY,
+                                         titleFontSize,
+                                         titleColor);
     currentY += spdlogTitleSize.y + 10.0f;
     
     const char* spdlogLicense[] = {
@@ -482,7 +535,9 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     };
     
     for (size_t i = 0; i < sizeof(spdlogLicense) / sizeof(spdlogLicense[0]); ++i) {
-        systemAPI_->DrawTextDefault(spdlogLicense[i], contentX, currentY, textFontSize, Color{220, 220, 220, 255});
+        systemAPI_->Render().DrawTextDefault(
+            spdlogLicense[i], contentX, currentY, textFontSize,
+            bodyColor);
         currentY += lineHeight;
     }
     
@@ -490,8 +545,11 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     
     // rlImGui (MIT License)
     const char* rlimguiTitle = "=== rlImGui (MIT License) ===";
-    Vector2 rlimguiTitleSize = systemAPI_->MeasureTextDefault(rlimguiTitle, titleFontSize, 1.0f);
-    systemAPI_->DrawTextDefault(rlimguiTitle, contentX, currentY, titleFontSize, Color{255, 200, 100, 255});
+    Vector2 rlimguiTitleSize =
+        systemAPI_->Render().MeasureTextDefault(rlimguiTitle, titleFontSize, 1.0f);
+    systemAPI_->Render().DrawTextDefault(rlimguiTitle, contentX, currentY,
+                                         titleFontSize,
+                                         titleColor);
     currentY += rlimguiTitleSize.y + 10.0f;
     
     const char* rlimguiLicense[] = {
@@ -515,62 +573,97 @@ void LicenseOverlay::RenderLicenseText(float contentX, float contentY, float con
     };
     
     for (size_t i = 0; i < sizeof(rlimguiLicense) / sizeof(rlimguiLicense[0]); ++i) {
-        systemAPI_->DrawTextDefault(rlimguiLicense[i], contentX, currentY, textFontSize, Color{220, 220, 220, 255});
+        systemAPI_->Render().DrawTextDefault(
+            rlimguiLicense[i], contentX, currentY, textFontSize,
+            bodyColor);
         currentY += lineHeight;
+    }
+
+    currentY += sectionSpacing;
+
+    // Kenney assets
+    std::vector<AssetLicenseEntry> assetLicenses;
+    if (systemAPI_) {
+        assetLicenses = systemAPI_->Resource().GetAssetLicenses();
+    }
+    for (size_t i = 0; i < assetLicenses.size(); ++i) {
+        const std::string title = "=== Kenney: " + assetLicenses[i].packName + " ===";
+        Vector2 kenneyTitleSize =
+            systemAPI_->Render().MeasureTextDefault(title, titleFontSize, 1.0f);
+        systemAPI_->Render().DrawTextDefault(title, contentX, currentY,
+                                             titleFontSize,
+                                             titleColor);
+        currentY += kenneyTitleSize.y + 10.0f;
+
+        const auto lines = SplitLines(assetLicenses[i].licenseText);
+        for (const auto& line : lines) {
+            systemAPI_->Render().DrawTextDefault(
+                line, contentX, currentY, textFontSize,
+                bodyColor);
+            currentY += lineHeight;
+        }
+
+        if (i + 1 < assetLicenses.size()) {
+            currentY += sectionSpacing;
+        }
     }
 }
 
-void LicenseOverlay::HandleScrollbarInteraction(float windowX, float windowY, float windowWidth, float windowHeight) {
+void LicenseOverlay::HandleScrollbarInteraction(InputSystemAPI* inputAPI, float windowX, float windowY,
+                                                float windowWidth, float windowHeight) {
+    if (!inputAPI) {
+        return;
+    }
     if (totalContentHeight_ <= visibleContentHeight_) {
-        // スクロール不要な場合は何もしない
+        // スクロール不要な場合�E何もしなぁE
         isDraggingScrollbar_ = false;
         return;
     }
     
     const float scrollbarWidth = 20.0f;
     const float scrollbarX = windowX + windowWidth - scrollbarWidth - 20.0f;
-    const float scrollbarY = windowY + 100.0f;  // タイトル下
-    const float scrollbarHeight = windowHeight - 180.0f;  // タイトルとボタンの間
+    const float scrollbarY = windowY + 100.0f;  // タイトル丁E
+    const float scrollbarHeight = windowHeight - 180.0f;  // タイトルとボタンの閁E
     
     float scrollRatio = visibleContentHeight_ / totalContentHeight_;
     float thumbHeight = scrollbarHeight * scrollRatio;
     float thumbY = scrollbarY + (scrollY_ / totalContentHeight_) * scrollbarHeight;
     
-    Vector2 mouse = systemAPI_->GetMousePosition();
+    auto mouse = inputAPI->GetMousePosition();
     bool mouseOverScrollbar = (mouse.x >= scrollbarX && mouse.x <= scrollbarX + scrollbarWidth &&
                                mouse.y >= scrollbarY && mouse.y <= scrollbarY + scrollbarHeight);
     bool mouseOverThumb = (mouse.x >= scrollbarX && mouse.x <= scrollbarX + scrollbarWidth &&
                            mouse.y >= thumbY && mouse.y <= thumbY + thumbHeight);
     
-    // マウスボタンが押されたとき
-    if (systemAPI_->IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    // マウスボタンが押されたとぁE
+    if (inputAPI->IsLeftClickPressed()) {
         if (mouseOverThumb) {
-            // つまみをクリックした場合、ドラッグ開始
+            // つまみをクリチE��した場合、ドラチE��開姁E
             isDraggingScrollbar_ = true;
             dragStartY_ = mouse.y;
             dragStartScrollY_ = scrollY_;
-            systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+            inputAPI->ConsumeLeftClick();
         } else if (mouseOverScrollbar) {
-            // スクロールバーのトラック（つまみ以外）をクリックした場合、その位置にスクロール
+            // スクロールバ�EのトラチE���E�つまみ以外）をクリチE��した場合、その位置にスクロール
             float maxScroll = totalContentHeight_ - visibleContentHeight_;
-            float scrollRange = scrollbarHeight - thumbHeight;  // つまみが動ける範囲
+            float scrollRange = scrollbarHeight - thumbHeight;  // つまみが動ける篁E��
             
             if (scrollRange > 0.0f) {
-                // クリック位置をスクロール範囲にマッピング
+                // クリチE��位置をスクロール篁E��にマッピング
                 float clickY = mouse.y - scrollbarY;
                 float clickRatio = (clickY - thumbHeight / 2.0f) / scrollRange;
-                clickRatio = std::max(0.0f, std::min(1.0f, clickRatio));  // 0-1にクランプ
+                clickRatio = std::max(0.0f, std::min(1.0f, clickRatio));  // 0-1にクランチE
                 scrollY_ = clickRatio * maxScroll;
             }
-            systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+            inputAPI->ConsumeLeftClick();
         }
     }
     
-    // ドラッグ中
-    if (isDraggingScrollbar_ && systemAPI_->IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    // ドラチE��中
+    if (isDraggingScrollbar_ && inputAPI->IsLeftClickDown()) {
         float deltaY = mouse.y - dragStartY_;
         float maxScroll = totalContentHeight_ - visibleContentHeight_;
-        float scrollRange = scrollbarHeight - thumbHeight;  // つまみが動ける範囲
+        float scrollRange = scrollbarHeight - thumbHeight;  // つまみが動ける篁E��
         
         if (scrollRange > 0.0f) {
             float scrollDelta = (deltaY / scrollRange) * maxScroll;
@@ -579,8 +672,8 @@ void LicenseOverlay::HandleScrollbarInteraction(float windowX, float windowY, fl
         }
     }
     
-    // マウスボタンが離されたとき
-    if (systemAPI_->IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    // マウスボタンが離されたとぁE
+    if (inputAPI->IsLeftClickReleased()) {
         isDraggingScrollbar_ = false;
     }
 }
@@ -588,47 +681,22 @@ void LicenseOverlay::HandleScrollbarInteraction(float windowX, float windowY, fl
 void LicenseOverlay::RenderScrollbar(float windowX, float windowY, float windowWidth, float windowHeight) {
     const float scrollbarWidth = 20.0f;
     const float scrollbarX = windowX + windowWidth - scrollbarWidth - 20.0f;
-    const float scrollbarY = windowY + 100.0f;  // タイトル下
-    const float scrollbarHeight = windowHeight - 180.0f;  // タイトルとボタンの間
+    const float scrollbarY = windowY + 100.0f;  // タイトル丁E
+    const float scrollbarHeight = windowHeight - 180.0f;  // タイトルとボタンの閁E
     
-    // スクロールバー背景
-    systemAPI_->DrawRectangle(
-        static_cast<int>(scrollbarX),
-        static_cast<int>(scrollbarY),
-        static_cast<int>(scrollbarWidth),
-        static_cast<int>(scrollbarHeight),
-        ui::OverlayColors::SLOT_EMPTY
-    );
+    Rectangle trackRect = {scrollbarX, scrollbarY, scrollbarWidth, scrollbarHeight};
+    systemAPI_->Render().DrawUiTexture(ui::UiAssetKeys::ScrollTrackVertical,
+                                       trackRect, WHITE);
     
-    // スクロール可能な場合のみスクロールバーを描画
+    // スクロール可能な場合�Eみスクロールバ�Eを描画
     if (totalContentHeight_ > visibleContentHeight_) {
         float scrollRatio = visibleContentHeight_ / totalContentHeight_;
         float thumbHeight = scrollbarHeight * scrollRatio;
         float thumbY = scrollbarY + (scrollY_ / totalContentHeight_) * scrollbarHeight;
-        
-        // つまみの色（ドラッグ中は明るく）
-        Color thumbColor = isDraggingScrollbar_ ? 
-            ui::OverlayColors::SLOT_HOVER :  // ドラッグ中
-            ui::OverlayColors::BORDER_DEFAULT;   // 通常
-        
-        // スクロールバーのつまみ
-        systemAPI_->DrawRectangle(
-            static_cast<int>(scrollbarX + 2),
-            static_cast<int>(thumbY),
-            static_cast<int>(scrollbarWidth - 4),
-            static_cast<int>(thumbHeight),
-            thumbColor
-        );
-        
-        // つまみの枠線
-        systemAPI_->DrawRectangleLines(
-            static_cast<int>(scrollbarX + 2),
-            static_cast<int>(thumbY),
-            static_cast<int>(scrollbarWidth - 4),
-            static_cast<int>(thumbHeight),
-            1.0f,
-            ui::OverlayColors::BORDER_DEFAULT
-        );
+        Rectangle thumbRect = {scrollbarX, thumbY, scrollbarWidth, thumbHeight};
+        systemAPI_->Render().DrawUiTexture(
+            ui::UiAssetKeys::ScrollThumb, thumbRect,
+            isDraggingScrollbar_ ? Color{220, 220, 255, 255} : WHITE);
     }
 }
 

@@ -1,24 +1,27 @@
 #pragma once
 
 #include "IOverlay.hpp"
-#include "../../entities/Character.hpp"
+#include "../../ecs/entities/Character.hpp"
+#include "../../config/RenderPrimitives.hpp"
+#include "../../config/RenderTypes.hpp"
 #include <vector>
-#include <raylib.h>
 
 namespace game {
 namespace core {
 
-/// @brief 編成オーバーレイ
+class GameplayDataAPI;
+
+/// @brief 編成オーバ�Eレイ
 ///
-/// 10キャラクター編成に対応した編成画面を表示するオーバーレイ。
-/// FHD (1920x1080) 画面に最適化されています。
+/// 10キャラクター編成に対応した編成画面を表示するオーバ�Eレイ、E
+/// FHD (1920x1080) 画面に最適化されてぁE��す、E
 class FormationOverlay : public IOverlay {
 public:
     FormationOverlay();
     ~FormationOverlay() = default;
 
-    // IOverlay実装
-    bool Initialize(BaseSystemAPI* systemAPI) override;
+    // IOverlay実裁E
+    bool Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) override;
     void Update(SharedContext& ctx, float deltaTime) override;
     void Render(SharedContext& ctx) override;
     void Shutdown() override;
@@ -28,23 +31,23 @@ public:
     bool RequestTransition(GameState& nextState) const override;
 
 private:
-    // ========== 内部構造体 ==========
+    // ========== 冁E��構造佁E==========
     
-    /// @brief 編成スロット
+    /// @brief 編成スロチE��
     struct SquadSlot {
         int slot_id = 0;                                // 0-9
         const entities::Character* assigned_character = nullptr; // nullptr = empty
-        Vector2 position = {0.0f, 0.0f};                // 画面座標
+        Vec2 position = {0.0f, 0.0f};                // 画面座樁E
         float width = 140.0f;
         float height = 120.0f;
         bool is_hovered = false;
         bool is_dragging = false;
     };
     
-    /// @brief パーティーサマリー情報
+    /// @brief パ�EチE��ーサマリー惁E��
     struct PartySummaryInfo {
         int total_cost = 0;
-        // 編成コスト上限は撤廃（表示用に残しているが判定には使わない）
+        // 編成コスト上限は撤廁E��表示用に残してぁE��が判定には使わなぁE��E
         int max_cost = 0;
         int total_hp = 0;
         int total_attack = 0;
@@ -53,12 +56,12 @@ private:
         int max_character_count = 10;
         
         bool IsCostValid() const {
-            // コスト上限なし
+            // コスト上限なぁE
             return true;
         }
         
         bool IsComplete() const {
-            // 1体以上いればOK（コスト上限チェックはしない）
+            // 1体以上いれ�EOK�E�コスト上限チェチE��はしなぁE��E
             return character_count > 0;
         }
     };
@@ -67,17 +70,17 @@ private:
     struct CharacterListView {
         std::vector<const entities::Character*> available_characters;
         int scroll_offset = 0;
-        int visible_columns = 8;
+        int visible_columns = 7;
         int visible_rows = 2;
         int selected_character_index = -1;
         
-        const float CARD_WIDTH = 100.0f;
+        const float CARD_WIDTH = 140.0f;
         const float CARD_HEIGHT = 120.0f;
-        const float CARD_SPACING_X = 115.0f;
-        const float CARD_SPACING_Y = 140.0f;
+        const float CARD_SPACING_X = 150.0f;
+        const float CARD_SPACING_Y = 150.0f;
     };
     
-    /// @brief 詳細パネル情報
+    /// @brief 詳細パネル惁E��
     struct DetailsPanelInfo {
         float x = 1220.0f;
         float y = 160.0f;
@@ -97,24 +100,24 @@ private:
     mutable bool hasTransitionRequest_;
     mutable GameState requestedNextState_;
     
-    // 編成スロット（10個）
+    // 編成スロチE���E�E0個！E
     SquadSlot squad_slots_[10];
     PartySummaryInfo m_partySummary;
     CharacterListView m_characterList;
     DetailsPanelInfo m_detailsPanel;
     
-    // 選択中のキャラクター（ホバー/ドラッグ中）
+    // 選択中のキャラクター�E��Eバ�E/ドラチE��中�E�E
     const entities::Character* selected_character_;
     
-    // ドラッグ&ドロップ状態
+    // ドラチE��&ドロチE�E状慁E
     const entities::Character* dragging_character_;
-    int dragging_source_slot_;  // -1 = キャラクター一覧から, 0-9 = スロットから
-    Vector2 drag_position_;
+    int dragging_source_slot_;  // -1 = キャラクター一覧から, 0-9 = スロチE��から
+    Vec2 drag_position_;
     bool is_dragging_;
-    Vector2 drag_start_pos_;
+    Vec2 drag_start_pos_;
     bool drag_started_;
     
-    // ボタン状態
+    // ボタン状慁E
     struct ButtonState {
         bool is_hovered = false;
         bool is_pressed = false;
@@ -123,24 +126,24 @@ private:
     ButtonState cancel_button_;
     ButtonState reset_button_;
     
-    // 選択中のスロット（キーボード操作用）
+    // 選択中のスロチE���E�キーボ�Eド操作用�E�E
     int selected_slot_index_;
     
-    // アニメーション時間（パルスエフェクト用）
+    // アニメーション時間�E�パルスエフェクト用�E�E
     float animation_time_;
     
-    // SharedContextの編成を一度だけ復元するためのフラグ
+    // SharedContextの編成を一度だけ復允E��るため�Eフラグ
     bool restored_from_context_ = false;
     
-    // ========== プライベートメソッド ==========
+    // ========== プライベ�EトメソチE�� ==========
     
-    // 初期化・クリーンアップ
+    // 初期化�EクリーンアチE�E
     void InitializeSlots();
     void RestoreFormationFromContext(SharedContext& ctx);
     void FilterAvailableCharacters(SharedContext& ctx);
-    void SortAvailableCharacters();
+    void SortAvailableCharacters(const GameplayDataAPI* gameplayDataAPI);
     
-    // 描画メソッド
+    // 描画メソチE��
     void RenderTitleBar();
     void RenderSquadSlots();
     void RenderSlot(const SquadSlot& slot);
@@ -150,43 +153,43 @@ private:
     void RenderButtons();
     void RenderDividers();
     void RenderDraggingCharacter();
-    void RenderDetailsPanel();
+    void RenderDetailsPanel(SharedContext& ctx);
     
-    // 座標計算ヘルパー
-    static Vector2 GetSlotPosition(int slot_id);
-    Vector2 GetCardPosition(int card_index) const;
-    int GetSlotAtPosition(Vector2 position) const;
-    int GetCardAtPosition(Vector2 position) const;
+    // 座標計算�Eルパ�E
+    static Vec2 GetSlotPosition(int slot_id);
+    Vec2 GetCardPosition(int card_index) const;
+    int GetSlotAtPosition(Vec2 position) const;
+    int GetCardAtPosition(Vec2 position) const;
     
-    // キャラクター管理
+    // キャラクター管琁E
     void AssignCharacter(int slot_id, const entities::Character* character);
     void RemoveCharacter(int slot_id);
     void SwapCharacters(int slot1_id, int slot2_id);
     
-    // パーティー管理
+    // パ�EチE��ー管琁E
     void UpdatePartySummary();
     bool ValidateSquadComposition();
     
-    // イベント処理
+    // イベント�E琁E
     void OnSlotClicked(int slot_id);
     void OnCardClicked(int card_index);
     void OnSlotRightClicked(int slot_id);
-    void OnDragStart(int source_slot, const entities::Character* character);
-    void OnDragUpdate(Vector2 mouse_pos);
-    void OnDragEnd(Vector2 mouse_pos);
+    void OnDragStart(int source_slot, const entities::Character* character, SharedContext& ctx);
+    void OnDragUpdate(Vec2 mouse_pos);
+    void OnDragEnd(Vec2 mouse_pos);
     void OnButtonClicked(const std::string& button_name, SharedContext& ctx);
     
-    // マウス入力処理
+    // マウス入力�E琁E
     void ProcessMouseInput(SharedContext& ctx);
-    void UpdateHoverStates(Vector2 mouse_pos);
+    void UpdateHoverStates(Vec2 mouse_pos);
     
-    // キーボード入力処理
-    void ProcessKeyboardInput();
+    // キーボ�Eド�E力�E琁E
+  void ProcessKeyboardInput(SharedContext& ctx);
     
-    // スクロール処理
+    // スクロール処琁E
     void ProcessScrollInput(float wheel_delta);
     
-    // ユーティリティ
+    // ユーチE��リチE��
     bool IsCharacterInSquad(const entities::Character* character) const;
     Color GetSlotColor(const SquadSlot& slot) const;
     Color GetPartySummaryColor() const;

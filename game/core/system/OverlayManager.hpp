@@ -11,6 +11,7 @@ namespace core {
 
 // 前方宣言
 class BaseSystemAPI;
+class UISystemAPI;
 
 /// @brief オーバーレイ管理クラス
 ///
@@ -24,8 +25,9 @@ public:
     /// @brief オーバーレイをスタックに追加
     /// @param state オーバーレイのステート
     /// @param systemAPI BaseSystemAPIへのポインタ（所有権なし）
+    /// @param uiAPI UISystemAPIへのポインタ（所有権なし）
     /// @return 成功時true、失敗時false
-    bool PushOverlay(OverlayState state, BaseSystemAPI* systemAPI);
+    bool PushOverlay(OverlayState state, BaseSystemAPI* systemAPI, UISystemAPI* uiAPI);
 
     /// @brief 最上層のオーバーレイをスタックから削除
     void PopOverlay();
@@ -43,6 +45,10 @@ public:
     /// @param ctx 共有コンテキスト
     /// @note すべてのオーバーレイを描画（奥のものが見えるように）
     void Render(SharedContext& ctx);
+
+    /// @brief ImGuiオーバーレイの描画処理（ImGuiフレーム内）
+    /// @param ctx 共有コンテキスト
+    void RenderImGui(SharedContext& ctx);
 
     /// @brief オーバーレイのクリーンアップ
     void Shutdown();
@@ -76,19 +82,28 @@ public:
     /// @brief 遷移リクエストをクリア
     void ClearTransitionRequest() { hasTransitionRequest_ = false; }
 
+    /// @brief 終了リクエストがあるかどうか
+    /// @return 終了リクエストがある場合true
+    bool HasQuitRequest() const { return hasQuitRequest_; }
+
+    /// @brief 終了リクエストをクリア
+    void ClearQuitRequest() { hasQuitRequest_ = false; }
+
 private:
     std::vector<std::unique_ptr<IOverlay>> stack_;
 
     // P0: オーバーレイからの遷移要求をバッファ
     GameState requestedTransition_ = GameState::Initializing;
     bool hasTransitionRequest_ = false;
+    bool hasQuitRequest_ = false;
 
     /// @brief オーバーレイインスタンスを作成
     /// @param state オーバーレイのステート
     /// @param systemAPI BaseSystemAPIへのポインタ（所有権なし）
+    /// @param uiAPI UISystemAPIへのポインタ（所有権なし）
     /// @return 作成されたオーバーレイのunique_ptr、失敗時はnullptr
     /// @note フェーズ3で各オーバーレイクラスが実装されたら、ここでインスタンス化
-    std::unique_ptr<IOverlay> CreateOverlay(OverlayState state, BaseSystemAPI* systemAPI);
+    std::unique_ptr<IOverlay> CreateOverlay(OverlayState state, BaseSystemAPI* systemAPI, UISystemAPI* uiAPI);
 };
 
 } // namespace core

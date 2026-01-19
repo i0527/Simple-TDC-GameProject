@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IOverlay.hpp"
-#include "../../entities/StageManager.hpp"
+#include "../../ecs/entities/StageManager.hpp"
 #include <memory>
 #include <vector>
 #include <string>
@@ -10,7 +10,9 @@
 namespace game {
 namespace core {
 
-// StageDataはStageManager.hppで定義されているため、entities名前空間から使用
+class InputSystemAPI;
+
+// StageDataはStageManager.hppで定義されてぁE��ため、entities名前空間から使用
 using StageData = entities::StageData;
 
 /// @brief カードレイアウト情報
@@ -23,17 +25,17 @@ struct CardLayout {
     float height;
 };
 
-/// @brief ステージ選択オーバーレイ
+/// @brief スチE�Eジ選択オーバ�Eレイ
 ///
-/// ステージ選択画面を表示するオーバーレイ。
-/// カードベースのUIでステージ一覧を表示します。
+/// スチE�Eジ選択画面を表示するオーバ�Eレイ、E
+/// カード�EースのUIでスチE�Eジ一覧を表示します、E
 class StageSelectOverlay : public IOverlay {
 public:
     StageSelectOverlay();
     ~StageSelectOverlay() = default;
 
-    // IOverlay実装
-    bool Initialize(BaseSystemAPI* systemAPI) override;
+    // IOverlay実裁E
+    bool Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) override;
     void Update(SharedContext& ctx, float deltaTime) override;
     void Render(SharedContext& ctx) override;
     void Shutdown() override;
@@ -49,10 +51,10 @@ private:
     mutable bool hasTransitionRequest_;
     mutable GameState requestedNextState_;
 
-    // ステージデータ
+    // スチE�EジチE�Eタ
     std::vector<StageData> stages_;
     
-    // UI状態
+    // UI状慁E
     int selectedStage_;
     int hoveredStage_;
     float scrollPosition_;
@@ -64,19 +66,19 @@ private:
     std::map<int, float> cardAlphas_;
     float panelFadeAlpha_;
     
-    // レイアウト
+    // レイアウチE
     std::vector<CardLayout> cardLayouts_;
     
-    // 内部メソッド
+    // 冁E��メソチE��
     void LoadStageData(SharedContext& ctx);
     void CalculateCardLayouts();
     void RenderCards();
-    void RenderDetailPanel();
+    void RenderDetailPanel(SharedContext& ctx);
     void UpdateAnimations(float deltaTime);
     void HandleCardSelection(int stageNumber, SharedContext& ctx);
     void HandleMouseInput(SharedContext& ctx);
     void HandleKeyboardInput(SharedContext& ctx);
-    void HandleScrollInput();
+    void HandleScrollInput(InputSystemAPI* inputAPI);
 };
 
 } // namespace core

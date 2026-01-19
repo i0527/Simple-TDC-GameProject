@@ -33,14 +33,14 @@ bool ResourceInitializer::Initialize(BaseSystemAPI* systemAPI) {
 
     try {
         // リソースマネージャーの初期化
-        systemAPI_->InitializeResources();
+        systemAPI_->Resource().InitializeResources();
 
         // デフォルトフォントを設定
-        systemAPI_->SetDefaultFont("NotoSansJP-Medium.ttf", 32);
+        systemAPI_->Resource().SetDefaultFont("NotoSansJP-Medium.ttf", 32);
         LOG_INFO("Default font set successfully");
 
         // ディレクトリスキャンを実行
-        initState_.totalProgress = systemAPI_->ScanResourceFiles();
+        initState_.totalProgress = systemAPI_->Resource().ScanResourceFiles();
         initState_.scanningCompleted = true;
         initState_.currentMessage = "ファイルリストを構築しました";
         LOG_INFO("Scanned {} resource files", initState_.totalProgress);
@@ -80,7 +80,7 @@ bool ResourceInitializer::Update(float deltaTime) {
     // 読み込み処理（毎フレーム1つずつ）
     if (initState_.scanningCompleted && initState_.initializationStarted) {
         try {
-            bool hasMore = systemAPI_->LoadNextResource(
+            bool hasMore = systemAPI_->Resource().LoadNextResource(
                 [this](const LoadProgress& progress) {
                     initState_.currentProgress = progress.current;
                     initState_.totalProgress = progress.total;
@@ -94,7 +94,7 @@ bool ResourceInitializer::Update(float deltaTime) {
             }
         } catch (const std::exception& e) {
             LOG_WARN("Error loading resource: {}", e.what());
-            if (!systemAPI_->HasMoreResources()) {
+            if (!systemAPI_->Resource().HasMoreResources()) {
                 initState_.initializationCompleted = true;
                 initState_.currentMessage = "初期化完了";
             }
@@ -142,19 +142,19 @@ void ResourceInitializer::renderInitScreen() {
     // ゲームタイトル表示
     const char* title = "ゲームタイトル";
     float titleFontSize = 60.0f;
-    Vector2 titleSize = systemAPI_->MeasureTextDefault(title, titleFontSize, 1.0f);
-    float titleX = systemAPI_->GetInternalWidth() / 2.0f - titleSize.x / 2.0f;
-    float titleY = systemAPI_->GetInternalHeight() / 2.0f - 100.0f;
-    systemAPI_->DrawTextDefault(title, titleX, titleY, titleFontSize, WHITE);
+    Vector2 titleSize = systemAPI_->Render().MeasureTextDefault(title, titleFontSize, 1.0f);
+    float titleX = systemAPI_->Render().GetInternalWidth() / 2.0f - titleSize.x / 2.0f;
+    float titleY = systemAPI_->Render().GetInternalHeight() / 2.0f - 100.0f;
+    systemAPI_->Render().DrawTextDefault(title, titleX, titleY, titleFontSize, WHITE);
 
     // 進捗バー描画
     float progress = (initState_.totalProgress > 0)
                          ? (static_cast<float>(initState_.currentProgress) /
                             initState_.totalProgress)
                          : 0.0f;
-    float barX = systemAPI_->GetInternalWidth() / 2.0f - 300.0f;
-    float barY = systemAPI_->GetInternalHeight() / 2.0f;
-    systemAPI_->DrawProgressBar(barX, barY, 600.0f, 30.0f, progress, BLUE, DARKBLUE);
+    float barX = systemAPI_->Render().GetInternalWidth() / 2.0f - 300.0f;
+    float barY = systemAPI_->Render().GetInternalHeight() / 2.0f;
+    systemAPI_->Render().DrawProgressBar(barX, barY, 600.0f, 30.0f, progress, BLUE, DARKBLUE);
 
     // 進捗テキスト
     std::string progressText = initState_.currentMessage;
@@ -166,37 +166,39 @@ void ResourceInitializer::renderInitScreen() {
     }
 
     float textFontSize = 24.0f;
-    Vector2 textSize = systemAPI_->MeasureTextDefault(progressText, textFontSize, 1.0f);
-    float textX = systemAPI_->GetInternalWidth() / 2.0f - textSize.x / 2.0f;
+    Vector2 textSize =
+        systemAPI_->Render().MeasureTextDefault(progressText, textFontSize, 1.0f);
+    float textX = systemAPI_->Render().GetInternalWidth() / 2.0f - textSize.x / 2.0f;
     float textY = barY + 50.0f;
-    systemAPI_->DrawTextDefault(progressText, textX, textY, textFontSize, BLACK);
+    systemAPI_->Render().DrawTextDefault(progressText, textX, textY, textFontSize, BLACK);
 }
 
 void ResourceInitializer::renderErrorScreen() {
     // エラータイトル
     const char* errorTitle = "初期化エラー";
     float titleFontSize = 48.0f;
-    Vector2 titleSize = systemAPI_->MeasureTextDefault(errorTitle, titleFontSize, 1.0f);
-    float titleX = systemAPI_->GetInternalWidth() / 2.0f - titleSize.x / 2.0f;
+    Vector2 titleSize = systemAPI_->Render().MeasureTextDefault(errorTitle, titleFontSize, 1.0f);
+    float titleX = systemAPI_->Render().GetInternalWidth() / 2.0f - titleSize.x / 2.0f;
     float titleY = 200.0f;
-    systemAPI_->DrawTextDefault(errorTitle, titleX, titleY, titleFontSize, RED);
+    systemAPI_->Render().DrawTextDefault(errorTitle, titleX, titleY, titleFontSize, RED);
 
     // エラーメッセージ
     float messageFontSize = 24.0f;
-    Vector2 messageSize = systemAPI_->MeasureTextDefault(initState_.errorMessage,
-                                                          messageFontSize, 1.0f);
-    float messageX = systemAPI_->GetInternalWidth() / 2.0f - messageSize.x / 2.0f;
+    Vector2 messageSize = systemAPI_->Render().MeasureTextDefault(
+        initState_.errorMessage, messageFontSize, 1.0f);
+    float messageX = systemAPI_->Render().GetInternalWidth() / 2.0f - messageSize.x / 2.0f;
     float messageY = 300.0f;
-    systemAPI_->DrawTextDefault(initState_.errorMessage, messageX, messageY,
-                                messageFontSize, DARKGRAY);
+    systemAPI_->Render().DrawTextDefault(initState_.errorMessage, messageX, messageY,
+                                         messageFontSize, DARKGRAY);
 
     // 終了メッセージ
     const char* closeMessage = "5秒後にアプリケーションを終了します...";
     float closeFontSize = 20.0f;
-    Vector2 closeSize = systemAPI_->MeasureTextDefault(closeMessage, closeFontSize, 1.0f);
-    float closeX = systemAPI_->GetInternalWidth() / 2.0f - closeSize.x / 2.0f;
+    Vector2 closeSize =
+        systemAPI_->Render().MeasureTextDefault(closeMessage, closeFontSize, 1.0f);
+    float closeX = systemAPI_->Render().GetInternalWidth() / 2.0f - closeSize.x / 2.0f;
     float closeY = 500.0f;
-    systemAPI_->DrawTextDefault(closeMessage, closeX, closeY, closeFontSize, LIGHTGRAY);
+    systemAPI_->Render().DrawTextDefault(closeMessage, closeX, closeY, closeFontSize, LIGHTGRAY);
 
     // 残り時間表示
     float remainingTime = 5.0f - initState_.errorDisplayTime;
@@ -204,10 +206,11 @@ void ResourceInitializer::renderErrorScreen() {
         remainingTime = 0.0f;
     std::string timeText =
         "残り時間: " + std::to_string(static_cast<int>(remainingTime + 0.5f)) + "秒";
-    Vector2 timeSize = systemAPI_->MeasureTextDefault(timeText, closeFontSize, 1.0f);
-    float timeX = systemAPI_->GetInternalWidth() / 2.0f - timeSize.x / 2.0f;
+    Vector2 timeSize =
+        systemAPI_->Render().MeasureTextDefault(timeText, closeFontSize, 1.0f);
+    float timeX = systemAPI_->Render().GetInternalWidth() / 2.0f - timeSize.x / 2.0f;
     float timeY = 550.0f;
-    systemAPI_->DrawTextDefault(timeText, timeX, timeY, closeFontSize, YELLOW);
+    systemAPI_->Render().DrawTextDefault(timeText, timeX, timeY, closeFontSize, YELLOW);
 }
 
 } // namespace core

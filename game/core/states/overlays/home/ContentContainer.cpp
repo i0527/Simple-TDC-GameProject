@@ -6,7 +6,7 @@
 #include "../EnhancementOverlay.hpp"
 #include "../CharacterEnhancementOverlay.hpp"
 #include "../SettingsOverlay.hpp"
-#include "../../../entities/CharacterManager.hpp"
+#include "../../../ecs/entities/CharacterManager.hpp"
 #include "../../../ui/OverlayColors.hpp"
 #include "../../../../utils/Log.h"
 #include <raylib.h>
@@ -42,7 +42,7 @@ bool ContentContainer::Initialize(BaseSystemAPI* systemAPI,
     for (int i = 0; i < static_cast<int>(HomeTab::COUNT); ++i) {
         auto overlay = CreateOverlay(static_cast<HomeTab>(i), systemAPI);
         if (overlay) {
-            if (overlay->Initialize(systemAPI)) {
+            if (overlay->Initialize(systemAPI, nullptr)) {
                 overlays_[i] = std::move(overlay);
                 LOG_INFO("ContentContainer: Initialized overlay for tab {}", i);
             } else {

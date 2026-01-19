@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raylib.h>
+#include "../../config/RenderTypes.hpp"
 
 namespace game {
 namespace core {

@@ -1,8 +1,11 @@
 #include "Button.hpp"
 #include "../UIEvent.hpp"
+#include "../../api/UISystemAPI.hpp"
+#include "../UiAssetKeys.hpp"
 #include "../../../utils/Log.h"
 #include <imgui.h>
 #include <algorithm>
+#include <cstdint>
 
 namespace game {
 namespace core {
@@ -66,29 +69,44 @@ void Button::Render() {
     }
 
     if (ImGui::Begin(("Button##" + id_).c_str(), nullptr, flags)) {
-        // ボタンのスタイル
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        ImVec2 windowPos = ImGui::GetWindowPos();
+        ImVec2 windowSize = ImGui::GetWindowSize();
+
+        ImGui::SetCursorPos(ImVec2(0.0f, 0.0f));
+        bool clicked = ImGui::InvisibleButton(("##btn_hit_" + id_).c_str(),
+                                              ImVec2(bounds_.width, bounds_.height));
+        bool hovered = ImGui::IsItemHovered();
+        isHovered_ = hovered;
+
+        const char* textureKey = UiAssetKeys::ButtonPrimaryNormal;
         if (!enabled_) {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
-        } else if (isHovered_) {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
+            textureKey = UiAssetKeys::ButtonSecondaryNormal;
+        } else if (hovered) {
+            textureKey = UiAssetKeys::ButtonPrimaryHover;
         }
 
-        // ボタンを描画
-        if (ImGui::Button(label_.c_str(), ImVec2(bounds_.width, bounds_.height))) {
-            if (enabled_ && onClickCallback_) {
-                onClickCallback_();
+        Color textColor = Color{230, 230, 230, 255};
+        if (uiAPI_) {
+            Texture2D* texture = uiAPI_->GetTexturePtr(textureKey);
+            if (texture && texture->id != 0) {
+                ImTextureID texId = static_cast<ImTextureID>(static_cast<uintptr_t>(texture->id));
+                drawList->AddImage(texId, windowPos,
+                                   ImVec2(windowPos.x + windowSize.x, windowPos.y + windowSize.y));
             }
+            textColor = uiAPI_->GetReadableTextColor(textureKey);
         }
 
-        // ホバー状態のチェック
-        isHovered_ = ImGui::IsItemHovered();
+        ImVec2 textSize = ImGui::CalcTextSize(label_.c_str());
+        ImVec2 textPos = ImVec2(
+            windowPos.x + (windowSize.x - textSize.x) * 0.5f,
+            windowPos.y + (windowSize.y - textSize.y) * 0.5f
+        );
+        unsigned char textAlpha = enabled_ ? 255 : 160;
+        drawList->AddText(textPos, IM_COL32(textColor.r, textColor.g, textColor.b, textAlpha), label_.c_str());
 
-        if (!enabled_ || isHovered_) {
-            ImGui::PopStyleColor(3);
+        if (clicked && enabled_ && onClickCallback_) {
+            onClickCallback_();
         }
 
         // 子要素の描画

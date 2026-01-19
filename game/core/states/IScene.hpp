@@ -8,6 +8,7 @@ namespace core {
 
 // 前方宣言
 class BaseSystemAPI;
+struct SharedContext;
 
 /// @brief 独立シーン基底インターフェース
 ///
@@ -30,8 +31,21 @@ public:
     /// @brief シーンの描画処理
     virtual void Render() = 0;
 
+    /// @brief オーバーレイ描画（シーン内のUI重ね描画）
+    virtual void RenderOverlay() {}
+
+    /// @brief HUD描画（シーン上のHUD/UI）
+    virtual void RenderHUD() {}
+
+    /// @brief ImGui描画（ImGuiフレーム内）
+    virtual void RenderImGui() {}
+
     /// @brief シーンのクリーンアップ
     virtual void Shutdown() = 0;
+
+    /// @brief SharedContext設定（必要な場合のみ使用）
+    /// @param ctx SharedContextへのポインタ（所有権なし）
+    virtual void SetSharedContext(SharedContext* ctx) {}
 
     /// @brief 遷移リクエストを取得
     /// @param nextState 遷移先のステート（出力）

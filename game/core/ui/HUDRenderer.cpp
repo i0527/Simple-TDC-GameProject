@@ -1,6 +1,5 @@
 #include "HUDRenderer.hpp"
 #include "../../utils/Log.h"
-#include <raylib.h>
 #include <sstream>
 #include <iomanip>
 
@@ -16,63 +15,63 @@ void HUDRenderer::RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
                                int gold, float gameSpeed, bool isPaused,
                                const std::string& gameStateText) {
     // 背景描画
-    Color bgColor = {
+    ColorRGBA bgColor = {
         static_cast<unsigned char>(30),
         static_cast<unsigned char>(35),
         static_cast<unsigned char>(40),
         static_cast<unsigned char>(255)
     };
-    sysAPI_->DrawRectangle(0, 0, 1920, 50, bgColor);
+    sysAPI_->Render().DrawRectangle(0, 0, 1920, 50, bgColor);
     
-    // ボーダー線
-    Color borderColor = {
+    // ボ�Eダー緁E
+    ColorRGBA borderColor = {
         static_cast<unsigned char>(100),
         static_cast<unsigned char>(110),
         static_cast<unsigned char>(120),
         static_cast<unsigned char>(50)
     };
-    sysAPI_->DrawLine(0, 50, 1920, 50, 2.0f, borderColor);
+    sysAPI_->Render().DrawLine(0, 50, 1920, 50, 2.0f, borderColor);
     
-    // テキスト色
-    Color textWhite = WHITE;
-    Color textGray = {
+    // チE��スト色
+    ColorRGBA textWhite = ToCoreColor(WHITE);
+    ColorRGBA textGray = {
         static_cast<unsigned char>(180),
         static_cast<unsigned char>(180),
         static_cast<unsigned char>(180),
         static_cast<unsigned char>(255)
     };
-    Color textGold = {
+    ColorRGBA textGold = {
         static_cast<unsigned char>(240),
         static_cast<unsigned char>(170),
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(255)
     };
-    Color textRed = {
+    ColorRGBA textRed = {
         static_cast<unsigned char>(255),
         static_cast<unsigned char>(80),
         static_cast<unsigned char>(80),
         static_cast<unsigned char>(255)
     };
     
-    // Wave表示（左）
+    // Wave表示�E�左�E�E
     std::ostringstream waveText;
     waveText << "Wave: " << wave << "/" << totalWaves;
     DrawText(10, 15, waveText.str(), 18, textWhite);
     
-    // HP表示（中央左）
+    // HP表示�E�中央左�E�E
     std::ostringstream hpText;
     hpText << "HP: " << hp << "/" << maxHp;
     DrawText(160, 18, "HP:", 14, textGray);
     
-    // HPバー
-    Color hpColorGreen = {
+    // HPバ�E
+    ColorRGBA hpColorGreen = {
         static_cast<unsigned char>(100),
         static_cast<unsigned char>(200),
         static_cast<unsigned char>(100),
         static_cast<unsigned char>(255)
     };
-    Color hpColor = (hp < maxHp * 0.3f) ? textRed : hpColorGreen;
-    Color hpBgColor = {
+    ColorRGBA hpColor = (hp < maxHp * 0.3f) ? textRed : hpColorGreen;
+    ColorRGBA hpBgColor = {
         static_cast<unsigned char>(40),
         static_cast<unsigned char>(40),
         static_cast<unsigned char>(40),
@@ -84,15 +83,15 @@ void HUDRenderer::RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
     // HP数値
     DrawText(330, 18, hpText.str(), 12, textGray);
     
-    // Gold表示（中央）
+    // Gold表示�E�中央�E�E
     std::ostringstream goldText;
     goldText << "Gold: " << gold << " G";
     DrawText(450, 15, goldText.str(), 18, textGold);
     
-    // ゲーム状態テキスト（中央右）
+    // ゲーム状態テキスト（中央右�E�E
     DrawText(650, 18, gameStateText, 14, textGray);
     
-    // スピードボタン（右中央）
+    // スピ�Eド�Eタン�E�右中央�E�E
     topHudButtons_.clear();
     
     float speedBtnY = 8;
@@ -101,9 +100,9 @@ void HUDRenderer::RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
     float speedBtnSpacing = 10;
     float speedBtnStartX = 900;
     
-    // ×0.5
+    // ÁE.5
     bool isSpeed05 = (std::abs(gameSpeed - 0.5f) < 0.01f);
-    Color speedBtn1Color = {
+    ColorRGBA speedBtn1Color = {
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(80),
@@ -113,9 +112,9 @@ void HUDRenderer::RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
                "x0.5", isSpeed05, speedBtn1Color);
     topHudButtons_.push_back({speedBtnStartX, speedBtnY, speedBtnWidth, speedBtnHeight, "speed_0.5"});
     
-    // ×1.0
+    // ÁE.0
     bool isSpeed10 = (std::abs(gameSpeed - 1.0f) < 0.01f);
-    Color speedBtn2Color = {
+    ColorRGBA speedBtn2Color = {
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(80),
         static_cast<unsigned char>(60),
@@ -126,9 +125,9 @@ void HUDRenderer::RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
     topHudButtons_.push_back({speedBtnStartX + speedBtnWidth + speedBtnSpacing, 
                              speedBtnY, speedBtnWidth, speedBtnHeight, "speed_1.0"});
     
-    // ×2.0
+    // ÁE.0
     bool isSpeed20 = (std::abs(gameSpeed - 2.0f) < 0.01f);
-    Color speedBtn3Color = {
+    ColorRGBA speedBtn3Color = {
         static_cast<unsigned char>(80),
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(60),
@@ -139,9 +138,9 @@ void HUDRenderer::RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
     topHudButtons_.push_back({speedBtnStartX + (speedBtnWidth + speedBtnSpacing) * 2,
                              speedBtnY, speedBtnWidth, speedBtnHeight, "speed_2.0"});
     
-    // Pauseボタン（右）
+    // Pauseボタン�E�右�E�E
     float pauseBtnX = 1660;
-    Color pauseBtnColor = {
+    ColorRGBA pauseBtnColor = {
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(100),
@@ -151,9 +150,9 @@ void HUDRenderer::RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
                isPaused ? "Resume" : "Pause", isPaused, pauseBtnColor);
     topHudButtons_.push_back({pauseBtnX, speedBtnY, 120, speedBtnHeight, "pause"});
     
-    // Exitボタン（右端）
+    // Exitボタン�E�右端�E�E
     float exitBtnX = 1790;
-    Color exitBtnColor = {
+    ColorRGBA exitBtnColor = {
         static_cast<unsigned char>(100),
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(60),
@@ -167,44 +166,44 @@ void HUDRenderer::RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
 void HUDRenderer::RenderLeftPanel(float fieldOriginX, float fieldOriginY,
                                   float fieldWidth, float fieldHeight) {
     // 背景描画
-    Color bgColor = {
+    ColorRGBA bgColor = {
         static_cast<unsigned char>(25),
         static_cast<unsigned char>(30),
         static_cast<unsigned char>(35),
         static_cast<unsigned char>(255)
     };
-    sysAPI_->DrawRectangle(0, 50, 640, 1030, bgColor);
+    sysAPI_->Render().DrawRectangle(0, 50, 640, 1030, bgColor);
     
-    // ボーダー線
-    Color borderColor = {
+    // ボ�Eダー緁E
+    ColorRGBA borderColor = {
         static_cast<unsigned char>(80),
         static_cast<unsigned char>(90),
         static_cast<unsigned char>(100),
         static_cast<unsigned char>(255)
     };
-    sysAPI_->DrawLine(640, 50, 640, 1080, 2.0f, borderColor);
+    sysAPI_->Render().DrawLine(640, 50, 640, 1080, 2.0f, borderColor);
     
     // タイトル
-    Color textWhite = WHITE;
+    ColorRGBA textWhite = ToCoreColor(WHITE);
     DrawText(20, 60, "Field Overview", 16, textWhite);
     
-    // ミニマップ枠（簡易表示）
+    // ミニマップ枠�E�簡易表示�E�E
     float miniMapX = 20;
     float miniMapY = 100;
     float miniMapWidth = 600;
     float miniMapHeight = 900;
     
-    Color miniMapBorderColor = {
+    ColorRGBA miniMapBorderColor = {
         static_cast<unsigned char>(100),
         static_cast<unsigned char>(110),
         static_cast<unsigned char>(120),
         static_cast<unsigned char>(255)
     };
-    sysAPI_->DrawRectangleLines(miniMapX, miniMapY, miniMapWidth, miniMapHeight,
-                               2.0f, miniMapBorderColor);
+    sysAPI_->Render().DrawRectangleLines(miniMapX, miniMapY, miniMapWidth,
+                                         miniMapHeight, 2.0f, miniMapBorderColor);
     
-    // ミニマップ説明テキスト
-    Color textGray = {
+    // ミニマップ説明テキスチE
+    ColorRGBA textGray = {
         static_cast<unsigned char>(150),
         static_cast<unsigned char>(150),
         static_cast<unsigned char>(150),
@@ -217,32 +216,32 @@ void HUDRenderer::RenderLeftPanel(float fieldOriginX, float fieldOriginY,
 void HUDRenderer::RenderRightPanel(const std::vector<UnitListItem>& units,
                                    const std::string& selectedUnitId) {
     // 背景描画
-    Color bgColor = {
+    ColorRGBA bgColor = {
         static_cast<unsigned char>(35),
         static_cast<unsigned char>(40),
         static_cast<unsigned char>(45),
         static_cast<unsigned char>(255)
     };
-    sysAPI_->DrawRectangle(1600, 50, 320, 1030, bgColor);
+    sysAPI_->Render().DrawRectangle(1600, 50, 320, 1030, bgColor);
     
-    // ボーダー線
-    Color borderColor = {
+    // ボ�Eダー緁E
+    ColorRGBA borderColor = {
         static_cast<unsigned char>(80),
         static_cast<unsigned char>(90),
         static_cast<unsigned char>(100),
         static_cast<unsigned char>(255)
     };
-    sysAPI_->DrawLine(1600, 50, 1600, 1080, 2.0f, borderColor);
+    sysAPI_->Render().DrawLine(1600, 50, 1600, 1080, 2.0f, borderColor);
     
     // タイトル
-    Color textGold = {
+    ColorRGBA textGold = {
         static_cast<unsigned char>(240),
         static_cast<unsigned char>(170),
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(255)
     };
-    Color textWhite = WHITE;
-    Color textGray = {
+    ColorRGBA textWhite = ToCoreColor(WHITE);
+    ColorRGBA textGray = {
         static_cast<unsigned char>(180),
         static_cast<unsigned char>(180),
         static_cast<unsigned char>(180),
@@ -251,7 +250,7 @@ void HUDRenderer::RenderRightPanel(const std::vector<UnitListItem>& units,
     
     DrawText(1620, 60, "Unit Selection", 16, textGold);
     
-    // ユニットリスト
+    // ユニットリスチE
     float listY = 100;
     float itemHeight = 120;
     float listX = 1610;
@@ -261,21 +260,22 @@ void HUDRenderer::RenderRightPanel(const std::vector<UnitListItem>& units,
         const auto& unit = units[i];
         float itemY = listY + i * itemHeight;
         
-        // アイテム背景
-        Color itemBgSelected = {
+        // アイチE��背景
+        ColorRGBA itemBgSelected = {
             static_cast<unsigned char>(60),
             static_cast<unsigned char>(80),
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(255)
         };
-        Color itemBgNormal = {
+        ColorRGBA itemBgNormal = {
             static_cast<unsigned char>(45),
             static_cast<unsigned char>(50),
             static_cast<unsigned char>(55),
             static_cast<unsigned char>(255)
         };
-        Color itemBg = unit.isSelected ? itemBgSelected : itemBgNormal;
-        sysAPI_->DrawRectangle(listX, itemY, listWidth, itemHeight - 10, itemBg);
+        ColorRGBA itemBg = unit.isSelected ? itemBgSelected : itemBgNormal;
+        sysAPI_->Render().DrawRectangle(listX, itemY, listWidth, itemHeight - 10,
+                                        itemBg);
         
         // ユニット名
         DrawText(listX + 10, itemY + 10, unit.displayName, 14, textWhite);
@@ -285,14 +285,14 @@ void HUDRenderer::RenderRightPanel(const std::vector<UnitListItem>& units,
         countText << "Placed: " << unit.currentCount << "/" << unit.maxCount;
         DrawText(listX + 10, itemY + 35, countText.str(), 12, textGray);
         
-        // コスト
+        // コスチE
         std::ostringstream costText;
         costText << "Cost: " << unit.costGold << " G";
         DrawText(listX + 10, itemY + 55, costText.str(), 12, textGold);
         
-        // 選択ボタン
+        // 選択�Eタン
         if (unit.isSelected) {
-            Color selectedBtnColor = {
+            ColorRGBA selectedBtnColor = {
                 static_cast<unsigned char>(60),
                 static_cast<unsigned char>(100),
                 static_cast<unsigned char>(60),
@@ -300,7 +300,7 @@ void HUDRenderer::RenderRightPanel(const std::vector<UnitListItem>& units,
             };
             DrawButton(listX + 10, itemY + 75, 100, 25, "Selected", true, selectedBtnColor);
         } else {
-            Color selectBtnColor = {
+            ColorRGBA selectBtnColor = {
                 static_cast<unsigned char>(60),
                 static_cast<unsigned char>(80),
                 static_cast<unsigned char>(100),
@@ -310,7 +310,7 @@ void HUDRenderer::RenderRightPanel(const std::vector<UnitListItem>& units,
         }
     }
     
-    // 操作ガイド（下部）
+    // 操作ガイド（下部�E�E
     float guideY = 950;
     DrawText(1620, guideY, "Operation Guide", 14, textGold);
     DrawText(1620, guideY + 25, "- Left Click: Place/Select", 12, textGray);
@@ -325,38 +325,38 @@ void HUDRenderer::RenderFieldUI(int hoverGx, int hoverGy, int selectGx, int sele
         float hoverX = fieldOriginX + hoverGx * cellSize;
         float hoverY = fieldOriginY + hoverGy * cellSize;
         
-        Color hoverColorPlaceable = {
+        ColorRGBA hoverColorPlaceable = {
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(200),
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(80)
         };
-        Color hoverColorBlocked = {
+        ColorRGBA hoverColorBlocked = {
             static_cast<unsigned char>(200),
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(80)
         };
-        Color hoverColor = isPlaceable ? hoverColorPlaceable : hoverColorBlocked;
+        ColorRGBA hoverColor = isPlaceable ? hoverColorPlaceable : hoverColorBlocked;
         
-        sysAPI_->DrawRectangle(hoverX, hoverY, cellSize, cellSize, hoverColor);
+        sysAPI_->Render().DrawRectangle(hoverX, hoverY, cellSize, cellSize, hoverColor);
         
-        // 枠線
-        Color borderColorPlaceable = {
+        // 枠緁E
+        ColorRGBA borderColorPlaceable = {
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(200),
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(255)
         };
-        Color borderColorBlocked = {
+        ColorRGBA borderColorBlocked = {
             static_cast<unsigned char>(200),
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(255)
         };
-        Color borderColor = isPlaceable ? borderColorPlaceable : borderColorBlocked;
-        sysAPI_->DrawRectangleLines(hoverX, hoverY, cellSize, cellSize,
-                                   2.0f, borderColor);
+        ColorRGBA borderColor = isPlaceable ? borderColorPlaceable : borderColorBlocked;
+        sysAPI_->Render().DrawRectangleLines(hoverX, hoverY, cellSize, cellSize,
+                                             2.0f, borderColor);
     }
     
     // 選択表示
@@ -364,14 +364,14 @@ void HUDRenderer::RenderFieldUI(int hoverGx, int hoverGy, int selectGx, int sele
         float selectX = fieldOriginX + selectGx * cellSize;
         float selectY = fieldOriginY + selectGy * cellSize;
         
-        Color selectColor = {
+    ColorRGBA selectColor = {
             static_cast<unsigned char>(100),
             static_cast<unsigned char>(150),
             static_cast<unsigned char>(200),
             static_cast<unsigned char>(255)
         };
-        sysAPI_->DrawRectangleLines(selectX, selectY, cellSize, cellSize,
-                                   3.0f, selectColor);
+        sysAPI_->Render().DrawRectangleLines(selectX, selectY, cellSize, cellSize,
+                                             3.0f, selectColor);
     }
 }
 
@@ -385,68 +385,69 @@ std::string HUDRenderer::CheckTopHUDButtonClick(float mouseX, float mouseY) {
 }
 
 void HUDRenderer::DrawBar(float x, float y, float width, float height,
-                         float current, float max, Color fillColor, Color bgColor) {
+                         float current, float max, ColorRGBA fillColor, ColorRGBA bgColor) {
     // 背景
-    sysAPI_->DrawRectangle(x, y, width, height, bgColor);
+    sysAPI_->Render().DrawRectangle(x, y, width, height, bgColor);
     
     // フィル
     float fillWidth = (current / max) * width;
     if (fillWidth > 0) {
-        sysAPI_->DrawRectangle(x, y, fillWidth, height, fillColor);
+        sysAPI_->Render().DrawRectangle(x, y, fillWidth, height, fillColor);
     }
     
-    // 枠線
-    Color barBorderColor = {
+    // 枠緁E
+    ColorRGBA barBorderColor = {
         static_cast<unsigned char>(200),
         static_cast<unsigned char>(200),
         static_cast<unsigned char>(200),
         static_cast<unsigned char>(255)
     };
-    sysAPI_->DrawRectangleLines(x, y, width, height, 1.0f, barBorderColor);
+    sysAPI_->Render().DrawRectangleLines(x, y, width, height, 1.0f, barBorderColor);
 }
 
 void HUDRenderer::DrawText(float x, float y, const std::string& text,
-                          int fontSize, Color color) {
-    sysAPI_->DrawTextDefault(text, x, y, static_cast<float>(fontSize), color);
+                          int fontSize, ColorRGBA color) {
+    sysAPI_->Render().DrawTextDefault(text, x, y, static_cast<float>(fontSize), color);
 }
 
 void HUDRenderer::DrawTextCentered(float centerX, float y, const std::string& text,
-                                  int fontSize, Color color) {
-    Vector2 textSize = sysAPI_->MeasureTextDefault(text, static_cast<float>(fontSize));
+                                  int fontSize, ColorRGBA color) {
+    Vec2 textSize =
+        sysAPI_->Render().MeasureTextDefaultCore(text, static_cast<float>(fontSize));
     float x = centerX - textSize.x / 2.0f;
     DrawText(x, y, text, fontSize, color);
 }
 
 void HUDRenderer::DrawButton(float x, float y, float width, float height,
-                            const std::string& label, bool isActive, Color baseColor) {
+                            const std::string& label, bool isActive, ColorRGBA baseColor) {
     // ボタン背景
-    Color btnColor = isActive ?
-        Color{
+    ColorRGBA btnColor = isActive ?
+        ColorRGBA{
             static_cast<unsigned char>(std::min(255, static_cast<int>(baseColor.r) + 30)),
             static_cast<unsigned char>(std::min(255, static_cast<int>(baseColor.g) + 30)),
             static_cast<unsigned char>(std::min(255, static_cast<int>(baseColor.b) + 30)),
             static_cast<unsigned char>(255)
         } : baseColor;
-    sysAPI_->DrawRectangle(x, y, width, height, btnColor);
+    sysAPI_->Render().DrawRectangle(x, y, width, height, btnColor);
     
-    // 枠線
-    Color borderColorActive = {
+    // 枠緁E
+    ColorRGBA borderColorActive = {
         static_cast<unsigned char>(240),
         static_cast<unsigned char>(170),
         static_cast<unsigned char>(60),
         static_cast<unsigned char>(255)
     };
-    Color borderColorInactive = {
+    ColorRGBA borderColorInactive = {
         static_cast<unsigned char>(150),
         static_cast<unsigned char>(150),
         static_cast<unsigned char>(150),
         static_cast<unsigned char>(255)
     };
-    Color borderColor = isActive ? borderColorActive : borderColorInactive;
-    sysAPI_->DrawRectangleLines(x, y, width, height, 2.0f, borderColor);
+    ColorRGBA borderColor = isActive ? borderColorActive : borderColorInactive;
+    sysAPI_->Render().DrawRectangleLines(x, y, width, height, 2.0f, borderColor);
     
-    // ラベル（中央揃え）
-    Color textColor = WHITE;
+    // ラベル�E�中央揁E���E�E
+    ColorRGBA textColor = ToCoreColor(WHITE);
     DrawTextCentered(x + width / 2, y + height / 2 - 7, label, 14, textColor);
 }
 

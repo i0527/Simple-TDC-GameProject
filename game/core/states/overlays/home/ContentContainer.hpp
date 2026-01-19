@@ -3,6 +3,7 @@
 #include "../IOverlay.hpp"
 #include "TabBarManager.hpp"
 #include "../../../api/BaseSystemAPI.hpp"
+#include "../../../ecs/entities/CharacterManager.hpp"
 #include "../../../config/SharedContext.hpp"
 #include <memory>
 #include <unordered_map>

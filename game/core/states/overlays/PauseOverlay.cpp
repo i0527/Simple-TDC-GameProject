@@ -2,14 +2,16 @@
 
 #include "../../../utils/Log.h"
 #include "../../api/BaseSystemAPI.hpp"
+#include "../../api/InputSystemAPI.hpp"
 #include "../../ui/OverlayColors.hpp"
+#include "../../ui/UiAssetKeys.hpp"
+#include "../../config/RenderPrimitives.hpp"
 
-#include <raylib.h>
 
 namespace game {
 namespace core {
 
-bool PauseOverlay::Initialize(BaseSystemAPI* systemAPI) {
+bool PauseOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     if (isInitialized_) {
         LOG_ERROR("PauseOverlay already initialized");
         return false;
@@ -31,7 +33,8 @@ void PauseOverlay::Update(SharedContext& ctx, float /*deltaTime*/) {
     if (!isInitialized_) return;
 
     // Space / ESC で再開
-    if (systemAPI_->IsKeyPressed(KEY_SPACE) || systemAPI_->IsKeyPressed(KEY_ESCAPE)) {
+    if (ctx.inputAPI &&
+        (ctx.inputAPI->IsSpacePressed() || ctx.inputAPI->IsEscapePressed())) {
         requestClose_ = true;
         return;
     }
@@ -39,7 +42,7 @@ void PauseOverlay::Update(SharedContext& ctx, float /*deltaTime*/) {
     HandleMouseInput(ctx);
 }
 
-void PauseOverlay::Render(SharedContext& /*ctx*/) {
+void PauseOverlay::Render(SharedContext& ctx) {
     if (!isInitialized_) return;
 
     // 中央ウィンドウ
@@ -48,29 +51,27 @@ void PauseOverlay::Render(SharedContext& /*ctx*/) {
     const float windowX = (1920.0f - windowW) * 0.5f;
     const float windowY = (1080.0f - windowH) * 0.45f;
 
-    systemAPI_->DrawRectangle(static_cast<int>(windowX),
-                              static_cast<int>(windowY),
-                              static_cast<int>(windowW),
-                              static_cast<int>(windowH),
-                              ui::OverlayColors::OVERLAY_BG);
-
-    systemAPI_->DrawRectangleLines(static_cast<int>(windowX),
-                                   static_cast<int>(windowY),
-                                   static_cast<int>(windowW),
-                                   static_cast<int>(windowH),
-                                   2.0f,
-                                   ui::OverlayColors::BORDER_DEFAULT);
+    Rect windowRect{windowX, windowY, windowW, windowH};
+    systemAPI_->Render().DrawUiNineSlice(ui::UiAssetKeys::PanelBackground,
+                                         windowRect, 8, 8, 8, 8,
+                                         ToCoreColor(WHITE));
+    systemAPI_->Render().DrawUiNineSlice(ui::UiAssetKeys::PanelBorder, windowRect,
+                                         8, 8, 8, 8, ToCoreColor(WHITE));
 
     // タイトル
     const char* title = "ポーズ";
     const float titleSize = 56.0f;
-    Vector2 tSize = systemAPI_->MeasureTextDefault(title, titleSize, 1.0f);
+    Vec2 tSize =
+        systemAPI_->Render().MeasureTextDefaultCore(title, titleSize, 1.0f);
     float titleX = windowX + (windowW - tSize.x) * 0.5f;
     float titleY = windowY + 44.0f;
-    systemAPI_->DrawTextDefault(title, titleX, titleY, titleSize, ui::OverlayColors::TEXT_PRIMARY);
+    systemAPI_->Render().DrawTextDefault(title, titleX, titleY, titleSize,
+                                         ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
 
     // 説明
-    systemAPI_->DrawTextDefault("Space / ESC: 再開", windowX + 64.0f, titleY + 84.0f, 22.0f, ui::OverlayColors::TEXT_SECONDARY);
+    systemAPI_->Render().DrawTextDefault(
+        "Space / ESC: 再開", windowX + 64.0f, titleY + 84.0f, 22.0f,
+        ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
 
     // ボタン（縦）
     const float btnW = 440.0f;
@@ -79,27 +80,30 @@ void PauseOverlay::Render(SharedContext& /*ctx*/) {
     const float btnY0 = windowY + 250.0f;
     const float gapY = 22.0f;
 
-    Rectangle resumeRect{ btnX, btnY0, btnW, btnH };
-    Rectangle homeRect{ btnX, btnY0 + (btnH + gapY), btnW, btnH };
+    Rect resumeRect{ btnX, btnY0, btnW, btnH };
+    Rect retryRect{ btnX, btnY0 + (btnH + gapY), btnW, btnH };
+    Rect homeRect{ btnX, btnY0 + (btnH + gapY) * 2.0f, btnW, btnH };
 
-    auto drawBtn = [&](Rectangle r, Color bg, const char* label) {
-        systemAPI_->DrawRectangleRec(r, bg);
-        systemAPI_->DrawRectangleLines(static_cast<int>(r.x),
-                                       static_cast<int>(r.y),
-                                       static_cast<int>(r.width),
-                                       static_cast<int>(r.height),
-                                       2.0f,
-                                       ui::OverlayColors::BORDER_DEFAULT);
-        Vector2 s = systemAPI_->MeasureTextDefault(label, 26.0f, 1.0f);
-        systemAPI_->DrawTextDefault(label,
-                                    r.x + (r.width - s.x) * 0.5f,
-                                    r.y + 16.0f,
-                                    26.0f,
-                                    ui::OverlayColors::TEXT_DARK);
+    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
+                              : Vec2{0.0f, 0.0f};
+    auto drawBtn = [&](Rect r, const char* label) {
+        bool hovered = mouse.x >= r.x && mouse.x <= r.x + r.width &&
+                       mouse.y >= r.y && mouse.y <= r.y + r.height;
+        const char* textureKey = hovered
+            ? ui::UiAssetKeys::ButtonPrimaryHover
+            : ui::UiAssetKeys::ButtonPrimaryNormal;
+        systemAPI_->Render().DrawUiNineSlice(textureKey, r, 8, 8, 8, 8,
+                                             ToCoreColor(WHITE));
+        Vec2 s =
+            systemAPI_->Render().MeasureTextDefaultCore(label, 26.0f, 1.0f);
+        systemAPI_->Render().DrawTextDefault(
+            label, r.x + (r.width - s.x) * 0.5f, r.y + 16.0f, 26.0f,
+            ToCoreColor(ui::OverlayColors::TEXT_DARK));
     };
 
-    drawBtn(resumeRect, ui::OverlayColors::BUTTON_PRIMARY, "再開");
-    drawBtn(homeRect, ui::OverlayColors::BUTTON_ORANGE, "ホームへ");
+    drawBtn(resumeRect, "再開");
+    drawBtn(retryRect, "リトライ");
+    drawBtn(homeRect, "ホームへ");
 }
 
 void PauseOverlay::Shutdown() {
@@ -126,7 +130,7 @@ bool PauseOverlay::RequestTransition(GameState& nextState) const {
 }
 
 void PauseOverlay::HandleMouseInput(SharedContext& ctx) {
-    if (!systemAPI_->IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!ctx.inputAPI || !ctx.inputAPI->IsLeftClickPressed()) {
         return;
     }
 
@@ -141,30 +145,38 @@ void PauseOverlay::HandleMouseInput(SharedContext& ctx) {
     const float btnY0 = windowY + 250.0f;
     const float gapY = 22.0f;
 
-    Rectangle resumeRect{ btnX, btnY0, btnW, btnH };
-    Rectangle homeRect{ btnX, btnY0 + (btnH + gapY), btnW, btnH };
+    Rect resumeRect{ btnX, btnY0, btnW, btnH };
+    Rect retryRect{ btnX, btnY0 + (btnH + gapY), btnW, btnH };
+    Rect homeRect{ btnX, btnY0 + (btnH + gapY) * 2.0f, btnW, btnH };
 
-    Vector2 mouse = systemAPI_->GetMousePosition();
-    auto inRect = [&](Rectangle r) {
+    auto mouse = ctx.inputAPI->GetMousePosition();
+    auto inRect = [&](Rect r) {
         return mouse.x >= r.x && mouse.x <= r.x + r.width &&
                mouse.y >= r.y && mouse.y <= r.y + r.height;
     };
 
     if (inRect(resumeRect)) {
         requestClose_ = true;
-        systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+        ctx.inputAPI->ConsumeLeftClick();
+        return;
+    }
+
+    if (inRect(retryRect)) {
+        hasTransitionRequest_ = true;
+        requestedNextState_ = GameState::Game;
+        ctx.inputAPI->ConsumeLeftClick();
         return;
     }
 
     if (inRect(homeRect)) {
         hasTransitionRequest_ = true;
         requestedNextState_ = GameState::Home;
-        systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+        ctx.inputAPI->ConsumeLeftClick();
         return;
     }
 
     // クリック消費（背後へ伝播させない）
-    systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+    ctx.inputAPI->ConsumeLeftClick();
 }
 
 } // namespace core

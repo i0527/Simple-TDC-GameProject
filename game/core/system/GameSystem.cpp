@@ -1,104 +1,62 @@
 #include "GameSystem.hpp"
 #include "../../utils/Log.h"
-#include <raylib.h>
 #include <rlImGui.h>
+#include "../ui/UiAssetKeys.hpp"
 
 namespace game {
 namespace core {
 GameSystem::GameSystem()
-    : systemAPI_(nullptr), gameAPI_(std::make_unique<GameModuleAPI>()),
-      overlayManager_(std::make_unique<OverlayManager>()),
+    : systemAPI_(nullptr), audioAPI_(nullptr), ecsAPI_(std::make_unique<ECSystemAPI>()),
+      inputAPI_(std::make_unique<InputSystemAPI>()),
+      uiAPI_(std::make_unique<UISystemAPI>()),
+      sceneOverlayAPI_(std::make_unique<SceneOverlayControlAPI>()),
       currentState_(GameState::Initializing), requestShutdown_(false) {}
 
 int GameSystem::Initialize() {
-  // BaseSystemAPIの作成と初期化（ログシステムも自動的に初期化される）
-  systemAPI_ = std::make_unique<BaseSystemAPI>();
-  if (!systemAPI_->Initialize(Resolution::FHD)) {
-    LOG_ERROR("Failed to initialize BaseSystemAPI!");
+  if (!InitializeBaseSystem()) {
     return 1;
   }
-  LOG_INFO("=== Cat Tower Defense - Game Initialization ===");
-  LOG_INFO("BaseSystemAPI initialized with resolution FHD");
-
-  // CharacterManagerの初期化
-  characterManager_ = std::make_unique<entities::CharacterManager>();
-  if (!characterManager_->Initialize("data/characters.json")) {
-    LOG_WARN("CharacterManager initialization failed, continuing with hardcoded data");
-  } else {
-    LOG_INFO("CharacterManager initialized with {} characters", characterManager_->GetCharacterCount());
+  if (!InitializeAudio()) {
+    return 1;
   }
-
-  // ItemPassiveManagerの初期化
-  itemPassiveManager_ = std::make_unique<entities::ItemPassiveManager>();
-  if (!itemPassiveManager_->Initialize("data/item_passive.json")) {
-    LOG_WARN("ItemPassiveManager initialization failed, continuing with hardcoded data");
+  if (!InitializeInput()) {
+    return 1;
   }
-
-  // StageManagerの初期化
-  stageManager_ = std::make_unique<entities::StageManager>();
-  if (!stageManager_->Initialize("data/stages.json")) {
-    LOG_WARN("StageManager initialization failed, using default stages");
-  } else {
-    LOG_INFO("StageManager initialized with {} stages", stageManager_->GetStageCount());
-  }
-
-  // PlayerDataManagerの初期化（単一JSONロード）
-  playerDataManager_ = std::make_unique<PlayerDataManager>();
-  if (!playerDataManager_->LoadOrCreate("data/saves/player_save.json",
-                                        *characterManager_,
-                                        *itemPassiveManager_)) {
-    LOG_WARN("PlayerDataManager initialization failed, continuing with defaults");
-  }
-
-  // SharedContextの設定
-  sharedContext_.systemAPI = systemAPI_.get();
-  sharedContext_.gameAPI = gameAPI_.get();
-  sharedContext_.playerDataManager = playerDataManager_.get();
-  sharedContext_.characterManager = characterManager_.get();
-  sharedContext_.itemPassiveManager = itemPassiveManager_.get();
-  sharedContext_.stageManager = stageManager_.get();
-  sharedContext_.overlayManager = overlayManager_.get();
-  sharedContext_.currentStageId = "";  // 初期状態では空
-
-  // セーブ内容をSharedContext/マスターへ反映
-  if (sharedContext_.playerDataManager) {
-    sharedContext_.playerDataManager->ApplyToSharedContext(sharedContext_);
-
-    // 既存UIが参照する is_discovered/level を最低限反映
-    const auto& save = sharedContext_.playerDataManager->GetSaveData();
-    for (const auto& [id, st] : save.characters) {
-      characterManager_->SetCharacterDiscovered(id, st.unlocked);
-      characterManager_->SetCharacterLevel(id, st.level);
-    }
-  }
-
-  // RaylibのESCキーによる終了を無効化
-  systemAPI_->SetExitKey(0);
-
-  // ModuleSystemの初期化
-  moduleSystem_ = std::make_unique<ModuleSystem>(gameAPI_.get());
-  RegisterModules();
-
-  if (!moduleSystem_->Initialize(sharedContext_)) {
-    LOG_ERROR("Failed to initialize modules!");
+  if (!InitializeUI()) {
     return 1;
   }
 
-  // ResourceInitializerの初期化
-  resourceInitializer_ = std::make_unique<ResourceInitializer>();
-  if (!resourceInitializer_->Initialize(systemAPI_.get())) {
-    LOG_ERROR("Failed to initialize ResourceInitializer!");
+  InitializeGameplayData();
+  SetupSharedContext();
+  sharedContext_.currentState = currentState_;
+
+  if (!InitializeDebugUI()) {
     return 1;
   }
 
-  // TitleScreenの作成（まだ初期化しない、リソース初期化完了後に初期化）
-  titleScreen_ = std::make_unique<TitleScreen>();
-  
-  // HomeScreenの作成（まだ初期化しない、遷移時に初期化）
-  homeScreen_ = std::make_unique<states::HomeScreen>();
-  
-  // GameSceneの作成（まだ初期化しない、遷移時に初期化）
-  gameScene_ = std::make_unique<states::GameScene>();
+  // RaylibのESCキーによる終亁E��無効匁E
+  inputAPI_->SetExitKey(0);
+
+  if (!InitializeSetup()) {
+    return 1;
+  }
+  if (!InitializeBattleSetup()) {
+    return 1;
+  }
+  if (!InitializeSceneOverlay()) {
+    return 1;
+  }
+  if (!InitializeBattleProgress()) {
+    return 1;
+  }
+  if (!InitializeScenes()) {
+    return 1;
+  }
+
+  if (!sceneOverlayAPI_->InitializeState(GameState::Initializing)) {
+    LOG_ERROR("Failed to initialize Initializing state");
+    return 1;
+  }
 
   LOG_INFO("Game initialization completed successfully");
   return 0;
@@ -112,153 +70,54 @@ int GameSystem::Run() {
 
   LOG_INFO("Entering main game loop");
 
-  // メインループ
-  while (!systemAPI_->WindowShouldClose() && !requestShutdown_) {
-    float deltaTime = systemAPI_->GetFrameTime();
+  // メインルーチE
+  while (!systemAPI_->Window().WindowShouldClose() && !requestShutdown_) {
+    float deltaTime = systemAPI_->Timing().GetFrameTime();
     sharedContext_.deltaTime = deltaTime;
+    sharedContext_.currentState = currentState_;
 
-    // 入力状態の更新
-    systemAPI_->UpdateInput();
+    // 入力状態�E更新
+    inputAPI_->UpdateInput();
 
-    // ステートに応じた更新
-    switch (currentState_) {
-    case GameState::Initializing:
-      if (resourceInitializer_->Update(deltaTime)) {
-        if (resourceInitializer_->IsCompleted()) {
-          transitionTo(GameState::Title);
-        } else if (resourceInitializer_->ShouldShutdown()) {
-          // エラー表示時間が5秒を超えた場合、終了
-          LOG_ERROR(
-              "Initialization failed, closing application after 5 seconds");
-          requestShutdown_ = true;
-        }
+    // オーチE��オ更新
+    if (audioAPI_) {
+      audioAPI_->Update(deltaTime);
+    }
+
+    // スチE�Eトに応じた更新
+    {
+      const SceneOverlayUpdateResult updateResult =
+          sceneOverlayAPI_->Update(currentState_, deltaTime);
+      if (updateResult.requestShutdown) {
+        requestShutdown_ = true;
       }
-      break;
-
-    case GameState::Title:
-      if (titleScreen_) {
-        titleScreen_->Update(deltaTime);
-        moduleSystem_->Update(sharedContext_, deltaTime);
-
-        // オーバーレイの更新（最上層のみ）
-        overlayManager_->Update(sharedContext_, deltaTime);
-
-        // P0: オーバーレイによる遷移リクエスト処理
-        if (overlayManager_->HasTransitionRequest()) {
-          GameState next = overlayManager_->GetRequestedTransition();
-          overlayManager_->PopAllOverlays();
-          transitionTo(next);
-          overlayManager_->ClearTransitionRequest();
-        }
-
-        // 終了リクエストチェック
-        if (titleScreen_->RequestQuit()) {
-          LOG_INFO("QUIT requested from TitleScreen");
-          requestShutdown_ = true;
-        }
-
-        // 遷移リクエストチェック（将来的に他のシーンへの遷移用）
-        GameState nextState;
-        if (titleScreen_->RequestTransition(nextState)) {
-          transitionTo(nextState);
-        }
+      if (updateResult.hasTransition) {
+        transitionTo(updateResult.nextState);
       }
-      break;
-
-    case GameState::Home:
-      if (homeScreen_) {
-        // SharedContextを設定
-        homeScreen_->SetSharedContext(&sharedContext_);
-        homeScreen_->Update(deltaTime);
-        moduleSystem_->Update(sharedContext_, deltaTime);
-        overlayManager_->Update(sharedContext_, deltaTime);
-        
-        // P0: オーバーレイによる遷移リクエスト処理
-        if (overlayManager_->HasTransitionRequest()) {
-          GameState next = overlayManager_->GetRequestedTransition();
-          overlayManager_->PopAllOverlays();
-          transitionTo(next);
-          overlayManager_->ClearTransitionRequest();
-        }
-        
-        // HomeScreenからの遷移リクエスト処理
-        GameState nextState;
-        if (homeScreen_->RequestTransition(nextState)) {
-          transitionTo(nextState);
-        }
-      }
-      break;
-
-    case GameState::Game:
-      if (gameScene_) {
-        gameScene_->SetSharedContext(&sharedContext_);
-        gameScene_->Update(deltaTime);
-        moduleSystem_->Update(sharedContext_, deltaTime);
-        overlayManager_->Update(sharedContext_, deltaTime);
-        
-        // P0: オーバーレイによる遷移リクエスト処理
-        if (overlayManager_->HasTransitionRequest()) {
-          GameState next = overlayManager_->GetRequestedTransition();
-          overlayManager_->PopAllOverlays();
-          transitionTo(next);
-          overlayManager_->ClearTransitionRequest();
-        }
-        
-        // GameSceneからの遷移リクエスト処理
-        GameState nextState;
-        if (gameScene_->RequestTransition(nextState)) {
-          transitionTo(nextState);
-        }
-      }
-      break;
     }
 
     // ===== 描画フェーズ =====
-    systemAPI_->BeginRender();
+    systemAPI_->Render().BeginRender();
 
-    switch (currentState_) {
-    case GameState::Initializing:
-      resourceInitializer_->Render();
-      break;
+    sceneOverlayAPI_->Render(currentState_);
 
-    case GameState::Title:
-      if (titleScreen_) {
-        titleScreen_->Render();
-      }
-      moduleSystem_->Render(sharedContext_);
-      // オーバーレイの描画（すべてのオーバーレイを描画）
-      overlayManager_->Render(sharedContext_);
-      break;
-
-    case GameState::Home:
-      if (homeScreen_) {
-        homeScreen_->Render();
-      }
-      moduleSystem_->Render(sharedContext_);
-      overlayManager_->Render(sharedContext_);
-      break;
-
-    case GameState::Game:
-      if (gameScene_) {
-        gameScene_->Render();
-      }
-      moduleSystem_->Render(sharedContext_);
-      overlayManager_->Render(sharedContext_);
-      break;
+    // UIカーソル追従！ESカーソルは残す�E�E
+    {
+      auto mouse = inputAPI_->GetMousePosition();
+      systemAPI_->Render().DrawUiCursor(ui::UiAssetKeys::CursorPointer, mouse,
+                                        Vec2{2.0f, 2.0f}, 1.0f, WHITE);
     }
 
-    systemAPI_->EndRender();
+    systemAPI_->Render().EndRender();
     
-    // 画面描画（RenderTexture + ImGUI）
-    // EndFrame()内でBeginDrawing()が呼ばれ、RenderTexture描画の後に
-    // 自動的にImGUI描画フレームが開始・終了される
-    // HomeScreenのオーバレイをImGuiフレーム内で描画するためのコールバック
-    systemAPI_->EndFrame([this]() {
-        if (currentState_ == GameState::Home && homeScreen_) {
-            homeScreen_->RenderImGui();
-        }
-        // タイトル画面のオーバーレイ（LicenseOverlay、SettingsOverlay）は
-        // Raylibの描画APIを使用するため、ImGuiフレームは不要
+    // 画面描画�E�EenderTexture + ImGUI�E�E
+    // EndFrame()冁E��BeginDrawing()が呼ばれ、RenderTexture描画の後に
+    // 自動的にImGUI描画フレームが開始�E終亁E��れる
+    // HomeScreenのオーバレイをImGuiフレーム冁E��描画するためのコールバック
+    systemAPI_->Render().EndFrame([this]() {
+        sceneOverlayAPI_->RenderImGui(currentState_);
+        // タイトル画面のオーバ�Eレイ�E�EicenseOverlay、SettingsOverlay�E��E
+        // Raylibの描画APIを使用するため、ImGuiフレームは不要E
     });
   }
 
@@ -267,8 +126,25 @@ int GameSystem::Run() {
 }
 
 void GameSystem::transitionTo(GameState newState) {
-  // 同じ状態への遷移を防止
+  // 同じ状態への遷移を防止（リトライ時は再初期化）
   if (currentState_ == newState) {
+    if (newState == GameState::Game) {
+      float prevSpeed = 1.0f;
+      if (sharedContext_.battleProgressAPI) {
+        prevSpeed = sharedContext_.battleProgressAPI->GetGameSpeed();
+      }
+      LOG_INFO("Reinitializing Game state (retry)");
+      sceneOverlayAPI_->CleanupState(currentState_);
+      if (!sceneOverlayAPI_->InitializeState(newState)) {
+        LOG_ERROR("Failed to reinitialize state: {}", static_cast<int>(newState));
+        requestShutdown_ = true;
+      }
+      if (sharedContext_.battleProgressAPI) {
+        sharedContext_.battleProgressAPI->SetGameSpeed(prevSpeed);
+      }
+      sharedContext_.currentState = currentState_;
+      return;
+    }
     LOG_WARN("Already in state: {}", static_cast<int>(newState));
     return;
   }
@@ -276,168 +152,256 @@ void GameSystem::transitionTo(GameState newState) {
   LOG_INFO("State transition: {} -> {}", static_cast<int>(currentState_),
            static_cast<int>(newState));
 
-  // 現在のステートのクリーンアップ
-  cleanupCurrentState();
+  // 現在のスチE�Eト�EクリーンアチE�E
+  sceneOverlayAPI_->CleanupState(currentState_);
 
-  // 新しいステートの初期化
-  if (!initializeState(newState)) {
+  // 新しいスチE�Eト�E初期匁E
+  if (!sceneOverlayAPI_->InitializeState(newState)) {
     LOG_ERROR("Failed to initialize state: {}", static_cast<int>(newState));
-    // エラー時は終了
+    // エラー時�E終亁E
     requestShutdown_ = true;
     return;
   }
 
   currentState_ = newState;
+  sharedContext_.currentState = currentState_;
   LOG_INFO("State transitioned to: {}", static_cast<int>(newState));
-}
-
-void GameSystem::cleanupCurrentState() {
-  switch (currentState_) {
-  case GameState::Initializing:
-    // ResourceInitializerはGameSystemのShutdownでクリーンアップ
-    break;
-
-  case GameState::Title:
-    if (titleScreen_) {
-      titleScreen_->Shutdown();
-    }
-    // オーバーレイをすべて削除
-    overlayManager_->PopAllOverlays();
-    break;
-
-  case GameState::Home:
-    if (homeScreen_) {
-      homeScreen_->Shutdown();
-    }
-    overlayManager_->PopAllOverlays();
-    break;
-
-  case GameState::Game:
-    if (gameScene_) {
-      gameScene_->Shutdown();
-    }
-    overlayManager_->PopAllOverlays();
-    break;
-  }
-}
-
-bool GameSystem::initializeState(GameState state) {
-  switch (state) {
-  case GameState::Initializing:
-    // ResourceInitializerはInitialize()で既に初期化済み
-    return true;
-
-  case GameState::Title:
-    LOG_INFO("Initializing Title state...");
-    if (titleScreen_) {
-      LOG_INFO("TitleScreen object exists, calling Initialize()...");
-      bool result = titleScreen_->Initialize(systemAPI_.get(), &sharedContext_);
-      LOG_INFO("TitleScreen::Initialize() returned: {}", result);
-      return result;
-    }
-    LOG_ERROR("TitleScreen object is null!");
-    return false;
-
-  case GameState::Home:
-    if (homeScreen_) {
-      if (!homeScreen_->Initialize(systemAPI_.get())) {
-        LOG_ERROR("Failed to initialize HomeScreen");
-        return false;
-      }
-      homeScreen_->SetSharedContext(&sharedContext_);
-      LOG_INFO("Home state initialized");
-      return true;
-    }
-    return false;
-
-  case GameState::Game:
-    if (gameScene_) {
-      if (!gameScene_->Initialize(systemAPI_.get())) {
-        LOG_ERROR("Failed to initialize GameScene");
-        return false;
-      }
-      gameScene_->SetSharedContext(&sharedContext_);
-      LOG_INFO("Game state initialized");
-      return true;
-    }
-    return false;
-  }
-  return false;
 }
 
 void GameSystem::Shutdown() {
   LOG_INFO("=== Game Shutdown ===");
 
-  // 現在のステートのクリーンアップ
-  cleanupCurrentState();
+  ShutdownScenes();
+  ShutdownBattleProgress();
+  ShutdownDebugUI();
+  ShutdownBattleSetup();
+  ShutdownSetup();
+  ShutdownGameplayData();
+  ShutdownSceneOverlay();
+  ShutdownUI();
+  ShutdownInput();
+  ShutdownAudio();
+  ShutdownBaseSystem();
 
-  // TitleScreenのクリーンアップ
-  if (titleScreen_) {
-    titleScreen_->Shutdown();
-    titleScreen_.reset();
+  // 注愁E systemAPI_->Shutdown() 冁E�� ShutdownLogSystem() が呼ばれ、E
+  // spdlog::shutdown() によりすべてのロガーが破棁E��れるため、E
+  // こ�E時点以降ではログ出力を行わなぁE��と
+}
+
+bool GameSystem::InitializeBaseSystem() {
+  // BaseSystemAPIの作�Eと初期化（ログシスチE��も�E動的に初期化される�E�E
+  systemAPI_ = std::make_unique<BaseSystemAPI>();
+  if (!systemAPI_->Initialize(Resolution::FHD)) {
+    LOG_ERROR("Failed to initialize BaseSystemAPI!");
+    return false;
   }
-  
-  // HomeScreenのクリーンアップ
-  if (homeScreen_) {
-    homeScreen_->Shutdown();
-    homeScreen_.reset();
+  LOG_INFO("=== tower of defense - Game Initialization ===");
+  LOG_INFO("BaseSystemAPI initialized with resolution FHD");
+  return true;
+}
+
+bool GameSystem::InitializeAudio() {
+  audioAPI_ = std::make_unique<AudioControlAPI>();
+  if (!audioAPI_->Initialize(systemAPI_.get())) {
+    LOG_ERROR("Failed to initialize AudioControlAPI!");
+    return false;
   }
-  
-  // GameSceneのクリーンアップ
-  if (gameScene_) {
-    gameScene_->Shutdown();
-    gameScene_.reset();
+  return true;
+}
+
+bool GameSystem::InitializeInput() {
+  if (!inputAPI_->Initialize()) {
+    LOG_ERROR("Failed to initialize InputSystemAPI!");
+    return false;
+  }
+  return true;
+}
+
+bool GameSystem::InitializeUI() {
+  if (!uiAPI_->Initialize(systemAPI_.get())) {
+    LOG_ERROR("Failed to initialize UISystemAPI!");
+    return false;
+  }
+  return true;
+}
+
+void GameSystem::InitializeGameplayData() {
+  // GameplayDataAPIの作�E�E��E期化はSetupAPIで行う�E�E
+  gameplayDataAPI_ = std::make_unique<GameplayDataAPI>();
+}
+
+void GameSystem::SetupSharedContext() {
+  sharedContext_.systemAPI = systemAPI_.get();
+  sharedContext_.audioAPI = audioAPI_.get();
+  sharedContext_.ecsAPI = ecsAPI_.get();
+  sharedContext_.inputAPI = inputAPI_.get();
+  sharedContext_.uiAPI = uiAPI_.get();
+  sharedContext_.gameplayDataAPI = gameplayDataAPI_.get();
+  sharedContext_.currentStageId = "";  // 初期状態では空
+}
+
+bool GameSystem::InitializeDebugUI() {
+  debugUIAPI_ = std::make_unique<DebugUIAPI>();
+  if (!debugUIAPI_->Initialize(&sharedContext_)) {
+    LOG_ERROR("Failed to initialize DebugUIAPI!");
+    return false;
+  }
+  sharedContext_.debugUIAPI = debugUIAPI_.get();
+  return true;
+}
+
+bool GameSystem::InitializeSetup() {
+  setupAPI_ = std::make_unique<SetupAPI>();
+  if (!setupAPI_->Initialize(systemAPI_.get(), gameplayDataAPI_.get(), ecsAPI_.get(), &sharedContext_)) {
+    LOG_ERROR("Failed to initialize SetupAPI!");
+    return false;
+  }
+  sharedContext_.setupAPI = setupAPI_.get();
+  return true;
+}
+
+bool GameSystem::InitializeBattleSetup() {
+  battleSetupAPI_ = std::make_unique<BattleSetupAPI>();
+  if (!battleSetupAPI_->Initialize(gameplayDataAPI_.get(), setupAPI_.get(), &sharedContext_)) {
+    LOG_ERROR("Failed to initialize BattleSetupAPI!");
+    return false;
+  }
+  sharedContext_.battleSetupAPI = battleSetupAPI_.get();
+  return true;
+}
+
+bool GameSystem::InitializeSceneOverlay() {
+  if (!sceneOverlayAPI_->Initialize(systemAPI_.get(), uiAPI_.get(), &sharedContext_)) {
+    LOG_ERROR("Failed to initialize SceneOverlayControlAPI!");
+    return false;
+  }
+  sharedContext_.sceneOverlayAPI = sceneOverlayAPI_.get();
+  return true;
+}
+
+bool GameSystem::InitializeBattleProgress() {
+  battleProgressAPI_ = std::make_unique<BattleProgressAPI>();
+  if (!battleProgressAPI_->Initialize(&sharedContext_)) {
+    LOG_ERROR("Failed to initialize BattleProgressAPI!");
+    return false;
+  }
+  sharedContext_.battleProgressAPI = battleProgressAPI_.get();
+  return true;
+}
+
+bool GameSystem::InitializeScenes() {
+  // InitSceneの作�E�E�EnitializingスチE�Eトで使用�E�E
+  initScene_ = std::make_unique<states::InitScene>();
+
+  // TitleScreenの作�E�E�まだ初期化しなぁE��リソース初期化完亁E��に初期化！E
+  titleScreen_ = std::make_unique<TitleScreen>();
+
+  // HomeScreenの作�E�E�まだ初期化しなぁE��E�E移時に初期化！E
+  homeScreen_ = std::make_unique<states::HomeScreen>();
+
+  // GameSceneの作�E�E�まだ初期化しなぁE��E�E移時に初期化！E
+  gameScene_ = std::make_unique<states::GameScene>();
+
+  // EditorSceneの作�E�E�まだ初期化しなぁE��E�E移時に初期化！E
+  editorScene_ = std::make_unique<states::EditorScene>();
+
+  // Scene/Overlay制御APIへシーンを登録
+  sceneOverlayAPI_->RegisterScene(GameState::Title, titleScreen_.get());
+  sceneOverlayAPI_->RegisterScene(GameState::Home, homeScreen_.get());
+  sceneOverlayAPI_->RegisterScene(GameState::Game, gameScene_.get());
+  sceneOverlayAPI_->RegisterScene(GameState::Editor, editorScene_.get());
+  sceneOverlayAPI_->RegisterScene(GameState::Initializing, initScene_.get());
+  return true;
+}
+
+void GameSystem::ShutdownScenes() {
+  if (sceneOverlayAPI_) {
+    sceneOverlayAPI_->ShutdownAllScenes();
   }
 
-  // ResourceInitializerのクリーンアップ
-  if (resourceInitializer_) {
-    resourceInitializer_->Reset();
-    resourceInitializer_.reset();
-  }
+  initScene_.reset();
+  titleScreen_.reset();
+  homeScreen_.reset();
+  gameScene_.reset();
+  editorScene_.reset();
+}
 
-  // CharacterManagerのクリーンアップ
-  if (characterManager_) {
-    characterManager_->Shutdown();
-    characterManager_.reset();
+void GameSystem::ShutdownBattleProgress() {
+  if (battleProgressAPI_) {
+    battleProgressAPI_.reset();
   }
+  sharedContext_.battleProgressAPI = nullptr;
+}
 
-  // ItemPassiveManagerのクリーンアップ
-  if (itemPassiveManager_) {
-    itemPassiveManager_->Shutdown();
-    itemPassiveManager_.reset();
+void GameSystem::ShutdownDebugUI() {
+  if (debugUIAPI_) {
+    debugUIAPI_->Shutdown();
+    debugUIAPI_.reset();
   }
+  sharedContext_.debugUIAPI = nullptr;
+}
 
-  // オーバーレイのシャットダウン
-  if (overlayManager_) {
-    overlayManager_->Shutdown();
-    overlayManager_.reset();
+void GameSystem::ShutdownBattleSetup() {
+  if (battleSetupAPI_) {
+    battleSetupAPI_.reset();
   }
+  sharedContext_.battleSetupAPI = nullptr;
+}
 
-  // モジュールのシャットダウン
-  if (moduleSystem_) {
-    moduleSystem_->Shutdown(sharedContext_);
-    moduleSystem_.reset();
+void GameSystem::ShutdownSetup() {
+  if (setupAPI_) {
+    setupAPI_.reset();
   }
+  sharedContext_.setupAPI = nullptr;
+}
 
+void GameSystem::ShutdownGameplayData() {
+  if (gameplayDataAPI_) {
+    gameplayDataAPI_->Shutdown();
+    gameplayDataAPI_.reset();
+  }
+  sharedContext_.gameplayDataAPI = nullptr;
+}
+
+void GameSystem::ShutdownSceneOverlay() {
+  if (sceneOverlayAPI_) {
+    sceneOverlayAPI_->Shutdown();
+    sceneOverlayAPI_.reset();
+  }
+  sharedContext_.sceneOverlayAPI = nullptr;
+}
+
+void GameSystem::ShutdownUI() {
+  if (uiAPI_) {
+    uiAPI_->Shutdown();
+    uiAPI_.reset();
+  }
+  sharedContext_.uiAPI = nullptr;
+}
+
+void GameSystem::ShutdownInput() {
+  if (inputAPI_) {
+    inputAPI_->Shutdown();
+    inputAPI_.reset();
+  }
+  sharedContext_.inputAPI = nullptr;
+}
+
+void GameSystem::ShutdownAudio() {
+  if (audioAPI_) {
+    audioAPI_->Shutdown();
+    audioAPI_.reset();
+  }
+  sharedContext_.audioAPI = nullptr;
+}
+
+void GameSystem::ShutdownBaseSystem() {
   if (systemAPI_) {
     LOG_INFO("Shutting down BaseSystemAPI");
     systemAPI_->Shutdown();
     systemAPI_.reset();
   }
-
-  // 注意: systemAPI_->Shutdown() 内で ShutdownLogSystem() が呼ばれ、
-  // spdlog::shutdown() によりすべてのロガーが破棄されるため、
-  // この時点以降ではログ出力を行わないこと
-}
-
-void GameSystem::RegisterModules() {
-  // モジュール登録
-  // 将来的にdefineModules.hppで定義されたモジュールを登録
-  // 現在は空（モジュール実装時に追加）
-  // 例:
-  // #include "ecs/defineModules.hpp"
-  // moduleSystem_->RegisterModule<MovementModule>();
-  // moduleSystem_->RegisterModule<RenderModule>();
+  sharedContext_.systemAPI = nullptr;
 }
 
 void GameSystem::RequestTransition(GameState newState) {

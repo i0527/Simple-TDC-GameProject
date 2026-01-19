@@ -3,28 +3,28 @@
 // 標準ライブラリ
 #include <string>
 
-// 外部ライブラリ
-#include <entt/entt.hpp>
-
-// プロジェクト内
+// プロジェクト�E
 #include "../api/BaseSystemAPI.hpp"
+#include "../api/ECSystemAPI.hpp"
 #include "../ecs/defineComponents.hpp"
 
 namespace game {
 namespace core {
 namespace game {
 
-/// @brief ECS上の Sprite/Animation/Position/Team を最小限描画するレンダラ
+/// @brief ECS上�E Sprite/Animation/Position/Team を最小限描画するレンダラ
 class BattleRenderer {
 public:
-    explicit BattleRenderer(BaseSystemAPI* systemAPI);
+    BattleRenderer(BaseSystemAPI* systemAPI, ECSystemAPI* ecsAPI);
     ~BattleRenderer() = default;
 
-    void UpdateAnimations(entt::registry& registry, float deltaTime);
-    void RenderEntities(entt::registry& registry);
+    void SetEcsAPI(ECSystemAPI* ecsAPI) { ecsAPI_ = ecsAPI; }
+    void UpdateAnimations(ECSystemAPI* ecsAPI, float deltaTime);
+    void RenderEntities(ECSystemAPI* ecsAPI);
 
 private:
     BaseSystemAPI* systemAPI_;
+    ECSystemAPI* ecsAPI_;
 
     void RenderEntity(const ecs::components::Position& pos,
                       const ecs::components::Sprite& sprite,

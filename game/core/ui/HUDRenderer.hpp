@@ -1,15 +1,15 @@
 #pragma once
 
 #include "../api/BaseSystemAPI.hpp"
+#include "../config/RenderPrimitives.hpp"
 #include <string>
 #include <vector>
-#include <raylib.h>
 
 namespace game {
 namespace core {
 namespace ui {
 
-/// @brief ユニットリストアイテム
+/// @brief ユニットリストアイチE��
 struct UnitListItem {
     std::string unitId;
     std::string displayName;
@@ -21,11 +21,11 @@ struct UnitListItem {
 
 /// @brief ゲームシーンHUD描画クラス
 ///
-/// 責務:
-/// - Top HUD（Wave、HP、Gold、ゲーム速度、ボタン）
-/// - Left Panel（ミニマップ・背景表示）
-/// - Right Panel（ユニット選択パネル）
-/// - Field UI（選択・ホバー表示）
+/// 責勁E
+/// - Top HUD�E�Eave、HP、Gold、ゲーム速度、�Eタン�E�E
+/// - Left Panel�E�ミニ�EチE�E・背景表示�E�E
+/// - Right Panel�E�ユニット選択パネル�E�E
+/// - Field UI�E�選択�Eホバー表示�E�E
 class HUDRenderer {
 public:
     /// @brief コンストラクタ
@@ -41,79 +41,79 @@ public:
     /// @param totalWaves 総ウェーブ数
     /// @param hp 現在のHP
     /// @param maxHp 最大HP
-    /// @param gold 現在のゴールド
-    /// @param gameSpeed ゲーム速度（0.5, 1.0, 2.0）
-    /// @param isPaused ポーズ中かどうか
-    /// @param gameStateText ゲーム状態テキスト（例："準備中..."）
+    /// @param gold 現在のゴールチE
+    /// @param gameSpeed ゲーム速度�E�E.5, 1.0, 2.0�E�E
+    /// @param isPaused ポ�Eズ中かどぁE��
+    /// @param gameStateText ゲーム状態テキスト（例！E準備中..."�E�E
     void RenderTopHUD(int wave, int totalWaves, int hp, int maxHp,
                      int gold, float gameSpeed, bool isPaused,
                      const std::string& gameStateText);
 
     // ========== Left Panel ==========
 
-    /// @brief Left Panel（ミニマップ）を描画
-    /// @param fieldOriginX フィールド原点X座標
-    /// @param fieldOriginY フィールド原点Y座標
-    /// @param fieldWidth フィールド幅（ピクセル）
-    /// @param fieldHeight フィールド高さ（ピクセル）
+    /// @brief Left Panel�E�ミニ�EチE�E�E�を描画
+    /// @param fieldOriginX フィールド原点X座樁E
+    /// @param fieldOriginY フィールド原点Y座樁E
+    /// @param fieldWidth フィールド幁E��ピクセル�E�E
+    /// @param fieldHeight フィールド高さ�E�ピクセル�E�E
     void RenderLeftPanel(float fieldOriginX, float fieldOriginY,
                         float fieldWidth, float fieldHeight);
 
     // ========== Right Panel ==========
 
-    /// @brief Right Panel（ユニット選択）を描画
-    /// @param units ユニットリスト
-    /// @param selectedUnitId 選択中のユニットID（空文字列なら未選択）
+    /// @brief Right Panel�E�ユニット選択）を描画
+    /// @param units ユニットリスチE
+    /// @param selectedUnitId 選択中のユニッチED�E�空斁E���Eなら未選択！E
     void RenderRightPanel(const std::vector<UnitListItem>& units,
                          const std::string& selectedUnitId);
 
     // ========== Field UI ==========
 
-    /// @brief フィールドUI（ホバー・選択表示）を描画
-    /// @param hoverGx ホバー中のグリッドX座標（-1なら無効）
-    /// @param hoverGy ホバー中のグリッドY座標（-1なら無効）
-    /// @param selectGx 選択中のグリッドX座標（-1なら無効）
-    /// @param selectGy 選択中のグリッドY座標（-1なら無効）
-    /// @param isPlaceable ホバー位置が配置可能かどうか
-    /// @param cellSize セルサイズ（ピクセル）
-    /// @param fieldOriginX フィールド原点X座標
-    /// @param fieldOriginY フィールド原点Y座標
+    /// @brief フィールドUI�E��Eバ�E・選択表示�E�を描画
+    /// @param hoverGx ホバー中のグリチE��X座標！E1なら無効�E�E
+    /// @param hoverGy ホバー中のグリチE��Y座標！E1なら無効�E�E
+    /// @param selectGx 選択中のグリチE��X座標！E1なら無効�E�E
+    /// @param selectGy 選択中のグリチE��Y座標！E1なら無効�E�E
+    /// @param isPlaceable ホバー位置が�E置可能かどぁE��
+    /// @param cellSize セルサイズ�E�ピクセル�E�E
+    /// @param fieldOriginX フィールド原点X座樁E
+    /// @param fieldOriginY フィールド原点Y座樁E
     void RenderFieldUI(int hoverGx, int hoverGy, int selectGx, int selectGy,
                       bool isPlaceable, int cellSize,
                       float fieldOriginX, float fieldOriginY);
 
-    // ========== ボタン検出 ==========
+    // ========== ボタン検�E ==========
 
-    /// @brief Top HUDのボタンがクリックされたかチェック
-    /// @param mouseX マウスX座標
-    /// @param mouseY マウスY座標
-    /// @return クリックされたボタン名（"speed_0.5", "speed_1.0", "speed_2.0", "pause", "exit", ""）
+    /// @brief Top HUDのボタンがクリチE��されたかチェチE��
+    /// @param mouseX マウスX座樁E
+    /// @param mouseY マウスY座樁E
+    /// @return クリチE��された�Eタン名！Espeed_0.5", "speed_1.0", "speed_2.0", "pause", "exit", ""�E�E
     std::string CheckTopHUDButtonClick(float mouseX, float mouseY);
 
 private:
     BaseSystemAPI* sysAPI_;
 
-    /// @brief プログレスバーを描画
+    /// @brief プログレスバ�Eを描画
     void DrawBar(float x, float y, float width, float height,
-                float current, float max, Color fillColor, Color bgColor);
+                         float current, float max, ColorRGBA fillColor, ColorRGBA bgColor);
 
-    /// @brief テキストを描画（デフォルトフォント使用）
+    /// @brief チE��ストを描画�E�デフォルトフォント使用�E�E
     void DrawText(float x, float y, const std::string& text,
-                 int fontSize, Color color);
+                          int fontSize, ColorRGBA color);
 
-    /// @brief 中央揃えテキストを描画
+    /// @brief 中央揁E��チE��ストを描画
     void DrawTextCentered(float centerX, float y, const std::string& text,
-                         int fontSize, Color color);
+                                  int fontSize, ColorRGBA color);
 
     /// @brief ボタンを描画
     void DrawButton(float x, float y, float width, float height,
-                   const std::string& label, bool isActive, Color baseColor);
+                            const std::string& label, bool isActive, ColorRGBA baseColor);
 
-    /// @brief 矩形内にマウスがあるかチェック
+    /// @brief 矩形冁E��マウスがあるかチェチE��
     bool IsMouseInRect(float mouseX, float mouseY,
                       float rectX, float rectY, float rectW, float rectH);
 
-    // Top HUDボタン矩形（キャッシュ）
+    // Top HUDボタン矩形�E�キャチE��ュ�E�E
     struct ButtonRect {
         float x, y, width, height;
         std::string id;

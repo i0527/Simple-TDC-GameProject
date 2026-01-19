@@ -3,21 +3,23 @@
 namespace game {
 namespace core {
 
-/// @brief ゲームステート定義
+/// @brief ゲームスチE�Eト定義
 ///
-/// ゲームの現在の状態を表すenum。
-/// GameSystemがステート管理に使用します。
+/// ゲームの現在の状態を表すenum、E
+/// GameSystemがスチE�Eト管琁E��使用します、E
 enum class GameState {
   Initializing, // リソース初期化中
   Title,        // タイトル画面
-  Home,         // ホーム画面
+  Home,         // ホ�Eム画面
   Game,         // ゲーム画面
+  Editor,       // エチE��タ画面
+  Count,
 };
 
-/// @brief オーバーレイステート定義
+/// @brief オーバ�EレイスチE�Eト定義
 ///
-/// オーバーレイの種類を表すenum。
-/// OverlayManagerがオーバーレイ管理に使用します。
+/// オーバ�Eレイの種類を表すenum、E
+/// OverlayManagerがオーバ�Eレイ管琁E��使用します、E
 enum class OverlayState {
   None = 0,
   StageSelect = 1,

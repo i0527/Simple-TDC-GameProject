@@ -30,10 +30,11 @@ std::vector<SpawnEvent> WaveLoader::LoadStageSpawnEvents(const nlohmann::json& s
     std::vector<SpawnEvent> result;
 
     try {
+        const int defaultLevel = std::max(1, stageData.value("enemyLevel", 1));
         // wave_ids 優先（存在する場合）
         if (stageData.contains("wave_ids") && IsStringArray(stageData["wave_ids"])) {
             EnsureWaveCacheLoaded();
-            result = LoadWaveIdList(stageData["wave_ids"]);
+            result = LoadWaveIdList(stageData["wave_ids"], defaultLevel);
             SortByTime(result);
             return result;
         }
@@ -41,14 +42,14 @@ std::vector<SpawnEvent> WaveLoader::LoadStageSpawnEvents(const nlohmann::json& s
         // waves: 文字列配列（waveID列）
         if (stageData.contains("waves") && IsStringArray(stageData["waves"])) {
             EnsureWaveCacheLoaded();
-            result = LoadWaveIdList(stageData["waves"]);
+            result = LoadWaveIdList(stageData["waves"], defaultLevel);
             SortByTime(result);
             return result;
         }
 
         // waves: オブジェクト配列（インライン定義）
         if (stageData.contains("waves") && IsObjectArray(stageData["waves"])) {
-            result = LoadInlineWaves(stageData["waves"]);
+            result = LoadInlineWaves(stageData["waves"], defaultLevel);
             SortByTime(result);
             return result;
         }
@@ -131,8 +132,9 @@ bool WaveLoader::LoadWaveFile(const std::string& path) {
                     const float delay = entry.value("delay", 0.0f);
                     const int count = entry.value("count", 1);
                     const float interval = entry.value("interval", 0.0f);
+                    const int level = std::max(0, entry.value("level", 0));
                     for (int i = 0; i < count; ++i) {
-                        events.push_back(SpawnEvent{delay + interval * static_cast<float>(i), enemyId, lane});
+                        events.push_back(SpawnEvent{delay + interval * static_cast<float>(i), enemyId, lane, level});
                     }
                 }
             }
@@ -146,8 +148,9 @@ bool WaveLoader::LoadWaveFile(const std::string& path) {
                     const float delay = group.value("delay_from_wave_start", 0.0f);
                     const int count = group.value("count", 1);
                     const float interval = group.value("spawn_interval", 0.0f);
+                    const int level = std::max(0, group.value("level", 0));
                     for (int i = 0; i < count; ++i) {
-                        events.push_back(SpawnEvent{delay + interval * static_cast<float>(i), enemyId, 0});
+                        events.push_back(SpawnEvent{delay + interval * static_cast<float>(i), enemyId, 0, level});
                     }
                 }
             }
@@ -167,12 +170,14 @@ bool WaveLoader::LoadWaveFile(const std::string& path) {
     }
 }
 
-std::vector<SpawnEvent> WaveLoader::LoadInlineWaves(const nlohmann::json& wavesArray) {
+std::vector<SpawnEvent> WaveLoader::LoadInlineWaves(const nlohmann::json& wavesArray,
+                                                    int defaultLevel) {
     std::vector<SpawnEvent> result;
 
     float waveStart = 0.0f;
     int waveIndex = 0;
 
+    defaultLevel = std::max(1, defaultLevel);
     for (const auto& w : wavesArray) {
         if (!w.is_object()) {
             continue;
@@ -183,6 +188,7 @@ std::vector<SpawnEvent> WaveLoader::LoadInlineWaves(const nlohmann::json& wavesA
         const int count = w.value("count", 1);
         const float interval = w.value("interval", 0.0f);
         const float delay = w.value("delay", 0.0f);
+        const int level = std::max(1, w.value("level", defaultLevel));
 
         if (type.empty()) {
             continue;
@@ -194,7 +200,7 @@ std::vector<SpawnEvent> WaveLoader::LoadInlineWaves(const nlohmann::json& wavesA
         for (int i = 0; i < count; ++i) {
             const float t = waveStart + delay + interval * static_cast<float>(i);
             lastTimeInWave = std::max(lastTimeInWave, delay + interval * static_cast<float>(i));
-            result.push_back(SpawnEvent{t, type, 0});
+            result.push_back(SpawnEvent{t, type, 0, level});
         }
 
         ++waveIndex;
@@ -206,10 +212,12 @@ std::vector<SpawnEvent> WaveLoader::LoadInlineWaves(const nlohmann::json& wavesA
     return result;
 }
 
-std::vector<SpawnEvent> WaveLoader::LoadWaveIdList(const nlohmann::json& waveIdArray) {
+std::vector<SpawnEvent> WaveLoader::LoadWaveIdList(const nlohmann::json& waveIdArray,
+                                                   int defaultLevel) {
     std::vector<SpawnEvent> result;
 
     float waveStart = 0.0f;
+    defaultLevel = std::max(1, defaultLevel);
     for (const auto& waveIdJ : waveIdArray) {
         if (!waveIdJ.is_string()) {
             continue;
@@ -223,7 +231,8 @@ std::vector<SpawnEvent> WaveLoader::LoadWaveIdList(const nlohmann::json& waveIdA
 
         float lastTimeInWave = 0.0f;
         for (const auto& ev : it->second) {
-            result.push_back(SpawnEvent{waveStart + ev.time, ev.enemyId, ev.lane});
+            const int level = ev.level > 0 ? ev.level : defaultLevel;
+            result.push_back(SpawnEvent{waveStart + ev.time, ev.enemyId, ev.lane, level});
             lastTimeInWave = std::max(lastTimeInWave, ev.time);
         }
         waveStart += lastTimeInWave + WAVE_GAP_SECONDS;

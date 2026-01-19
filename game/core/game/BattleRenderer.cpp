@@ -1,21 +1,24 @@
 #include "BattleRenderer.hpp"
 
-// 外部ライブラリ
-#include <raylib.h>
-
-// プロジェクト内
+// プロジェクト�E
 #include "../../utils/Log.h"
 
 namespace game {
 namespace core {
 namespace game {
 
-BattleRenderer::BattleRenderer(BaseSystemAPI* systemAPI)
-    : systemAPI_(systemAPI) {
+BattleRenderer::BattleRenderer(BaseSystemAPI* systemAPI, ECSystemAPI* ecsAPI)
+    : systemAPI_(systemAPI), ecsAPI_(ecsAPI) {
 }
 
-void BattleRenderer::UpdateAnimations(entt::registry& registry, float deltaTime) {
-    auto view = registry.view<ecs::components::Animation>();
+void BattleRenderer::UpdateAnimations(ECSystemAPI* ecsAPI, float deltaTime) {
+    if (!ecsAPI) {
+        ecsAPI = ecsAPI_;
+    }
+    if (!ecsAPI) {
+        return;
+    }
+    auto view = ecsAPI->View<ecs::components::Animation>();
     for (auto e : view) {
         auto& anim = view.get<ecs::components::Animation>(e);
         if (anim.frame_count <= 1) {
@@ -36,13 +39,19 @@ void BattleRenderer::UpdateAnimations(entt::registry& registry, float deltaTime)
     }
 }
 
-void BattleRenderer::RenderEntities(entt::registry& registry) {
-    auto view = registry.view<ecs::components::Position, ecs::components::Sprite>();
+void BattleRenderer::RenderEntities(ECSystemAPI* ecsAPI) {
+    if (!ecsAPI) {
+        ecsAPI = ecsAPI_;
+    }
+    if (!ecsAPI) {
+        return;
+    }
+    auto view = ecsAPI->View<ecs::components::Position, ecs::components::Sprite>();
     for (auto e : view) {
         const auto& pos = view.get<ecs::components::Position>(e);
         const auto& sprite = view.get<ecs::components::Sprite>(e);
-        const auto* anim = registry.try_get<ecs::components::Animation>(e);
-        const auto* team = registry.try_get<ecs::components::Team>(e);
+        const auto* anim = ecsAPI->Try<ecs::components::Animation>(e);
+        const auto* team = ecsAPI->Try<ecs::components::Team>(e);
         RenderEntity(pos, sprite, anim, team);
     }
 }
@@ -55,12 +64,14 @@ void BattleRenderer::RenderEntity(const ecs::components::Position& pos,
         return;
     }
 
-    void* texturePtr = systemAPI_->GetTexture(sprite.sheet_path);
+    void* texturePtr = systemAPI_->Resource().GetTexture(sprite.sheet_path);
     if (!texturePtr) {
+        LOG_WARN("Texture not found: {}", sprite.sheet_path);
         return;
     }
     auto* texture = static_cast<Texture2D*>(texturePtr);
     if (!texture || texture->id == 0) {
+        LOG_WARN("Texture invalid: {}", sprite.sheet_path);
         return;
     }
 
@@ -74,8 +85,9 @@ void BattleRenderer::RenderEntity(const ecs::components::Position& pos,
         static_cast<float>(sprite.frame_height)
     };
 
-    // 位置は「足元基準」ではなく簡易に左上基準（後で調整）
-    systemAPI_->DrawTexturePro(*texture, src, dst, {0.0f, 0.0f}, 0.0f, WHITE);
+    // 位置は「足允E��準」ではなく簡易に左上基準（後で調整�E�E
+    systemAPI_->Render().DrawTexturePro(*texture, src, dst, {0.0f, 0.0f}, 0.0f,
+                                        WHITE);
 }
 
 Rectangle BattleRenderer::MakeSourceRect(const ecs::components::Sprite& sprite,

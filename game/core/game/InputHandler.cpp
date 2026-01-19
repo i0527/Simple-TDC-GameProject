@@ -24,9 +24,9 @@ void InputHandler::Shutdown() {
 
 void InputHandler::Update(float deltaTime) {
     // マウス状態更新
-    mousePosition_ = sysAPI_->GetMousePosition();
-    leftClickPressed_ = sysAPI_->IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-    rightClickPressed_ = sysAPI_->IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+    mousePosition_ = ::GetMousePosition();
+    leftClickPressed_ = ::IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    rightClickPressed_ = ::IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
     
     // イベントはシーン側で生成されるため、ここでは状態のみ更新
 }
@@ -74,7 +74,7 @@ bool InputHandler::IsRightClickPressed() const {
 }
 
 bool InputHandler::IsKeyPressed(int key) const {
-    return sysAPI_->IsKeyPressed(key);
+    return ::IsKeyPressed(key);
 }
 
 bool InputHandler::IsEscapePressed() const {

@@ -8,14 +8,14 @@
 namespace game {
 namespace core {
 
-/// @brief バトル結果オーバーレイ（勝利/敗北）
+/// @brief バトル結果オーバ�Eレイ�E�勝利/敗北�E�E
 class BattleResultOverlay : public IOverlay {
 public:
     explicit BattleResultOverlay(bool isVictory);
     ~BattleResultOverlay() = default;
 
-    // IOverlay実装
-    bool Initialize(BaseSystemAPI* systemAPI) override;
+    // IOverlay実裁E
+    bool Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) override;
     void Update(SharedContext& ctx, float deltaTime) override;
     void Render(SharedContext& ctx) override;
     void Shutdown() override;
@@ -33,11 +33,11 @@ private:
     mutable bool hasTransitionRequest_ = false;
     mutable GameState requestedNextState_ = GameState::Home;
 
-    // UI状態
+    // UI状慁E
     bool nextStageEnabled_ = false;
     std::string nextStageId_ = "";
 
-    // 内部
+    // 冁E��
     void UpdateNextStageInfo(SharedContext& ctx);
     void HandleMouseInput(SharedContext& ctx);
 };

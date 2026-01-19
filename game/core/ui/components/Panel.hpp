@@ -4,18 +4,21 @@
 
 namespace game {
 namespace core {
+
+class UISystemAPI;
+
 namespace ui {
 
-/// @brief パネルUIコンポーネント
+/// @brief パネルUIコンポ�EネンチE
 ///
-/// 共通UIとして使用されるパネルコンポーネント。
-/// 子要素のレイアウト管理を行います。
+/// 共通UIとして使用されるパネルコンポ�Eネント、E
+/// 子要素のレイアウト管琁E��行います、E
 class Panel : public IUIComponent {
 public:
     Panel();
     ~Panel() = default;
 
-    // IUIComponent実装
+    // IUIComponent実裁E
     bool Initialize() override;
     void Update(float deltaTime) override;
     void Render() override;
@@ -31,7 +34,7 @@ public:
     void SetEnabled(bool enabled) override;
     bool IsEnabled() const override;
 
-    // P1: 構造化イベント
+    // P1: 構造化イベンチE
     UIEventResult HandleEvent(const UIEvent& ev) override;
 
     bool OnMouseClick(float x, float y) override;
@@ -45,9 +48,12 @@ public:
     const std::string& GetId() const override;
     void SetId(const std::string& id) override;
 
-    /// @brief ルートパネル（親ウィンドウを持たない）かどうかを設定
+    /// @brief ルートパネル�E�親ウィンドウを持たなぁE��かどぁE��を設宁E
     void SetRoot(bool isRoot) { isRoot_ = isRoot; }
     bool IsRoot() const { return isRoot_; }
+
+    /// @brief 描画用UIシスチE��APIを設宁E
+    void SetUISystemAPI(::game::core::UISystemAPI* uiAPI) { uiAPI_ = uiAPI; }
 
 private:
     Rect bounds_;
@@ -57,6 +63,7 @@ private:
     bool enabled_;
     bool isRoot_ = false;
     std::string id_;
+    ::game::core::UISystemAPI* uiAPI_ = nullptr;
 };
 
 } // namespace ui

@@ -58,20 +58,19 @@ void Panel::Render() {
     ImGui::SetNextWindowPos(absolutePos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(bounds_.width, bounds_.height), ImGuiCond_Always);
 
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | 
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                              ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                             ImGuiWindowFlags_NoScrollWithMouse;
+                             ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     if (!enabled_) {
         flags |= ImGuiWindowFlags_NoInputs;
     }
 
     if (ImGui::Begin(("Panel##" + id_).c_str(), nullptr, flags)) {
-        // パネルの背景
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         ImVec2 windowPos = ImGui::GetWindowPos();
         ImVec2 windowSize = ImGui::GetWindowSize();
-        
+
         ImU32 bgColor = IM_COL32(50, 50, 50, 255);
         drawList->AddRectFilled(windowPos, ImVec2(windowPos.x + windowSize.x, windowPos.y + windowSize.y), bgColor);
 

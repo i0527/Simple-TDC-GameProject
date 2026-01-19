@@ -3,149 +3,149 @@
 #include <vector>
 #include <map>
 #include <string>
-#include <raylib.h>
+#include "../config/RenderTypes.hpp"
 #include <entt/entt.hpp>
 
 namespace game {
 namespace core {
 namespace gamescene {
 
-/// @brief グリッドセルのタイプ
+/// @brief グリチE��セルのタイチE
 enum class CellType {
-    Normal,      // 通常（配置可能）
+    Normal,      // 通常�E��E置可能�E�E
     Path,        // 敵の進路
     Blocked,     // 配置不可
-    SpawnPoint,  // 敵スポーン位置
+    SpawnPoint,  // 敵スポ�Eン位置
     Goal         // ゴール位置
 };
 
-/// @brief マップタイル情報
+/// @brief マップタイル惁E��
 struct MapTile {
     CellType type;
     int gridX;
     int gridY;
 };
 
-/// @brief フィールド管理クラス
+/// @brief フィールド管琁E��ラス
 ///
-/// 責務:
-/// - グリッドベースのマップ管理
-/// - ピクセル座標とグリッド座標の変換
+/// 責勁E
+/// - グリチE��ベ�Eスのマップ管琁E
+/// - ピクセル座標とグリチE��座標�E変換
 /// - マップタイルの描画
-/// - ユニット配置の管理
+/// - ユニット�E置の管琁E
 class FieldManager {
 public:
     /// @brief コンストラクタ
-    /// @param width グリッド幅（セル数）
-    /// @param height グリッド高さ（セル数）
-    /// @param cellSize セルサイズ（ピクセル）
-    /// @param originX フィールド原点X座標（ピクセル）
-    /// @param originY フィールド原点Y座標（ピクセル）
+    /// @param width グリチE��幁E��セル数�E�E
+    /// @param height グリチE��高さ�E�セル数�E�E
+    /// @param cellSize セルサイズ�E�ピクセル�E�E
+    /// @param originX フィールド原点X座標（ピクセル�E�E
+    /// @param originY フィールド原点Y座標（ピクセル�E�E
     explicit FieldManager(int width = 30, int height = 16, int cellSize = 32,
                          float originX = 640.0f, float originY = 50.0f);
     
     ~FieldManager() = default;
 
-    /// @brief 初期化
-    /// @param registry ECSレジストリ（将来のユニット配置用）
+    /// @brief 初期匁E
+    /// @param registry ECSレジストリ�E�封E��のユニット�E置用�E�E
     bool Initialize(entt::registry* registry);
 
-    /// @brief シャットダウン
+    /// @brief シャチE��ダウン
     void Shutdown();
 
     /// @brief フィールド描画
-    /// @param showGrid グリッド線を表示するか
+    /// @param showGrid グリチE��線を表示するぁE
     void Render(bool showGrid = true);
 
     // ========== 座標変換 ==========
 
-    /// @brief グリッド座標をピクセル座標に変換
-    /// @param gx グリッドX座標
-    /// @param gy グリッドY座標
-    /// @return ピクセル座標
+    /// @brief グリチE��座標をピクセル座標に変換
+    /// @param gx グリチE��X座樁E
+    /// @param gy グリチE��Y座樁E
+    /// @return ピクセル座樁E
     Vector2 GridToPixel(int gx, int gy) const;
 
-    /// @brief ピクセル座標をグリッド座標に変換
-    /// @param px ピクセルX座標
-    /// @param py ピクセルY座標
-    /// @return グリッド座標（first: gx, second: gy）
+    /// @brief ピクセル座標をグリチE��座標に変換
+    /// @param px ピクセルX座樁E
+    /// @param py ピクセルY座樁E
+    /// @return グリチE��座標！Eirst: gx, second: gy�E�E
     std::pair<int, int> PixelToGrid(float px, float py) const;
 
-    /// @brief グリッド座標が有効範囲内か確認
-    /// @param gx グリッドX座標
-    /// @param gy グリッドY座標
-    /// @return 有効範囲内の場合true
+    /// @brief グリチE��座標が有効篁E��冁E��確誁E
+    /// @param gx グリチE��X座樁E
+    /// @param gy グリチE��Y座樁E
+    /// @return 有効篁E��冁E�E場吁Erue
     bool IsValidGridPosition(int gx, int gy) const;
 
-    // ========== ユニット配置管理 ==========
+    // ========== ユニット�E置管琁E==========
 
-    /// @brief ユニット配置
-    /// @param unitEntity ユニットエンティティ
-    /// @param gx グリッドX座標
-    /// @param gy グリッドY座標
+    /// @brief ユニット�E置
+    /// @param unitEntity ユニットエンチE��チE��
+    /// @param gx グリチE��X座樁E
+    /// @param gy グリチE��Y座樁E
     /// @return 配置成功時true
     bool PlaceUnit(entt::entity unitEntity, int gx, int gy);
 
     /// @brief ユニット削除
-    /// @param gx グリッドX座標
-    /// @param gy グリッドY座標
+    /// @param gx グリチE��X座樁E
+    /// @param gy グリチE��Y座樁E
     /// @return 削除成功時true
     bool RemoveUnit(int gx, int gy);
 
-    /// @brief 指定位置のユニットを取得
-    /// @param gx グリッドX座標
-    /// @param gy グリッドY座標
-    /// @return ユニットエンティティ（存在しない場合はentt::null）
+    /// @brief 持E��位置のユニットを取征E
+    /// @param gx グリチE��X座樁E
+    /// @param gy グリチE��Y座樁E
+    /// @return ユニットエンチE��チE���E�存在しなぁE��合�Eentt::null�E�E
     entt::entity GetUnitAt(int gx, int gy) const;
 
-    /// @brief セルが配置可能か確認
-    /// @param gx グリッドX座標
-    /// @param gy グリッドY座標
-    /// @return 配置可能な場合true
+    /// @brief セルが�E置可能か確誁E
+    /// @param gx グリチE��X座樁E
+    /// @param gy グリチE��Y座樁E
+    /// @return 配置可能な場吁Erue
     bool IsPlaceable(int gx, int gy) const;
 
     // ========== アクセサ ==========
 
-    /// @brief グリッド幅を取得
+    /// @brief グリチE��幁E��取征E
     int GetWidth() const { return width_; }
 
-    /// @brief グリッド高さを取得
+    /// @brief グリチE��高さを取征E
     int GetHeight() const { return height_; }
 
-    /// @brief セルサイズを取得
+    /// @brief セルサイズを取征E
     int GetCellSize() const { return cellSize_; }
 
-    /// @brief 原点座標を取得
+    /// @brief 原点座標を取征E
     Vector2 GetOrigin() const { return Vector2{originX_, originY_}; }
 
-    /// @brief タイル情報を取得
+    /// @brief タイル惁E��を取征E
     const std::vector<MapTile>& GetTiles() const { return tiles_; }
 
-    /// @brief 敵パスを取得
+    /// @brief 敵パスを取征E
     const std::vector<Vector2>& GetEnemyPath() const { return enemyPath_; }
 
 private:
-    // グリッド設定
+    // グリチE��設宁E
     int width_;
     int height_;
     int cellSize_;
     float originX_;
     float originY_;
 
-    // ECSレジストリ（参照）
+    // ECSレジストリ�E�参照�E�E
     entt::registry* registry_;
 
     // マップデータ
     std::vector<MapTile> tiles_;
     std::vector<Vector2> enemyPath_;
 
-    // ユニット配置マップ（グリッド座標 -> エンティティ）
+    // ユニット�E置マップ（グリチE��座樁E-> エンチE��チE���E�E
     std::map<std::pair<int, int>, entt::entity> gridMap_;
 
-    /// @brief デフォルトマップを生成
+    /// @brief チE��ォルト�EチE�Eを生戁E
     void GenerateDefaultMap();
 
-    /// @brief グリッド線を描画
+    /// @brief グリチE��線を描画
     void DrawGrid();
 
     /// @brief 背景タイルを描画

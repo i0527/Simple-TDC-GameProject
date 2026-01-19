@@ -286,6 +286,375 @@
       "equipment": [],
       "cost": 100,
       "is_discovered": true
+    },
+    {
+      "id": "char_sub_chainsword_001",
+      "name": "チェーンソード",
+      "description": "鎖付きの剣を操る戦士",
+      "rarity": 2,
+      "rarity_name": "R",
+      "status": {
+        "level": 1,
+        "hp": 120,
+        "attack": 32,
+        "defense": 5,
+        "move_speed": 52.0,
+        "attack_span": 0.909
+      },
+      "attack": {
+        "type": "single",
+        "size": [140.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/ChainSword/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/ChainSword/move.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 5,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/ChainSword/attack.png",
+          "frame_width": 83,
+          "frame_height": 64,
+          "frame_count": 20,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 210,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_bat_001",
+      "name": "コウモリ",
+      "description": "暗闇を飛び回る夜行性の生物",
+      "rarity": 1,
+      "rarity_name": "N",
+      "status": {
+        "level": 1,
+        "hp": 75,
+        "attack": 18,
+        "defense": 0,
+        "move_speed": 60.0,
+        "attack_span": 0.833
+      },
+      "attack": {
+        "type": "single",
+        "size": [100.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/Bat/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/Bat/move.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 5,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/Bat/attack.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 10,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 130,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_blueslime_001",
+      "name": "ブルースライム",
+      "description": "青い体を持つスライム",
+      "rarity": 1,
+      "rarity_name": "N",
+      "status": {
+        "level": 1,
+        "hp": 70,
+        "attack": 16,
+        "defense": 0,
+        "move_speed": 45.0,
+        "attack_span": 0.833
+      },
+      "attack": {
+        "type": "single",
+        "size": [100.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/BlueSlime/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/BlueSlime/move.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 17,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/BlueSlime/attack.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 14,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 120,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_greenbossslime_001",
+      "name": "グリーンボススライム",
+      "description": "巨大な緑色のボススライム",
+      "rarity": 3,
+      "rarity_name": "SR",
+      "status": {
+        "level": 1,
+        "hp": 180,
+        "attack": 50,
+        "defense": 10,
+        "move_speed": 40.0,
+        "attack_span": 1.2
+      },
+      "attack": {
+        "type": "single",
+        "size": [160.0, 30.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/GreenBossSlime/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/GreenBossSlime/move.png",
+          "frame_width": 128,
+          "frame_height": 128,
+          "frame_count": 4,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/GreenBossSlime/attack.png",
+          "frame_width": 128,
+          "frame_height": 128,
+          "frame_count": 5,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 300,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_crystalgolem_001",
+      "name": "クリスタルゴーレム",
+      "description": "クリスタルで構成された堅牢なゴーレム",
+      "rarity": 3,
+      "rarity_name": "SR",
+      "status": {
+        "level": 1,
+        "hp": 160,
+        "attack": 48,
+        "defense": 15,
+        "move_speed": 35.0,
+        "attack_span": 1.1
+      },
+      "attack": {
+        "type": "single",
+        "size": [150.0, 30.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/CrystalGolem/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/CrystalGolem/move.png",
+          "frame_width": 128,
+          "frame_height": 128,
+          "frame_count": 5,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/CrystalGolem/attack.png",
+          "frame_width": 128,
+          "frame_height": 128,
+          "frame_count": 13,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 290,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_seaserpent_001",
+      "name": "シーサーペント",
+      "description": "海を支配する巨大な海蛇",
+      "rarity": 3,
+      "rarity_name": "SR",
+      "status": {
+        "level": 1,
+        "hp": 170,
+        "attack": 52,
+        "defense": 8,
+        "move_speed": 50.0,
+        "attack_span": 1.0
+      },
+      "attack": {
+        "type": "single",
+        "size": [160.0, 30.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/SeaSerpent/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/SeaSerpent/move.png",
+          "frame_width": 128,
+          "frame_height": 128,
+          "frame_count": 5,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/SeaSerpent/attack.png",
+          "frame_width": 128,
+          "frame_height": 128,
+          "frame_count": 5,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 310,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_poisonjellyfish_001",
+      "name": "毒クラゲ",
+      "description": "猛毒を持つクラゲ",
+      "rarity": 2,
+      "rarity_name": "R",
+      "status": {
+        "level": 1,
+        "hp": 105,
+        "attack": 29,
+        "defense": 0,
+        "move_speed": 40.0,
+        "attack_span": 1.0
+      },
+      "attack": {
+        "type": "single",
+        "size": [130.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/PoisonJellyfish/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/PoisonJellyfish/move.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 13,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/PoisonJellyfish/attack.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 11,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 200,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_kimoisogin_001",
+      "name": "キモキモイソギン",
+      "description": "気持ち悪い触手を持つイソギンチャク",
+      "rarity": 2,
+      "rarity_name": "R",
+      "status": {
+        "level": 1,
+        "hp": 95,
+        "attack": 27,
+        "defense": 0,
+        "move_speed": 38.0,
+        "attack_span": 0.909
+      },
+      "attack": {
+        "type": "single",
+        "size": [125.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/KimoIsogin/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/KimoIsogin/move.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 14,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/KimoIsogin/attack.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 17,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 195,
+      "is_discovered": true
+    },
+    {
+      "id": "char_sub_mushmeramera_001",
+      "name": "マッシュメラメラ",
+      "description": "燃えるキノコのモンスター",
+      "rarity": 2,
+      "rarity_name": "R",
+      "status": {
+        "level": 1,
+        "hp": 108,
+        "attack": 31,
+        "defense": 3,
+        "move_speed": 43.0,
+        "attack_span": 0.909
+      },
+      "attack": {
+        "type": "single",
+        "size": [135.0, 20.0],
+        "effect_type": "normal"
+      },
+      "sprites": {
+        "icon_path": "assets/characters/MushMeramera/icon.png",
+        "move": {
+          "sheet_path": "assets/characters/MushMeramera/move.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 17,
+          "frame_duration": 0.1
+        },
+        "attack": {
+          "sheet_path": "assets/characters/MushMeramera/attack.png",
+          "frame_width": 64,
+          "frame_height": 64,
+          "frame_count": 12,
+          "frame_duration": 0.1
+        }
+      },
+      "passive_skills": [],
+      "equipment": [],
+      "cost": 205,
+      "is_discovered": true
     }
   ]
 }

@@ -7,15 +7,14 @@ namespace core {
 
 /// @brief 戦闘中のポーズメニューオーバーレイ
 ///
-/// Resume / Settings / Home を提供する。
-/// Settings は既存の SettingsOverlay をスタックに積む。
+/// 再開 / リトライ / ホームへ を提供する。
 class PauseOverlay : public IOverlay {
 public:
     PauseOverlay() = default;
     ~PauseOverlay() override = default;
 
     // IOverlay実装
-    bool Initialize(BaseSystemAPI* systemAPI) override;
+    bool Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) override;
     void Update(SharedContext& ctx, float deltaTime) override;
     void Render(SharedContext& ctx) override;
     void Shutdown() override;

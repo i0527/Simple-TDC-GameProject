@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+﻿cmake_minimum_required(VERSION 3.19)
 
 project(CatTDGame LANGUAGES CXX)
 
@@ -85,8 +85,8 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
     # nlohmann/jsonはヘッダーオンリーライブラリ（INTERFACE）のため、MSVC_RUNTIME_LIBRARY設定は不要
 endif()
 
-# spdlog - 高速ログライブラリ
-if(NOT TARGET spdlog::spdlog)
+# spdlog - 高速ログライブラリ（Webビルドでは不要）
+if(NOT EMSCRIPTEN AND NOT CATTD_WEB_BUILD AND NOT TARGET spdlog::spdlog)
     set(_spdlog_local "${FETCHCONTENT_BASE_DIR}/spdlog-src")
     if(EXISTS "${_spdlog_local}/CMakeLists.txt")
         message(STATUS "Using local spdlog from: ${_spdlog_local}")
@@ -203,6 +203,61 @@ list(APPEND GAME_SOURCES
     # PlayerDataManager
     "${CMAKE_CURRENT_SOURCE_DIR}/core/system/PlayerDataManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/system/PlayerDataManager.hpp"
+    # GameplayDataAPI
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/GameplayDataAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/GameplayDataAPI/GameplayDataAPI.Core.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/GameplayDataAPI/GameplayDataAPI.Character.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/GameplayDataAPI/GameplayDataAPI.ItemPassive.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/GameplayDataAPI/GameplayDataAPI.Stage.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/GameplayDataAPI/GameplayDataAPI.PlayerData.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/GameplayDataAPI/GameplayDataAPI.Consistency.cpp"
+    # BaseSystemAPI
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.Core.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.Log.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.Resource.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.Render.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.Audio.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.Timing.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.Window.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.Collision.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BaseSystemAPI/BaseSystemAPI.RenderUi.cpp"
+    # AudioControlAPI
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/AudioControlAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/AudioControlAPI.cpp"
+    # InputSystemAPI
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/InputSystemAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/InputSystemAPI/InputSystemAPI.Core.cpp"
+    # SetupAPI
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SetupAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SetupAPI/SetupAPI.Core.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SetupAPI/SetupAPI.Wave.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SetupAPI/SetupAPI.EcsSpawn.cpp"
+    # BattleSetupAPI
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BattleSetupAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/BattleSetupAPI/BattleSetupAPI.Core.cpp"
+    # BattleSetupData
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/config/BattleSetupData.hpp"
+    # UISystemAPI
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/UISystemAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/UISystemAPI/UISystemAPI.Core.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/UISystemAPI/UISystemAPI.Events.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/UISystemAPI/UISystemAPI.Draw.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/UISystemAPI/UISystemAPI.ThemeAssets.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/UISystemAPI/UISystemAPI.Effects.cpp"
+    # ECSystemAPI
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/ECSystemAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/ECSystemAPI/ECSystemAPI.Core.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/ECSystemAPI/ECSystemAPI.Entity.cpp"
+    # Scene/Overlay制御API
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/DebugUIAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/DebugUIAPI.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SceneOverlayControlAPI.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SceneOverlayControlAPI/SceneOverlayControlAPI.Core.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SceneOverlayControlAPI/SceneOverlayControlAPI.Update.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SceneOverlayControlAPI/SceneOverlayControlAPI.Render.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SceneOverlayControlAPI/SceneOverlayControlAPI.StateLifecycle.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/api/SceneOverlayControlAPI/SceneOverlayControlAPI.OverlayStack.cpp"
     # オーバーレイ
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/StageSelectOverlay.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/StageSelectOverlay.hpp"
@@ -212,16 +267,14 @@ list(APPEND GAME_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CharacterEnhancementOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CodexOverlay.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CodexOverlay.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/SettingsOverlay.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/SettingsOverlay.Core.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/SettingsOverlay.Logic.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/SettingsOverlay.Render.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/SettingsOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/GachaOverlay.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/GachaOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/LicenseOverlay.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/LicenseOverlay.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/BattleResultOverlay.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/BattleResultOverlay.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/PauseOverlay.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/PauseOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/IOverlay.hpp"
     # UIコンポーネント
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ui/IUIComponent.hpp"
@@ -237,6 +290,9 @@ list(APPEND GAME_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ui/components/Button.hpp"
     # IScene
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/IScene.hpp"
+    # InitScene
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/InitScene.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/InitScene.hpp"
     # HomeScreen
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/HomeScreen.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/HomeScreen.hpp"
@@ -247,29 +303,27 @@ list(APPEND GAME_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/home/TabBarManager.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/home/ResourceHeader.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/home/ResourceHeader.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/home/ContentContainer.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/home/ContentContainer.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/home/ITabContent.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/home/TabContent.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/home/TabContent.hpp"
     # Character system
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/Character.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/Character.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/CharacterManager.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/CharacterManager.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/ItemPassiveManager.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/ItemPassiveManager.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/StageManager.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/StageManager.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/CharacterToECS.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/EntityCreationData.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/entities/animation/AnimationData.hpp"
-    # GameScene and components
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/GameScene.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/GameScene.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/game/FieldManager.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/game/FieldManager.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/game/InputHandler.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/game/InputHandler.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/ui/HUDRenderer.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/ui/HUDRenderer.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/Character.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/Character.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/CharacterLoader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/CharacterLoader.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/CharacterManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/CharacterManager.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/CharacterStatCalculator.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/EntityCreationData.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/ItemPassiveLoader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/ItemPassiveLoader.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/ItemPassiveManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/ItemPassiveManager.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/StageLoader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/StageLoader.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/StageManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/StageManager.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/ecs/entities/animation/AnimationData.hpp"
 )
 
 # main.cppがエントリポイントであることを確認（必須）
@@ -301,10 +355,30 @@ target_link_libraries(CatTDGame
         raylib
         EnTT::EnTT
         nlohmann_json::nlohmann_json
-        spdlog::spdlog
         rlimgui_lib
         imgui_lib
 )
+
+# Webビルドではspdlogをリンクしない
+if(NOT EMSCRIPTEN AND NOT CATTD_WEB_BUILD)
+    target_link_libraries(CatTDGame PRIVATE spdlog::spdlog)
+endif()
+
+# Emscripten向け設定
+if(EMSCRIPTEN OR CATTD_WEB_BUILD)
+    target_compile_definitions(CatTDGame PRIVATE EMSCRIPTEN)
+
+    set(EMSCRIPTEN_LINK_FLAGS
+        "-s USE_GLFW=3"
+        "-s ALLOW_MEMORY_GROWTH=1"
+        "-s WASM=1"
+        "-s ASSERTIONS=1"
+        "-s FORCE_FILESYSTEM=1"
+        "--preload-file ${PROJECT_ROOT_DIR}/assets@/assets"
+        "--preload-file ${PROJECT_ROOT_DIR}/data@/data"
+    )
+    target_link_options(CatTDGame PRIVATE ${EMSCRIPTEN_LINK_FLAGS})
+endif()
 
 # std::filesystem サポート（GCC/Clangの場合）
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

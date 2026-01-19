@@ -3,12 +3,14 @@
 #include "../../config/SharedContext.hpp"
 #include "../../config/GameState.hpp"
 #include "../../api/BaseSystemAPI.hpp"
+#include "../../api/UISystemAPI.hpp"
 
 namespace game {
 namespace core {
 
 // 前方宣言
 class BaseSystemAPI;
+class UISystemAPI;
 
 /// @brief オーバーレイ基底インターフェース
 ///
@@ -20,8 +22,9 @@ public:
 
     /// @brief オーバーレイの初期化
     /// @param systemAPI BaseSystemAPIへのポインタ（所有権なし）
+    /// @param uiAPI UISystemAPIへのポインタ（所有権なし）
     /// @return 成功時true、失敗時false
-    virtual bool Initialize(BaseSystemAPI* systemAPI) = 0;
+    virtual bool Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) = 0;
 
     /// @brief オーバーレイの更新処理
     /// @param ctx 共有コンテキスト
@@ -47,6 +50,11 @@ public:
     /// @return クローズリクエストがある場合true
     /// @note このメソッドは一度だけ有効。呼び出し後、リクエストはリセットされる
     virtual bool RequestClose() const = 0;
+
+    /// @brief 終了リクエストを取得
+    /// @return 終了リクエストがある場合true
+    /// @note このメソッドは一度だけ有効。呼び出し後、リクエストはリセットされる
+    virtual bool RequestQuit() const { return false; }
 
     /// @brief ステート遷移リクエストを取得
     /// @param nextState 遷移先のステート（出力）

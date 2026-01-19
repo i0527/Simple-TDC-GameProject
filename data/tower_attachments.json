@@ -1,0 +1,64 @@
+{
+  "tower_attachments": [
+    {
+      "id": "tower_core_hp",
+      "name": "城塞コア",
+      "description": "城の最大HPが増加します。",
+      "effect_type": "percentage",
+      "target_stat": "tower_hp",
+      "value_per_level": 0.05,
+      "max_level": 50,
+      "rarity": 1
+    },
+    {
+      "id": "tower_wallet_gear",
+      "name": "蓄財ギア",
+      "description": "お金成長/秒が増加します。",
+      "effect_type": "percentage",
+      "target_stat": "wallet_growth",
+      "value_per_level": 0.05,
+      "max_level": 50,
+      "rarity": 1
+    },
+    {
+      "id": "tower_cost_capacitor",
+      "name": "回復コンデンサ",
+      "description": "コスト回復/秒が増加します。",
+      "effect_type": "percentage",
+      "target_stat": "cost_regen",
+      "value_per_level": 0.05,
+      "max_level": 50,
+      "rarity": 1
+    },
+    {
+      "id": "tower_ally_relic_atk",
+      "name": "猛攻レリック",
+      "description": "味方攻撃が増加します。",
+      "effect_type": "percentage",
+      "target_stat": "ally_attack",
+      "value_per_level": 0.02,
+      "max_level": 50,
+      "rarity": 2
+    },
+    {
+      "id": "tower_ally_relic_hp",
+      "name": "守護レリック",
+      "description": "味方HPが増加します。",
+      "effect_type": "percentage",
+      "target_stat": "ally_hp",
+      "value_per_level": 0.02,
+      "max_level": 50,
+      "rarity": 2
+    },
+    {
+      "id": "tower_enemy_slow",
+      "name": "妨害レンズ",
+      "description": "敵移動速度が低下します。",
+      "effect_type": "percentage",
+      "target_stat": "enemy_move_speed",
+      "value_per_level": -0.02,
+      "max_level": 50,
+      "rarity": 3
+    }
+  ]
+}

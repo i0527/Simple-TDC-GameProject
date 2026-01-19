@@ -1,6 +1,7 @@
 #pragma once
 
 // 標準ライブラリ
+#include <algorithm>
 #include <array>
 #include <string>
 #include <unordered_map>
@@ -15,6 +16,7 @@ namespace core {
 namespace entities {
 class CharacterManager;
 class ItemPassiveManager;
+class StageManager;
 } // namespace entities
 
 /// @brief プレイヤー永続データの管理（単一JSON）
@@ -36,11 +38,47 @@ public:
     };
 
     struct PlayerSaveData {
-        int version = 1;
+        int version = 5;
+        int gold = 1000; // 強化用の初期所持Gold（保存データに存在しない場合のデフォルト）
+        int gems = 0; // プレミアム通貨
+        int tickets = 30; // チケット（現状値）
+        int maxTickets = 100; // チケット最大値
+        int gachaDust = 0;
+        int gachaPityCounter = 0;
+        int gachaRollSequence = 0;
         FormationData formation;
         std::unordered_map<std::string, CharacterState> characters;
         std::unordered_map<std::string, int> ownedEquipment;
         std::unordered_map<std::string, int> ownedPassives;
+        struct GachaHistoryEntry {
+            int seq = 0;
+            std::string equipmentId;
+            std::string rarity;
+            int countAfter = 0;
+        };
+        std::vector<GachaHistoryEntry> gachaHistory;
+
+        struct StageState {
+            bool isCleared = false;
+            bool isLocked = true;
+            int starsEarned = 0;
+        };
+        std::unordered_map<std::string, StageState> stages;
+
+        // タワー強化（ホーム: タワー強化タブ）
+        struct TowerAttachmentSlot {
+            std::string id;
+            int level = 1;
+        };
+        struct TowerEnhancementState {
+            int towerHpLevel = 0;       // 城HP最大値
+            int walletGrowthLevel = 0;  // お財布成長（最大値増加/秒）
+            int costRegenLevel = 0;     // コスト回復（/秒）
+            int allyAttackLevel = 0;    // 味方攻撃力（%）
+            int allyHpLevel = 0;        // 味方HP（%）
+        };
+        TowerEnhancementState towerEnhancements{};
+        std::array<TowerAttachmentSlot, 3> towerAttachments{};
     };
 
     PlayerDataManager() = default;
@@ -48,7 +86,8 @@ public:
 
     bool LoadOrCreate(const std::string& filePath,
                       const entities::CharacterManager& characterManager,
-                      const entities::ItemPassiveManager& itemPassiveManager);
+                      const entities::ItemPassiveManager& itemPassiveManager,
+                      const entities::StageManager& stageManager);
 
     bool Save() const;
 
@@ -64,12 +103,61 @@ public:
     /// @brief キャラ状態を上書き（存在しない場合は作成）
     void SetCharacterState(const std::string& characterId, const CharacterState& state);
 
+    /// @brief ステージ状態を取得（存在しない場合はデフォルトを返す）
+    PlayerSaveData::StageState GetStageState(const std::string& stageId) const;
+
+    /// @brief ステージ状態を上書き（存在しない場合は作成）
+    void SetStageState(const std::string& stageId, const PlayerSaveData::StageState& state);
+
     int GetOwnedEquipmentCount(const std::string& equipmentId) const;
     int GetOwnedPassiveCount(const std::string& passiveId) const;
     void SetOwnedEquipmentCount(const std::string& equipmentId, int count);
     void SetOwnedPassiveCount(const std::string& passiveId, int count);
 
+    int GetGold() const { return data_.gold; }
+    void SetGold(int gold) { data_.gold = std::max(0, gold); }
+    void AddGold(int delta) { data_.gold = std::max(0, data_.gold + delta); }
+
+    int GetGems() const { return data_.gems; }
+    void SetGems(int gems) { data_.gems = std::max(0, gems); }
+    void AddGems(int delta) { data_.gems = std::max(0, data_.gems + delta); }
+
+    int GetTickets() const { return data_.tickets; }
+    void SetTickets(int tickets) { data_.tickets = std::max(0, tickets); }
+    void AddTickets(int delta) { data_.tickets = std::max(0, data_.tickets + delta); }
+
+    int GetMaxTickets() const { return data_.maxTickets; }
+    void SetMaxTickets(int maxTickets) { data_.maxTickets = std::max(0, maxTickets); }
+
+    int GetGachaDust() const { return data_.gachaDust; }
+    void SetGachaDust(int value) { data_.gachaDust = std::max(0, value); }
+    void AddGachaDust(int delta) { data_.gachaDust = std::max(0, data_.gachaDust + delta); }
+
+    int GetGachaPityCounter() const { return data_.gachaPityCounter; }
+    void SetGachaPityCounter(int value) { data_.gachaPityCounter = std::max(0, value); }
+    void AddGachaPityCounter(int delta) { data_.gachaPityCounter = std::max(0, data_.gachaPityCounter + delta); }
+
+    int GetGachaRollSequence() const { return data_.gachaRollSequence; }
+    int NextGachaRollSequence() { return ++data_.gachaRollSequence; }
+
+    const std::vector<PlayerSaveData::GachaHistoryEntry>& GetGachaHistory() const { return data_.gachaHistory; }
+    void AddGachaHistoryEntry(const PlayerSaveData::GachaHistoryEntry& entry);
+
     const PlayerSaveData& GetSaveData() const { return data_; }
+
+    /// @brief タワー強化状態を取得
+    PlayerSaveData::TowerEnhancementState GetTowerEnhancements() const { return data_.towerEnhancements; }
+
+    /// @brief タワー強化状態を上書き
+    void SetTowerEnhancements(const PlayerSaveData::TowerEnhancementState& st) { data_.towerEnhancements = st; }
+
+    /// @brief タワーアタッチメント状態を取得
+    std::array<PlayerSaveData::TowerAttachmentSlot, 3> GetTowerAttachments() const { return data_.towerAttachments; }
+
+    /// @brief タワーアタッチメント状態を上書き
+    void SetTowerAttachments(const std::array<PlayerSaveData::TowerAttachmentSlot, 3>& slots) {
+        data_.towerAttachments = slots;
+    }
 
 private:
     std::string filePath_ = "data/saves/player_save.json";
@@ -77,6 +165,7 @@ private:
 
     void EnsureDefaultsFromMasters(const entities::CharacterManager& characterManager,
                                   const entities::ItemPassiveManager& itemPassiveManager);
+    void EnsureStageStatesFromMasters(const entities::StageManager& stageManager);
 };
 
 } // namespace core

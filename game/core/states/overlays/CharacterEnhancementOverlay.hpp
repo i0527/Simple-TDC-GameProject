@@ -1,9 +1,10 @@
 #pragma once
 
 #include "IOverlay.hpp"
-#include "../../entities/Character.hpp"
+#include "../../ecs/entities/Character.hpp"
 #include "../../system/PlayerDataManager.hpp"
-#include <raylib.h>
+#include "../../config/RenderPrimitives.hpp"
+#include "../../config/RenderTypes.hpp"
 #include <vector>
 #include <random>
 #include <array>
@@ -12,17 +13,17 @@
 namespace game {
 namespace core {
 
-/// @brief ユニット強化オーバーレイ
+/// @brief ユニット強化オーバ�Eレイ
 ///
-/// ユニット強化・パッシブ付与・持ち物装備を管理するオーバーレイ。
-/// 3分割レイアウト（ユニット情報・ステータス・操作）で実装。
+/// ユニット強化�Eパッシブ付与�E持ち物裁E��を管琁E��るオーバ�Eレイ、E
+/// 3刁E��レイアウト（ユニット情報・スチE�Eタス・操作）で実裁E��E
 class CharacterEnhancementOverlay : public IOverlay {
 public:
     CharacterEnhancementOverlay();
     ~CharacterEnhancementOverlay() = default;
 
-    // IOverlay実装
-    bool Initialize(BaseSystemAPI* systemAPI) override;
+    // IOverlay実裁E
+    bool Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) override;
     void Update(SharedContext& ctx, float deltaTime) override;
     void Render(SharedContext& ctx) override;
     void Shutdown() override;
@@ -32,10 +33,10 @@ public:
     bool RequestTransition(GameState& nextState) const override;
 
 private:
-    // ========== パネル構造体 ==========
+    // ========== パネル構造佁E==========
     
-    /// @brief 左パネル: ユニット情報（幅は画面サイズから動的計算）
-    /// コンテンツ領域（y=90～990）内に配置される
+    /// @brief 左パネル: ユニット情報�E�幁E�E画面サイズから動的計算！E
+    /// コンチE��チE��域�E�E=90�E�E90�E��Eに配置されめE
     struct UnitInfoPanel {
         float x = 5.0f, y = 95.0f;
         float width = 437.0f, height = 880.0f;
@@ -50,8 +51,8 @@ private:
         const entities::Character* selected_character = nullptr;
     };
     
-    /// @brief 中央パネル: ステータス表示（幅は画面サイズから動的計算）
-    /// コンテンツ領域（y=90～990）内に配置される
+    /// @brief 中央パネル: スチE�Eタス表示�E�幁E�E画面サイズから動的計算！E
+    /// コンチE��チE��域�E�E=90�E�E90�E��Eに配置されめE
     struct StatusPanel {
         float x = 452.0f, y = 95.0f;
         float width = 568.0f, height = 880.0f;
@@ -67,7 +68,7 @@ private:
         StatValue speed;
         StatValue range;
         
-        // 追加表示（編成相当）
+        // 追加表示�E�編成相当！E
         int level = 1;
         int cost = 0;
         entities::AttackType attack_type = entities::AttackType::Single;
@@ -82,49 +83,49 @@ private:
         int font_size = 24;
     };
     
-    /// @brief 右パネル: 操作（幅は画面サイズから動的計算）
-    /// コンテンツ領域（y=90～990）内に配置される
+    /// @brief 右パネル: 操作（幁E�E画面サイズから動的計算！E
+    /// コンチE��チE��域�E�E=90�E�E90�E��Eに配置されめE
     struct OperationPanel {
         float x = 1030.0f, y = 95.0f;
         float width = 875.0f, height = 880.0f;
         
-        // タブ切り替え
+        // タブ�Eり替ぁE
         enum class TabType {
             Enhancement,  // パッシブスキル
-            Equipment     // 装備
+            Equipment     // 裁E��
         };
         TabType active_tab = TabType::Enhancement;
     
         
-        // パッシブスロット (3つ、横並び)
+        // パッシブスロチE�� (3つ、横並び)
         struct PassiveSlot {
             int slot_id;  // 0-2
             const entities::PassiveSkill* assigned_passive;  // nullptr = empty
-            Vector2 position;  // パネル内の相対座標
-            float width = 280.0f;  // 操作パネル幅から動的計算
+            Vector2 position;  // パネル冁E�E相対座樁E
+            float width = 280.0f;  // 操作パネル幁E��ら動皁E��箁E
             float height = 180.0f;
             bool is_hovered = false;
             int level = 1;  // パッシブレベル (1-3)
         };
         PassiveSlot passive_slots[3];
         
-        // パッシブポップアップメニュー
+        // パッシブ�EチE�EアチE�Eメニュー
         bool show_passive_popup = false;
-        int popup_slot_id = -1;  // どのスロットのポップアップか
+        int popup_slot_id = -1;  // どのスロチE��のポップアチE�EぁE
         Vector2 popup_position;
         
         // 利用可能なパッシブ一覧
         std::vector<const entities::PassiveSkill*> available_passives;
         
-        // パッシブ一覧スクロール（下部パネル用）
+        // パッシブ一覧スクロール�E�下部パネル用�E�E
         int passive_scroll_offset = 0;
         
-        // アイテムスロット（装備タブ用）
+        // アイチE��スロチE���E�裁E��タブ用�E�E
         struct ItemSlot {
             int slot_id;
             const entities::Equipment* assigned_item;
-            Vector2 position;  // パネル内の相対座標
-            float width = 280.0f;  // 操作パネル幅から動的計算
+            Vector2 position;  // パネル冁E�E相対座樁E
+            float width = 280.0f;  // 操作パネル幁E��ら動皁E��箁E
             float height = 180.0f;
             bool is_hovered = false;
         };
@@ -132,18 +133,29 @@ private:
         std::vector<const entities::Equipment*> available_items;
         int item_scroll_offset = 0;
 
-        // 装備D&D用
-        std::string dragging_item_id; // ドラッグ中のアイテムID
-        Vector2 drag_start_mouse_pos; // ドラッグ開始時のマウス座標
-        bool is_dragging_item = false; // アイテムをドラッグ中か
-        int selected_item_slot_id = -1; // 選択中のアイテムスロットID
+        // ソーチEI�E�裁E��タブ！E
+        enum class ItemSortKey {
+            Name,
+            OwnedCount,
+            Attack,
+            Defense,
+            Hp
+        };
+        ItemSortKey item_sort_key = ItemSortKey::Name;
+        bool item_sort_ascending = true;  // 初期: 名前は昁E��E
 
-        // アイテムポップアップメニュー
+        // 裁E��D&D用
+        std::string dragging_item_id; // ドラチE��中のアイチE��ID
+        Vector2 drag_start_mouse_pos; // ドラチE��開始時のマウス座樁E
+        bool is_dragging_item = false; // アイチE��をドラチE��中ぁE
+        int selected_item_slot_id = -1; // 選択中のアイチE��スロチE��ID
+
+        // アイチE��ポップアチE�Eメニュー
         bool show_item_popup = false;
-        int popup_item_slot_id = -1; // どのスロットのポップアップか
+        int popup_item_slot_id = -1; // どのスロチE��のポップアチE�EぁE
     };
     
-    /// @brief ポップアップメニュー項目
+    /// @brief ポップアチE�Eメニュー頁E��
     struct PopupMenuItem {
         std::string label;
         Color color;
@@ -153,6 +165,7 @@ private:
     
     // ========== メンバ変数 ==========
     BaseSystemAPI* systemAPI_;
+    SharedContext* sharedContext_ = nullptr;  // Render冁E��も参照したぁE��があるため保持�E�所有権なし！E
     bool isInitialized_;
     mutable bool requestClose_;
     mutable bool hasTransitionRequest_;
@@ -163,26 +176,26 @@ private:
     StatusPanel status_panel_;
     OperationPanel operation_panel_;
     
-    // 状態管理
+    // 状態管琁E
     bool has_unsaved_changes_;
-    PlayerDataManager::CharacterState saved_character_state_{};    // 直近セーブ状態（差分計算の基準）
-    PlayerDataManager::CharacterState editing_character_state_{};  // 現在の編集状態（Lvなど）
+    PlayerDataManager::CharacterState saved_character_state_{};    // 直近セーブ状態（差刁E��算�E基準！E
+    PlayerDataManager::CharacterState editing_character_state_{};  // 現在の編雁E��態！Evなど�E�E
     std::string editing_character_id_;
 
-    // 装備ドラッグ&ドロップ状態
+    // 裁E��ドラチE��&ドロチE�E状慁E
     bool item_drag_started_ = false;
     bool is_item_dragging_ = false;
     int dragging_item_index_ = -1;
     const entities::Equipment* dragging_item_ = nullptr;
-    Vector2 item_drag_start_pos_{};
-    Vector2 item_drag_pos_{};
+    Vec2 item_drag_start_pos_{};
+    Vec2 item_drag_pos_{};
     
-    // ランダム生成器（ガチャ用）
+    // ランダム生�E器�E�ガチャ用�E�E
     std::mt19937 rng_;
     
-    // ========== プライベートメソッド ==========
+    // ========== プライベ�EトメソチE�� ==========
     
-    // 初期化・クリーンアップ
+    // 初期化�EクリーンアチE�E
     void InitializePanels();
     void LoadCharacterList(SharedContext& ctx);
     void SelectCharacter(SharedContext& ctx, const entities::Character* character);
@@ -193,65 +206,69 @@ private:
     void FilterAvailablePassives(SharedContext& ctx);
     void FilterAvailableItems(SharedContext& ctx);
     
-    // 描画メソッド
+    // 描画メソチE��
     void RenderUnitInfoPanel();
-    void RenderStatusPanel();
-    void RenderOperationPanel();
+    void RenderStatusPanel(SharedContext& ctx);
+    void RenderOperationPanel(SharedContext& ctx);
     void RenderUnitListButton();
-    void RenderPassivePopup();
-    void RenderItemPopup();
+    void RenderPassivePopup(SharedContext& ctx);
+    void RenderItemPopup(SharedContext& ctx);
     
     // タブ別描画
-    void RenderEnhancementTab();
-    void RenderEquipmentTab();
+    void RenderEnhancementTab(SharedContext& ctx);
+    void RenderEquipmentTab(SharedContext& ctx);
     
-    // パーツ描画
-    void RenderPassiveSlot(const OperationPanel::PassiveSlot& slot);
+    // パ�EチE��画
+    void RenderPassiveSlot(SharedContext& ctx, const OperationPanel::PassiveSlot& slot);
     void RenderItemSlot(const OperationPanel::ItemSlot& slot);
     void RenderTabButton(float x, float y, float width, float height, const char* label, bool is_active);
     
-    // イベント処理
+    // イベント�E琁E
     void OnUnitListItemClick(SharedContext& ctx, int index);
     void OnTabClick(OperationPanel::TabType tab);
     void OnPassiveSlotClick(int slot_id);
-    void OnPassivePopupOption(SharedContext& ctx, int option);  // 0=ランダム付与/強化, 1=ランダム変更, 2=削除, 3=キャンセル
+    void OnPassivePopupOption(SharedContext& ctx, int option);  // 0=ランダム付丁E強匁E 1=ランダム変更, 2=削除, 3=キャンセル
     void OnItemSlotClick(int slot_id);
     void OnItemListClick(SharedContext& ctx, int index);
-    void OnItemPopupOption(SharedContext& ctx, int option);  // 0=このスロットに装備, 1=外す, 2=キャンセル
+    void OnItemPopupOption(SharedContext& ctx, int option);  // 0=こ�EスロチE��に裁E��, 1=外す, 2=キャンセル
 
-    // レベル操作
+    // レベル操佁E
     void OnLevelUpClick(SharedContext& ctx);
     void OnLevelDownClick(SharedContext& ctx);
+    void OnLevelDownBatchClick(SharedContext& ctx, int levels);
+    void OnLevelUpBatchClick(SharedContext& ctx, int levels);
+    void OnLevelDownMaxClick(SharedContext& ctx);
+    void OnLevelUpMaxClick(SharedContext& ctx);
 
-    // パッシブ一括操作
-    void ResetAllPassives(SharedContext& ctx);
-    void RerollAllPassives(SharedContext& ctx);
+    // パッシブ一括操佁E
+    bool ResetAllPassives(SharedContext& ctx);
+    bool RerollAllPassives(SharedContext& ctx);
 
-    // 装備一括操作
+    // 裁E��一括操佁E
     void RemoveAllEquipment(SharedContext& ctx);
     
-    // 装備D&D操作
+    // 裁E��D&D操佁E
     void OnDragStartItem(SharedContext& ctx, int item_index);
     void OnDragUpdateItem();
     void OnDragEndItem(SharedContext& ctx);
     
-    // マウス入力処理
+    // マウス入力�E琁E
     void ProcessMouseInput(SharedContext& ctx);
-    void UpdateHoverStates(Vector2 mouse_pos);
+    void UpdateHoverStates(Vec2 mouse_pos);
     
-    // キーボード入力処理
+    // キーボ�Eド�E力�E琁E
     void ProcessKeyboardInput(SharedContext& ctx);
     
-    // ユーティリティ
+    // ユーチE��リチE��
     const entities::Character* GetSelectedCharacter() const;
     int GetPassiveSlotAtPosition(Vector2 position) const;
     int GetItemSlotAtPosition(Vector2 position) const;
     
-    // パッシブ操作
-    void AssignRandomPassive(int slot_id);
-    void UpgradePassive(int slot_id);
-    void ReplacePassive(int slot_id);
-    void RemovePassive(int slot_id);
+    // パッシブ操佁E
+    bool AssignRandomPassive(int slot_id);
+    bool UpgradePassive(int slot_id);
+    bool ReplacePassive(SharedContext& ctx, int slot_id);
+    bool RemovePassive(int slot_id);
     
     // 定数
     static constexpr float PANEL_GAP = 20.0f;

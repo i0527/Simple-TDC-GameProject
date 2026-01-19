@@ -2,91 +2,116 @@
 #define __GAME_CORE_GAMESYSTEM_HPP__
 
 #include "../api/BaseSystemAPI.hpp"
-#include "../api/GameModuleAPI.hpp"
-#include "ModuleSystem.hpp"
-#include "OverlayManager.hpp"
+#include "../api/AudioControlAPI.hpp"
+#include "../api/ECSystemAPI.hpp"
+#include "../api/InputSystemAPI.hpp"
+#include "../api/UISystemAPI.hpp"
+#include "../api/DebugUIAPI.hpp"
+#include "../api/SceneOverlayControlAPI.hpp"
 #include "../config/SharedContext.hpp"
 #include "../config/GameState.hpp"
-#include "../init/ResourceInitializer.hpp"
+#include "../api/SetupAPI.hpp"
+#include "../api/BattleProgressAPI.hpp"
+#include "../api/BattleSetupAPI.hpp"
+#include "../states/InitScene.hpp"
 #include "../states/TitleScreen.hpp"
 #include "../states/HomeScreen.hpp"
 #include "../states/GameScene.hpp"
-#include "../entities/CharacterManager.hpp"
-#include "../entities/ItemPassiveManager.hpp"
-#include "../entities/StageManager.hpp"
-#include "PlayerDataManager.hpp"
+#include "../states/EditorScene.hpp"
+#include "../api/GameplayDataAPI.hpp"
 #include <memory>
 
 namespace game {
 namespace core {
 
-/// @brief ゲームシステム統合クラス
+/// @brief ゲームシスチE��統合クラス
 ///
-/// 責務:
-/// - アプリケーション全体の初期化・終了管理
-/// - メインループの管理（フレーム制御）
-/// - BaseSystemAPIとGameModuleAPIの所有・管理
-/// - SharedContextの所有・管理
-/// - ステート管理（enum + 遷移制御）
-/// - 各ステートクラスの所有・管理
-/// - 安全なステート遷移（二重初期化/解放防止）
-/// - モジュール登録の呼び出し（RegisterModules）
-/// - オーバーレイ管理（OverlayManager統合）
+/// 責勁E
+/// - アプリケーション全体�E初期化�E終亁E��琁E
+/// - メインループ�E管琁E��フレーム制御�E�E
+/// - BaseSystemAPIとECSystemAPIの所有�E管琁E
+/// - SharedContextの所有�E管琁E
+/// - スチE�Eト管琁E���E移制御のみ�E�E
+/// - 吁E��チE�Eトクラスの所有�E管琁E
+/// - スチE�Eト�E期化/終亁E�ESceneOverlayControlAPIに雁E��E
+/// - 安�EなスチE�Eト�E移�E�二重初期匁E解放防止�E�E
+/// - オーバ�Eレイ管琁E��EverlayManager統合！E
 ///
-/// ModuleSystemとの関係:
-/// - GameSystemがModuleSystemを所有
-/// - GameSystemがSharedContextを所有し、ModuleSystemに参照として渡す
-/// - メインループでModuleSystemのUpdate/Renderを呼び出す
-///
-/// OverlayManagerとの関係:
-/// - GameSystemがOverlayManagerを所有
-/// - メインループでOverlayManagerのUpdate/Renderを呼び出す
-/// - オーバーレイからの遷移リクエストを処理
+/// OverlayManagerとの関俁E
+/// - GameSystemがOverlayManagerを所朁E
+/// - メインループでOverlayManagerのUpdate/Renderを呼び出ぁE
+/// - オーバ�Eレイからの遷移リクエストを処琁E
 class GameSystem {
 public:
   GameSystem();
   ~GameSystem() = default;
 
-  /// @brief ゲームの初期化
-  /// @return 成功時0、失敗時非0
+  /// @brief ゲームの初期匁E
+  /// @return 成功晁E、失敗時靁E
   int Initialize();
 
-  /// @brief メインループ実行
-  /// @return 終了コード（通常0）
+  /// @brief メインループ実衁E
+  /// @return 終亁E��ード（通常0�E�E
   int Run();
 
-  /// @brief ゲームのシャットダウン
+  /// @brief ゲームのシャチE��ダウン
   void Shutdown();
 
-  /// @brief ステート遷移リクエスト（オーバーレイから呼び出し用）
-  /// @param newState 遷移先のステート
-  /// @note オーバーレイからの遷移リクエストを処理するために公開
+  /// @brief スチE�Eト�E移リクエスト（オーバ�Eレイから呼び出し用�E�E
+  /// @param newState 遷移先�EスチE�EチE
+  /// @note オーバ�Eレイからの遷移リクエストを処琁E��るために公閁E
   void RequestTransition(GameState newState);
 
 private:
   std::unique_ptr<BaseSystemAPI> systemAPI_;
-  std::unique_ptr<GameModuleAPI> gameAPI_;
-  std::unique_ptr<ModuleSystem> moduleSystem_;
-  std::unique_ptr<OverlayManager> overlayManager_;
-  std::unique_ptr<ResourceInitializer> resourceInitializer_;
+  std::unique_ptr<AudioControlAPI> audioAPI_;
+  std::unique_ptr<ECSystemAPI> ecsAPI_;
+  std::unique_ptr<InputSystemAPI> inputAPI_;
+  std::unique_ptr<UISystemAPI> uiAPI_;
+  std::unique_ptr<DebugUIAPI> debugUIAPI_;
+  std::unique_ptr<SceneOverlayControlAPI> sceneOverlayAPI_;
+  std::unique_ptr<SetupAPI> setupAPI_;
+  std::unique_ptr<BattleProgressAPI> battleProgressAPI_;
+  std::unique_ptr<BattleSetupAPI> battleSetupAPI_;
+  std::unique_ptr<states::InitScene> initScene_;
   std::unique_ptr<TitleScreen> titleScreen_;
   std::unique_ptr<states::HomeScreen> homeScreen_;
   std::unique_ptr<states::GameScene> gameScene_;
-  std::unique_ptr<entities::CharacterManager> characterManager_;
-  std::unique_ptr<entities::ItemPassiveManager> itemPassiveManager_;
-  std::unique_ptr<entities::StageManager> stageManager_;
-  std::unique_ptr<PlayerDataManager> playerDataManager_;
+  std::unique_ptr<states::EditorScene> editorScene_;
+  std::unique_ptr<GameplayDataAPI> gameplayDataAPI_;
   SharedContext sharedContext_;
   GameState currentState_;
   bool requestShutdown_;
 
-  // ステート管理
+  // スチE�Eト�E移管琁E
   void transitionTo(GameState newState);
-  void cleanupCurrentState();
-  bool initializeState(GameState state);
 
-  // モジュール管理
-  void RegisterModules();
+  // 初期匁E終亁E�E刁E��
+  bool InitializeBaseSystem();
+  bool InitializeAudio();
+  bool InitializeInput();
+  bool InitializeUI();
+  void InitializeGameplayData();
+  void SetupSharedContext();
+  bool InitializeDebugUI();
+  bool InitializeSetup();
+  bool InitializeBattleSetup();
+  bool InitializeSceneOverlay();
+  bool InitializeBattleProgress();
+  bool InitializeScenes();
+
+  void ShutdownScenes();
+  void ShutdownBattleProgress();
+  void ShutdownDebugUI();
+  void ShutdownBattleSetup();
+  void ShutdownSetup();
+  void ShutdownGameplayData();
+  void ShutdownSceneOverlay();
+  void ShutdownUI();
+  void ShutdownInput();
+  void ShutdownAudio();
+  void ShutdownBaseSystem();
+
 };
 } // namespace core
 } // namespace game

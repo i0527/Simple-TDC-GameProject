@@ -1,6 +1,5 @@
 #include "FieldManager.hpp"
 #include "../../utils/Log.h"
-#include <raylib.h>
 #include <cmath>
 
 namespace game {
@@ -16,7 +15,7 @@ FieldManager::FieldManager(int width, int height, int cellSize,
 bool FieldManager::Initialize(entt::registry* registry) {
     registry_ = registry;
     
-    // デフォルトマップを生成
+    // チE��ォルト�EチE�Eを生戁E
     GenerateDefaultMap();
     
     LOG_INFO("FieldManager initialized: {}x{} grid, cell size: {}", 
@@ -38,7 +37,7 @@ void FieldManager::Render(bool showGrid) {
     // 敵パス描画
     DrawEnemyPath();
     
-    // グリッド線描画
+    // グリチE��線描画
     if (showGrid) {
         DrawGrid();
     }
@@ -93,30 +92,30 @@ entt::entity FieldManager::GetUnitAt(int gx, int gy) const {
 }
 
 bool FieldManager::IsPlaceable(int gx, int gy) const {
-    // 範囲外チェック
+    // 篁E��外チェチE��
     if (!IsValidGridPosition(gx, gy)) {
         return false;
     }
     
-    // 既にユニットが配置されているかチェック
+    // 既にユニットが配置されてぁE��かチェチE��
     auto key = std::make_pair(gx, gy);
     if (gridMap_.find(key) != gridMap_.end()) {
         return false;
     }
     
-    // タイルタイプチェック（パスやブロックには配置不可）
+    // タイルタイプチェチE���E�パスめE��ロチE��には配置不可�E�E
     for (const auto& tile : tiles_) {
         if (tile.gridX == gx && tile.gridY == gy) {
             return tile.type == CellType::Normal;
         }
     }
     
-    // デフォルトで配置可能
+    // チE��ォルトで配置可能
     return true;
 }
 
 void FieldManager::GenerateDefaultMap() {
-    // 全セルを通常タイルとして初期化
+    // 全セルを通常タイルとして初期匁E
     tiles_.clear();
     for (int y = 0; y < height_; ++y) {
         for (int x = 0; x < width_; ++x) {
@@ -128,14 +127,14 @@ void FieldManager::GenerateDefaultMap() {
         }
     }
     
-    // 簡単な敵パスを生成（左から右へ）
+    // 簡単な敵パスを生成（左から右へ�E�E
     enemyPath_.clear();
     int pathY = height_ / 2;
     for (int x = 0; x < width_; ++x) {
         Vector2 pos = GridToPixel(x, pathY);
         enemyPath_.push_back(pos);
         
-        // パスタイルとしてマーク
+        // パスタイルとしてマ�Eク
         for (auto& tile : tiles_) {
             if (tile.gridX == x && tile.gridY == pathY) {
                 tile.type = CellType::Path;
@@ -144,12 +143,12 @@ void FieldManager::GenerateDefaultMap() {
         }
     }
     
-    // スポーン位置（左端）
+    // スポ�Eン位置�E�左端�E�E
     if (!tiles_.empty()) {
         tiles_[pathY * width_].type = CellType::SpawnPoint;
     }
     
-    // ゴール位置（右端）
+    // ゴール位置�E�右端�E�E
     if (!tiles_.empty()) {
         tiles_[pathY * width_ + (width_ - 1)].type = CellType::Goal;
     }
@@ -160,7 +159,7 @@ void FieldManager::GenerateDefaultMap() {
 void FieldManager::DrawGrid() {
     Color gridColor = Color{100, 110, 120, 80};
     
-    // 垂直線
+    // 垂直緁E
     for (int x = 0; x <= width_; ++x) {
         float xPos = originX_ + x * cellSize_;
         DrawLineEx(
@@ -170,7 +169,7 @@ void FieldManager::DrawGrid() {
         );
     }
     
-    // 水平線
+    // 水平緁E
     for (int y = 0; y <= height_; ++y) {
         float yPos = originY_ + y * cellSize_;
         DrawLineEx(
@@ -188,19 +187,19 @@ void FieldManager::DrawTiles() {
         
         switch (tile.type) {
         case CellType::Normal:
-            color = Color{60, 80, 60, 255}; // 濃緑（配置可能）
+            color = Color{60, 80, 60, 255}; // 濁E��（�E置可能�E�E
             break;
         case CellType::Path:
-            color = Color{100, 100, 80, 255}; // 薄黄（敵パス）
+            color = Color{100, 100, 80, 255}; // 薁E��E��敵パス�E�E
             break;
         case CellType::Blocked:
-            color = Color{80, 80, 80, 255}; // グレー（配置不可）
+            color = Color{80, 80, 80, 255}; // グレー�E��E置不可�E�E
             break;
         case CellType::SpawnPoint:
-            color = Color{180, 60, 60, 255}; // 赤（スポーン）
+            color = Color{180, 60, 60, 255}; // 赤�E�スポ�Eン�E�E
             break;
         case CellType::Goal:
-            color = Color{240, 170, 60, 255}; // ゴールド（ゴール）
+            color = Color{240, 170, 60, 255}; // ゴールド（ゴール�E�E
             break;
         default:
             color = GRAY;
@@ -227,7 +226,7 @@ void FieldManager::DrawEnemyPath() {
         Vector2 start = enemyPath_[i];
         Vector2 end = enemyPath_[i + 1];
         
-        // パスの中心に線を描画
+        // パスの中忁E��線を描画
         start.x += cellSize_ / 2.0f;
         start.y += cellSize_ / 2.0f;
         end.x += cellSize_ / 2.0f;

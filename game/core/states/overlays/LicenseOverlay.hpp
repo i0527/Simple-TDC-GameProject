@@ -6,6 +6,8 @@
 namespace game {
 namespace core {
 
+class InputSystemAPI;
+
 /// @brief ライセンスオーバーレイ
 ///
 /// ライセンス情報を表示するオーバーレイ。
@@ -16,7 +18,7 @@ public:
     ~LicenseOverlay() = default;
 
     // IOverlay実装
-    bool Initialize(BaseSystemAPI* systemAPI) override;
+    bool Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) override;
     void Update(SharedContext& ctx, float deltaTime) override;
     void Render(SharedContext& ctx) override;
     void Shutdown() override;
@@ -44,7 +46,8 @@ private:
     void RenderLicenseText(float contentX, float contentY, float contentWidth, float contentHeight);
     void RenderScrollbar(float windowX, float windowY, float windowWidth, float windowHeight);
     float CalculateTotalContentHeight();
-    void HandleScrollbarInteraction(float windowX, float windowY, float windowWidth, float windowHeight);
+    void HandleScrollbarInteraction(InputSystemAPI* inputAPI, float windowX, float windowY,
+                                    float windowWidth, float windowHeight);
 };
 
 } // namespace core

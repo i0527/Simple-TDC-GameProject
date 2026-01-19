@@ -17,6 +17,7 @@ struct SpawnEvent {
     float time = 0.0f;
     std::string enemyId;
     int lane = 0;
+    int level = 1;
 };
 
 /// @brief ステージ定義（data/stages.json）の waves/wave_ids を解釈し、スポーンイベントに正規化する
@@ -39,10 +40,10 @@ private:
     bool LoadWaveFile(const std::string& path);
 
     // stageData["waves"] がオブジェクト配列の場合の解釈
-    std::vector<SpawnEvent> LoadInlineWaves(const nlohmann::json& wavesArray);
+    std::vector<SpawnEvent> LoadInlineWaves(const nlohmann::json& wavesArray, int defaultLevel);
 
     // stageData["waves"] / stageData["wave_ids"] が文字列配列の場合の解釈
-    std::vector<SpawnEvent> LoadWaveIdList(const nlohmann::json& waveIdArray);
+    std::vector<SpawnEvent> LoadWaveIdList(const nlohmann::json& waveIdArray, int defaultLevel);
 
     static void SortByTime(std::vector<SpawnEvent>& events);
 };

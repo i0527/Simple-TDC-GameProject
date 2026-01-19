@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IScene.hpp"
 #include "../api/BaseSystemAPI.hpp"
 #include "../config/GameState.hpp"
 #include "../config/SharedContext.hpp"
@@ -10,7 +11,8 @@ namespace game {
 namespace core {
 
 // 前方宣言
-class OverlayManager;
+class InputSystemAPI;
+class SceneOverlayControlAPI;
 
 /// @brief タイトル画面専用クラス
 ///
@@ -24,7 +26,7 @@ class OverlayManager;
 /// - 初期化済みチェック
 /// - メニューインデックス範囲チェック
 /// - 遷移リクエストは一度だけ有効（取得後にリセット）
-class TitleScreen {
+class TitleScreen : public IScene {
 public:
     TitleScreen();
     ~TitleScreen();
@@ -33,28 +35,34 @@ public:
     /// @param systemAPI BaseSystemAPIへのポインタ（所有権なし）
     /// @param ctx SharedContextへのポインタ（所有権なし）
     /// @return 成功時true、失敗時false
-    bool Initialize(BaseSystemAPI* systemAPI, SharedContext* ctx);
+    bool Initialize(BaseSystemAPI* systemAPI) override;
 
     /// @brief 更新処理（入力処理・メニュー更新）
     /// @param deltaTime デルタタイム（秒）
-    void Update(float deltaTime);
+    void Update(float deltaTime) override;
 
     /// @brief タイトル画面描画
-    void Render();
+    void Render() override;
 
     /// @brief クリーンアップ
-    void Shutdown();
+    void Shutdown() override;
 
     /// @brief 遷移リクエスト取得
     /// @param nextState 遷移先のステート（出力）
     /// @return 遷移リクエストがある場合true
     /// @note このメソッドは一度だけ有効。呼び出し後、リクエストはリセットされる
-    bool RequestTransition(GameState& nextState);
+    bool RequestTransition(GameState& nextState) override;
 
     /// @brief 終了リクエスト取得
     /// @return 終了リクエストがある場合true
     /// @note このメソッドは一度だけ有効。呼び出し後、リクエストはリセットされる
-    bool RequestQuit();
+    bool RequestQuit() override;
+
+    void SetSharedContext(SharedContext* ctx) override {
+        sharedContext_ = ctx;
+        inputAPI_ = ctx ? ctx->inputAPI : nullptr;
+        sceneOverlayAPI_ = ctx ? ctx->sceneOverlayAPI : nullptr;
+    }
 
 private:
     struct Button {
@@ -71,8 +79,9 @@ private:
     // MenuItemはButtonと同じ構造を使用（統一されたボタンサイズのため）
 
     BaseSystemAPI* systemAPI_;
+    InputSystemAPI* inputAPI_;
     SharedContext* sharedContext_;
-    OverlayManager* overlayManager_;
+    SceneOverlayControlAPI* sceneOverlayAPI_;
     bool isInitialized_;
     bool hasTransitionRequest_;
     GameState requestedNextState_;
@@ -86,7 +95,7 @@ private:
     std::string version_text_;
     
     // リソース
-    Texture2D background_image_;
+    Texture2D* background_texture_;
     bool has_background_;
     
     // 設定

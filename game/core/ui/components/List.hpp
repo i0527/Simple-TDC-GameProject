@@ -6,6 +6,9 @@
 
 namespace game {
 namespace core {
+
+class UISystemAPI;
+
 namespace ui {
 
 /// @brief リストアイテム構造体
@@ -60,6 +63,9 @@ public:
     /// @param item 追加するアイテム
     void AddItem(const ListItem& item);
 
+    /// @brief アイテムをすべて削除
+    void ClearItems();
+
     /// @brief アイテムを削除
     /// @param id 削除するアイテムのID
     void RemoveItem(const std::string& id);
@@ -92,6 +98,9 @@ public:
     /// @return アイテム数
     size_t GetItemCount() const;
 
+    /// @brief 描画用UIシステムAPIを設定
+    void SetUISystemAPI(::game::core::UISystemAPI* uiAPI) { uiAPI_ = uiAPI; }
+
 private:
     Rect bounds_;
     Margin margin_;
@@ -106,6 +115,7 @@ private:
     float itemHeight_;
     float scrollOffset_;
     std::function<void(const ListItem&)> onSelectionChanged_;
+    ::game::core::UISystemAPI* uiAPI_ = nullptr;
 };
 
 } // namespace ui

@@ -22,7 +22,7 @@ OverlayManager::~OverlayManager() {
     Shutdown();
 }
 
-bool OverlayManager::PushOverlay(OverlayState state, BaseSystemAPI* systemAPI) {
+bool OverlayManager::PushOverlay(OverlayState state, BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     if (!systemAPI) {
         LOG_ERROR("OverlayManager: systemAPI is null");
         return false;
@@ -33,19 +33,19 @@ bool OverlayManager::PushOverlay(OverlayState state, BaseSystemAPI* systemAPI) {
         return false;
     }
 
-    // 既に同じステートのオーバーレイが存在するかチェック
+    // 既に同じスチE�Eト�Eオーバ�Eレイが存在するかチェチE��
     if (IsOverlayActive(state)) {
         LOG_WARN("OverlayManager: Overlay {} is already active", static_cast<int>(state));
         return false;
     }
 
-    auto overlay = CreateOverlay(state, systemAPI);
+    auto overlay = CreateOverlay(state, systemAPI, uiAPI);
     if (!overlay) {
         LOG_ERROR("OverlayManager: Failed to create overlay {}", static_cast<int>(state));
         return false;
     }
 
-    if (!overlay->Initialize(systemAPI)) {
+    if (!overlay->Initialize(systemAPI, uiAPI)) {
         LOG_ERROR("OverlayManager: Failed to initialize overlay {}", static_cast<int>(state));
         return false;
     }
@@ -79,40 +79,59 @@ void OverlayManager::Update(SharedContext& ctx, float deltaTime) {
         return;
     }
 
-    // 最上層のオーバーレイのみ更新
+    // 最上層のオーバ�Eレイのみ更新
     auto& top = stack_.back();
     top->Update(ctx, deltaTime);
 
-    // クローズリクエストを処理
+    // クローズリクエストを処琁E
     if (top->RequestClose()) {
         PopOverlay();
         return;
     }
 
-    // P0: ステート遷移リクエストを処理（内部に保持）
+    // P0: スチE�Eト�E移リクエストを処琁E���E部に保持�E�E
     GameState nextState;
     if (top->RequestTransition(nextState)) {
         requestedTransition_ = nextState;
         hasTransitionRequest_ = true;
         LOG_INFO("OverlayManager: Transition request to state {}", static_cast<int>(nextState));
     }
+
+    if (top->RequestQuit()) {
+        hasQuitRequest_ = true;
+        LOG_INFO("OverlayManager: Quit requested from overlay");
+    }
 }
 
 void OverlayManager::Render(SharedContext& ctx) {
     if (stack_.empty()) return;
 
-    // P1: 背景半透明をここで一括描画
-    // 背景シーンを見せたまま、全オーバーレイを重ねる想定
-    ctx.systemAPI->DrawRectangle(
+    // P1: 背景半透�Eをここで一括描画
+    // 背景シーンを見せたまま、�Eオーバ�Eレイを重ねる想宁E
+    ctx.systemAPI->Render().DrawRectangle(
         0, 0,
-        ctx.systemAPI->GetInternalWidth(),
-        ctx.systemAPI->GetInternalHeight(),
+        ctx.systemAPI->Render().GetInternalWidth(),
+        ctx.systemAPI->Render().GetInternalHeight(),
         Color{0, 0, 0, 100}
     );
 
-    // 下から順に描画（奥 → 手前）
+    // 下から頁E��描画�E�奥 ↁE手前�E�E
     for (auto& overlay : stack_) {
-        overlay->Render(ctx);
+        if (!overlay->IsImGuiOverlay()) {
+            overlay->Render(ctx);
+        }
+    }
+}
+
+void OverlayManager::RenderImGui(SharedContext& ctx) {
+    if (stack_.empty()) {
+        return;
+    }
+
+    for (auto& overlay : stack_) {
+        if (overlay->IsImGuiOverlay()) {
+            overlay->Render(ctx);
+        }
     }
 }
 
@@ -144,25 +163,10 @@ bool OverlayManager::IsOverlayActive(OverlayState state) const {
     return false;
 }
 
-std::unique_ptr<IOverlay> OverlayManager::CreateOverlay(OverlayState state, BaseSystemAPI* systemAPI) {
+std::unique_ptr<IOverlay> OverlayManager::CreateOverlay(OverlayState state, BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     switch (state) {
-    case OverlayState::StageSelect:
-        return std::make_unique<StageSelectOverlay>();
-    
-    case OverlayState::Formation:
-        return std::make_unique<FormationOverlay>();
-    
-    case OverlayState::Enhancement:
-        return std::make_unique<CharacterEnhancementOverlay>();
-    
-    case OverlayState::Codex:
-        return std::make_unique<CodexOverlay>();
-    
     case OverlayState::Settings:
         return std::make_unique<SettingsOverlay>();
-    
-    case OverlayState::Gacha:
-        return std::make_unique<GachaOverlay>();
     
     case OverlayState::License:
         return std::make_unique<LicenseOverlay>();

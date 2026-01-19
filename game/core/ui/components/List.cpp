@@ -1,8 +1,11 @@
 #include "List.hpp"
 #include "../UIEvent.hpp"
+#include "../../api/UISystemAPI.hpp"
+#include "../UiAssetKeys.hpp"
 #include "../../../utils/Log.h"
 #include <imgui.h>
 #include <algorithm>
+#include <cstdint>
 
 namespace game {
 namespace core {
@@ -58,56 +61,88 @@ void List::Render() {
     ImGui::SetNextWindowPos(absolutePos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(bounds_.width, bounds_.height), ImGuiCond_Always);
 
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | 
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                              ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                             ImGuiWindowFlags_NoScrollWithMouse;
+                             ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBackground;
 
     if (!enabled_) {
         flags |= ImGuiWindowFlags_NoInputs;
     }
 
     if (ImGui::Begin(("List##" + id_).c_str(), nullptr, flags)) {
-        // スクロール可能なリスト
-        ImGui::BeginChild("##list_content", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        ImVec2 windowPos = ImGui::GetWindowPos();
+        ImVec2 windowSize = ImGui::GetWindowSize();
+
+        if (uiAPI_) {
+            Texture2D* bgTexture = uiAPI_->GetTexturePtr(UiAssetKeys::FantasyPanelLight);
+            if (bgTexture && bgTexture->id != 0) {
+                ImTextureID texId = static_cast<ImTextureID>(static_cast<uintptr_t>(bgTexture->id));
+                drawList->AddImage(texId, windowPos,
+                                   ImVec2(windowPos.x + windowSize.x, windowPos.y + windowSize.y));
+            }
+            Texture2D* borderTexture = uiAPI_->GetTexturePtr(UiAssetKeys::FantasyBorderLight);
+            if (borderTexture && borderTexture->id != 0) {
+                ImTextureID borderId = static_cast<ImTextureID>(static_cast<uintptr_t>(borderTexture->id));
+                drawList->AddImage(borderId, windowPos,
+                                   ImVec2(windowPos.x + windowSize.x, windowPos.y + windowSize.y));
+            }
+        }
+
+        ImGui::BeginChild("##list_content", ImVec2(0, 0), false,
+                          ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoBackground);
+
+        ImDrawList* childDrawList = ImGui::GetWindowDrawList();
+        float availableWidth = ImGui::GetContentRegionAvail().x;
 
         for (size_t i = 0; i < items_.size(); ++i) {
             const auto& item = items_[i];
             bool isSelected = (static_cast<int>(i) == selectedIndex_);
             bool isEnabled = item.enabled && enabled_;
 
-            // 選択状態のスタイル
-            if (isSelected) {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.6f, 0.8f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.7f, 0.9f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.1f, 0.5f, 0.7f, 1.0f));
-            } else if (!isEnabled) {
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
+            ImVec2 itemPos = ImGui::GetCursorScreenPos();
+            ImVec2 itemSize = ImVec2(availableWidth, itemHeight_);
+            std::string buttonId = "##list_item_" + std::to_string(i);
+            bool clicked = ImGui::InvisibleButton(buttonId.c_str(), itemSize);
+            bool hovered = ImGui::IsItemHovered();
+
+            const char* textureKey = UiAssetKeys::ButtonSecondaryNormal;
+            if (!isEnabled) {
+                textureKey = UiAssetKeys::ButtonSecondaryNormal;
+            } else if (isSelected) {
+                textureKey = UiAssetKeys::ButtonPrimaryHover;
+            } else if (hovered) {
+                textureKey = UiAssetKeys::ButtonSecondaryHover;
             }
 
-            // アイテムボタン
-            std::string buttonLabel = item.label;
+            Color textColor = Color{230, 230, 230, 255};
+            if (uiAPI_) {
+                Texture2D* texture = uiAPI_->GetTexturePtr(textureKey);
+                if (texture && texture->id != 0) {
+                    ImTextureID texId = static_cast<ImTextureID>(static_cast<uintptr_t>(texture->id));
+                    childDrawList->AddImage(texId, itemPos,
+                                            ImVec2(itemPos.x + itemSize.x, itemPos.y + itemSize.y));
+                }
+                textColor = uiAPI_->GetReadableTextColor(textureKey);
+            }
+
+            std::string label = item.label;
             if (!item.value.empty()) {
-                buttonLabel += " - " + item.value;
+                label += " - " + item.value;
             }
+            ImVec2 textSize = ImGui::CalcTextSize(label.c_str());
+            ImVec2 textPos = ImVec2(itemPos.x + 12.0f, itemPos.y + (itemSize.y - textSize.y) * 0.5f);
+            unsigned char textAlpha = isEnabled ? 255 : 160;
+            childDrawList->AddText(textPos, IM_COL32(textColor.r, textColor.g, textColor.b, textAlpha), label.c_str());
 
-            if (ImGui::Button(buttonLabel.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, itemHeight_))) {
-                if (isEnabled && static_cast<int>(i) != selectedIndex_) {
-                    int oldIndex = selectedIndex_;
-                    selectedIndex_ = static_cast<int>(i);
-                    
-                    if (onSelectionChanged_ && oldIndex != selectedIndex_) {
-                        onSelectionChanged_(item);
-                    }
+            if (clicked && isEnabled && static_cast<int>(i) != selectedIndex_) {
+                int oldIndex = selectedIndex_;
+                selectedIndex_ = static_cast<int>(i);
+                if (onSelectionChanged_ && oldIndex != selectedIndex_) {
+                    onSelectionChanged_(item);
                 }
             }
 
-            if (isSelected || !isEnabled) {
-                ImGui::PopStyleColor(3);
-            }
-
-            // ページネーション: 表示するアイテム数を制限
             if (itemsPerPage_ > 0 && static_cast<int>(i) >= itemsPerPage_ - 1) {
                 break;
             }
@@ -349,6 +384,11 @@ void List::SetId(const std::string& id) {
 
 void List::AddItem(const ListItem& item) {
     items_.push_back(item);
+}
+
+void List::ClearItems() {
+    items_.clear();
+    selectedIndex_ = -1;
 }
 
 void List::RemoveItem(const std::string& id) {

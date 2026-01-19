@@ -2,8 +2,11 @@
 
 #include "../../../utils/Log.h"
 #include "../../api/BaseSystemAPI.hpp"
-#include "../../entities/StageManager.hpp"
+#include "../../api/InputSystemAPI.hpp"
+#include "../../api/GameplayDataAPI.hpp"
 #include "../../ui/OverlayColors.hpp"
+#include "../../ui/UiAssetKeys.hpp"
+#include "../../config/RenderPrimitives.hpp"
 
 // 標準ライブラリ
 #include <cstdlib>
@@ -15,7 +18,7 @@ BattleResultOverlay::BattleResultOverlay(bool isVictory)
     : isVictory_(isVictory) {
 }
 
-bool BattleResultOverlay::Initialize(BaseSystemAPI* systemAPI) {
+bool BattleResultOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     if (isInitialized_) {
         LOG_ERROR("BattleResultOverlay already initialized");
         return false;
@@ -40,8 +43,8 @@ void BattleResultOverlay::Update(SharedContext& ctx, float /*deltaTime*/) {
 
     UpdateNextStageInfo(ctx);
 
-    // ESCはホームへ
-    if (systemAPI_->IsKeyPressed(KEY_ESCAPE)) {
+    // ESCはホ�Eムへ
+    if (ctx.inputAPI && ctx.inputAPI->IsEscapePressed()) {
         hasTransitionRequest_ = true;
         requestedNextState_ = GameState::Home;
     }
@@ -49,7 +52,7 @@ void BattleResultOverlay::Update(SharedContext& ctx, float /*deltaTime*/) {
     HandleMouseInput(ctx);
 }
 
-void BattleResultOverlay::Render(SharedContext& /*ctx*/) {
+void BattleResultOverlay::Render(SharedContext& ctx) {
     if (!isInitialized_) return;
 
     // 中央ウィンドウ
@@ -58,31 +61,31 @@ void BattleResultOverlay::Render(SharedContext& /*ctx*/) {
     const float windowX = (1920.0f - windowW) * 0.5f;
     const float windowY = (1080.0f - windowH) * 0.45f;
 
-    systemAPI_->DrawRectangle(static_cast<int>(windowX),
-                              static_cast<int>(windowY),
-                              static_cast<int>(windowW),
-                              static_cast<int>(windowH),
-                              ui::OverlayColors::OVERLAY_BG);
-
-    systemAPI_->DrawRectangleLines(static_cast<int>(windowX),
-                                   static_cast<int>(windowY),
-                                   static_cast<int>(windowW),
-                                   static_cast<int>(windowH),
-                                   2.0f,
-                                   ui::OverlayColors::BORDER_DEFAULT);
+    Rect windowRect{windowX, windowY, windowW, windowH};
+    systemAPI_->Render().DrawUiNineSlice(ui::UiAssetKeys::PanelBackground,
+                                         windowRect, 8, 8, 8, 8,
+                                         ToCoreColor(WHITE));
+    systemAPI_->Render().DrawUiNineSlice(ui::UiAssetKeys::PanelBorder, windowRect,
+                                         8, 8, 8, 8, ToCoreColor(WHITE));
 
     // タイトル
-    const char* title = isVictory_ ? "勝利！" : "敗北…";
+    const char* title = isVictory_ ? "勝利!!" : "敗北...";
     const float titleSize = 64.0f;
-    Vector2 tSize = systemAPI_->MeasureTextDefault(title, titleSize, 1.0f);
+    Vec2 tSize =
+        systemAPI_->Render().MeasureTextDefaultCore(title, titleSize, 1.0f);
     float titleX = windowX + (windowW - tSize.x) * 0.5f;
     float titleY = windowY + 40.0f;
-    Color titleColor = isVictory_ ? ui::OverlayColors::TEXT_SUCCESS : ui::OverlayColors::TEXT_ERROR;
-    systemAPI_->DrawTextDefault(title, titleX, titleY, titleSize, titleColor);
+    ColorRGBA titleColor = isVictory_ ? ToCoreColor(ui::OverlayColors::TEXT_SUCCESS)
+                                      : ToCoreColor(ui::OverlayColors::TEXT_ERROR);
+    systemAPI_->Render().DrawTextDefault(title, titleX, titleY, titleSize,
+                                         titleColor);
 
-    // 説明
-    const char* desc = isVictory_ ? "敵のタワーを破壊しました。" : "自軍のタワーが破壊されました。";
-    systemAPI_->DrawTextDefault(desc, windowX + 80.0f, titleY + 90.0f, 24.0f, ui::OverlayColors::TEXT_PRIMARY);
+    // 説昁E
+    const char* desc = isVictory_ ? "敵のタワーを破壊しました。"
+                                  : "自軍のタワーが破壊されました。";
+    systemAPI_->Render().DrawTextDefault(desc, windowX + 80.0f, titleY + 90.0f,
+                                         24.0f,
+                                         ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
 
     // ボタン
     const float btnW = 260.0f;
@@ -91,35 +94,44 @@ void BattleResultOverlay::Render(SharedContext& /*ctx*/) {
     const float btnGap = 40.0f;
     const float btnX0 = windowX + (windowW - (btnW * 2 + btnGap)) * 0.5f;
 
-    // 左：ホーム
-    Rectangle homeRect{ btnX0, btnY, btnW, btnH };
-    systemAPI_->DrawRectangleRec(homeRect, ui::OverlayColors::BUTTON_SECONDARY);
-    systemAPI_->DrawRectangleLines(static_cast<int>(homeRect.x),
-                                   static_cast<int>(homeRect.y),
-                                   static_cast<int>(homeRect.width),
-                                   static_cast<int>(homeRect.height),
-                                   2.0f,
-                                   ui::OverlayColors::BORDER_DEFAULT);
-    systemAPI_->DrawTextDefault("ホームへ", homeRect.x + 72.0f, homeRect.y + 14.0f, 26.0f, ui::OverlayColors::TEXT_DARK);
+    // 左�E��Eーム
+    Rect homeRect{ btnX0, btnY, btnW, btnH };
+    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
+                              : Vec2{0.0f, 0.0f};
+    bool homeHovered = mouse.x >= homeRect.x && mouse.x <= homeRect.x + homeRect.width &&
+                       mouse.y >= homeRect.y && mouse.y <= homeRect.y + homeRect.height;
+    const char* homeTexture = homeHovered
+        ? ui::UiAssetKeys::ButtonSecondaryHover
+        : ui::UiAssetKeys::ButtonSecondaryNormal;
+    systemAPI_->Render().DrawUiNineSlice(homeTexture, homeRect, 8, 8, 8, 8,
+                                         ToCoreColor(WHITE));
+    systemAPI_->Render().DrawTextDefault(
+        "ホームへ", homeRect.x + 72.0f, homeRect.y + 14.0f, 26.0f,
+        ToCoreColor(ui::OverlayColors::TEXT_DARK));
 
-    // 右：勝利=次ステージ / 敗北=リトライ
-    Rectangle rightRect{ btnX0 + btnW + btnGap, btnY, btnW, btnH };
+    // 右�E�勝利=次スチE�Eジ / 敗北=リトライ
+    Rect rightRect{ btnX0 + btnW + btnGap, btnY, btnW, btnH };
     const bool rightEnabled = isVictory_ ? nextStageEnabled_ : true;
-    Color rightBg = rightEnabled ? ui::OverlayColors::BUTTON_PRIMARY : ui::OverlayColors::BUTTON_DISABLED;
-    systemAPI_->DrawRectangleRec(rightRect, rightBg);
-    systemAPI_->DrawRectangleLines(static_cast<int>(rightRect.x),
-                                   static_cast<int>(rightRect.y),
-                                   static_cast<int>(rightRect.width),
-                                   static_cast<int>(rightRect.height),
-                                   2.0f,
-                                   ui::OverlayColors::BORDER_DEFAULT);
+    bool rightHovered = mouse.x >= rightRect.x && mouse.x <= rightRect.x + rightRect.width &&
+                        mouse.y >= rightRect.y && mouse.y <= rightRect.y + rightRect.height;
+    const char* rightTexture = ui::UiAssetKeys::ButtonPrimaryNormal;
+    if (!rightEnabled) {
+        rightTexture = ui::UiAssetKeys::ButtonSecondaryNormal;
+    } else if (rightHovered) {
+        rightTexture = ui::UiAssetKeys::ButtonPrimaryHover;
+    }
+    systemAPI_->Render().DrawUiNineSlice(rightTexture, rightRect, 8, 8, 8, 8,
+                                         ToCoreColor(WHITE));
     const char* rightLabel = isVictory_ ? "次のステージ" : "リトライ";
-    systemAPI_->DrawTextDefault(rightLabel, rightRect.x + 40.0f, rightRect.y + 14.0f, 26.0f, ui::OverlayColors::TEXT_DARK);
+    systemAPI_->Render().DrawTextDefault(
+        rightLabel, rightRect.x + 40.0f, rightRect.y + 14.0f, 26.0f,
+        ToCoreColor(ui::OverlayColors::TEXT_DARK));
 
     // 注記（勝利で次ステージ不可のとき）
     if (isVictory_ && !nextStageEnabled_) {
-        systemAPI_->DrawTextDefault("次ステージが見つかりません（または未解放）",
-                                    windowX + 80.0f, btnY - 40.0f, 18.0f, ui::OverlayColors::TEXT_MUTED);
+        systemAPI_->Render().DrawTextDefault(
+            "次のステージが見つかりません。または未解放です。", windowX + 80.0f,
+            btnY - 40.0f, 18.0f, ToCoreColor(ui::OverlayColors::TEXT_MUTED));
     }
 }
 
@@ -154,19 +166,14 @@ void BattleResultOverlay::UpdateNextStageInfo(SharedContext& ctx) {
     nextStageEnabled_ = false;
     nextStageId_.clear();
 
-    if (!ctx.stageManager) return;
+    if (!ctx.gameplayDataAPI) return;
     if (ctx.currentStageId.empty()) return;
 
-    // stage idが数値なら次へ
-    char* endPtr = nullptr;
-    long cur = std::strtol(ctx.currentStageId.c_str(), &endPtr, 10);
-    if (!endPtr || *endPtr != '\0') {
-        // 数値でないステージ（debug等）は「次」を出さない
-        return;
-    }
+    const std::string nextStageId =
+        ctx.gameplayDataAPI->GetPreferredNextStageId(ctx.currentStageId);
+    if (nextStageId.empty()) return;
 
-    int nextNumber = static_cast<int>(cur) + 1;
-    auto nextStage = ctx.stageManager->GetStageData(nextNumber);
+    auto nextStage = ctx.gameplayDataAPI->GetStageDataById(nextStageId);
     if (!nextStage) return;
     if (nextStage->isLocked) return;
 
@@ -175,7 +182,7 @@ void BattleResultOverlay::UpdateNextStageInfo(SharedContext& ctx) {
 }
 
 void BattleResultOverlay::HandleMouseInput(SharedContext& ctx) {
-    if (!systemAPI_->IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (!ctx.inputAPI || !ctx.inputAPI->IsLeftClickPressed()) {
         return;
     }
 
@@ -190,11 +197,11 @@ void BattleResultOverlay::HandleMouseInput(SharedContext& ctx) {
     const float btnGap = 40.0f;
     const float btnX0 = windowX + (windowW - (btnW * 2 + btnGap)) * 0.5f;
 
-    Rectangle homeRect{ btnX0, btnY, btnW, btnH };
-    Rectangle rightRect{ btnX0 + btnW + btnGap, btnY, btnW, btnH };
+    Rect homeRect{ btnX0, btnY, btnW, btnH };
+    Rect rightRect{ btnX0 + btnW + btnGap, btnY, btnW, btnH };
 
-    Vector2 mouse = systemAPI_->GetMousePosition();
-    auto inRect = [&](Rectangle r) {
+    auto mouse = ctx.inputAPI->GetMousePosition();
+    auto inRect = [&](Rect r) {
         return mouse.x >= r.x && mouse.x <= r.x + r.width &&
                mouse.y >= r.y && mouse.y <= r.y + r.height;
     };
@@ -202,27 +209,27 @@ void BattleResultOverlay::HandleMouseInput(SharedContext& ctx) {
     if (inRect(homeRect)) {
         hasTransitionRequest_ = true;
         requestedNextState_ = GameState::Home;
-        systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+        ctx.inputAPI->ConsumeLeftClick();
         return;
     }
 
     if (inRect(rightRect)) {
         if (isVictory_) {
             if (!nextStageEnabled_) {
-                systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+                ctx.inputAPI->ConsumeLeftClick();
                 return;
             }
             ctx.currentStageId = nextStageId_;
             hasTransitionRequest_ = true;
             requestedNextState_ = GameState::Game;
-            systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+            ctx.inputAPI->ConsumeLeftClick();
             return;
         }
 
-        // 敗北：リトライ（ステージIDはそのまま）
+        // 敗北�E�リトライ�E�スチE�EジIDはそ�Eまま�E�E
         hasTransitionRequest_ = true;
         requestedNextState_ = GameState::Game;
-        systemAPI_->ConsumeMouseButton(MOUSE_LEFT_BUTTON);
+        ctx.inputAPI->ConsumeLeftClick();
         return;
     }
 }

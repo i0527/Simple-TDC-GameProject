@@ -5,10 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
-// 外部ライブラリ
-#include <raylib.h>
-
-// プロジェクト内
+// プロジェクト�E
+#include "../config/RenderPrimitives.hpp"
 #include "../api/BaseSystemAPI.hpp"
 #include "../config/SharedContext.hpp"
 
@@ -29,7 +27,7 @@ struct BattleHUDAction {
     std::string unitId;            // SpawnUnit用
 };
 
-/// @brief 画像寄せのシンプルHUD（上部操作＋下部10枠ユニットバー）
+/// @brief 画像寁E��のシンプルHUD�E�上部操作＋下部10枠ユニットバー�E�E
 class BattleHUDRenderer {
 public:
     explicit BattleHUDRenderer(BaseSystemAPI* sysAPI);
@@ -45,9 +43,9 @@ public:
                 float currentTime,
                 const std::unordered_map<std::string, float>& cooldownUntil);
 
-    /// @brief マウスクリックをHUDとして解釈し、アクションを返す
+    /// @brief マウスクリチE��をHUDとして解釈し、アクションを返す
     BattleHUDAction HandleClick(const SharedContext& ctx,
-                                Vector2 mousePos,
+                                Vec2 mousePos,
                                 int gold,
                                 float currentTime,
                                 const std::unordered_map<std::string, float>& cooldownUntil);
@@ -56,13 +54,12 @@ private:
     BaseSystemAPI* sysAPI_;
 
     struct RectButton {
-        Rectangle rect{};
+        Rect rect{};
         BattleHUDAction action{};
     };
 
     struct UnitSlotButton {
-        Rectangle slotRect{};
-        Rectangle spawnRect{};
+        Rect slotRect{};
         std::string unitId;
         int costGold = 0;
         bool isEnabled = false;
@@ -81,7 +78,7 @@ private:
                          float currentTime,
                          const std::unordered_map<std::string, float>& cooldownUntil);
 
-    static bool IsMouseInRect(Vector2 mouse, Rectangle rect);
+    static bool IsMouseInRect(Vec2 mouse, Rect rect);
     static float SafePct(int current, int max);
 };
 

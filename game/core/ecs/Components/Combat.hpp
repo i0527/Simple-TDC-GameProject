@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raylib.h>
-#include "../../entities/Character.hpp"
+#include "../../config/RenderTypes.hpp"
+#include "../entities/Character.hpp"
 
 namespace game {
 namespace core {
@@ -15,10 +15,21 @@ struct Combat {
     entities::EffectType effect_type = entities::EffectType::Normal;
     float attack_span = 1.0f;  // 攻撃スパン（秒）
     float last_attack_time = 0.0f;  // 最後の攻撃時刻
+    bool is_attacking = false;
+    float attack_start_time = 0.0f;
+    float attack_hit_time = 0.0f;
+    float attack_duration = 0.0f;
+    bool attack_hit_fired = false;
 
     Combat() = default;
-    Combat(entities::AttackType type, Vector2 size, entities::EffectType effect, float span)
-        : attack_type(type), attack_size(size), effect_type(effect), attack_span(span) {}
+    Combat(entities::AttackType type, Vector2 size, entities::EffectType effect, float span,
+           float hitTime = 0.0f, float duration = 0.0f)
+        : attack_type(type),
+          attack_size(size),
+          effect_type(effect),
+          attack_span(span),
+          attack_hit_time(hitTime),
+          attack_duration(duration) {}
 
     bool CanAttack(float current_time) const {
         return (current_time - last_attack_time) >= attack_span;

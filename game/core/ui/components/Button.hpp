@@ -5,6 +5,9 @@
 
 namespace game {
 namespace core {
+
+class UISystemAPI;
+
 namespace ui {
 
 /// @brief ボタンUIコンポーネント
@@ -67,6 +70,9 @@ public:
     /// @return アクションID
     const std::string& GetActionId() const;
 
+    /// @brief 描画用UIシステムAPIを設定
+    void SetUISystemAPI(::game::core::UISystemAPI* uiAPI) { uiAPI_ = uiAPI; }
+
 private:
     Rect bounds_;
     Margin margin_;
@@ -78,6 +84,7 @@ private:
     std::string label_;
     std::string actionId_;  // P1: 構造化イベント用
     std::function<void()> onClickCallback_;
+    ::game::core::UISystemAPI* uiAPI_ = nullptr;
 };
 
 } // namespace ui
