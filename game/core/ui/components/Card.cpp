@@ -1,5 +1,6 @@
 #include "Card.hpp"
 #include "../UIEvent.hpp"
+#include "../ImGuiSoundHelpers.hpp"
 #include "../../../utils/Log.h"
 #include <imgui.h>
 #include <algorithm>
@@ -82,12 +83,17 @@ void Card::Render() {
             ImGui::Separator();
         }
 
-        // 画像（将来実装: テクスチャIDから画像を取得して表示）
+        // 画像は未使用時に領域を確保しない（ガチャUIの可読性向上）
+        bool imageClicked = false;
         if (!content_.imageId.empty()) {
-            // プレースホルダー: 画像表示領域
-            ImVec2 imageSize(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x);
-            ImGui::InvisibleButton("##image", imageSize);
-            ImGui::SameLine();
+            ImVec2 imageSize(ImGui::GetContentRegionAvail().x,
+                             ImGui::GetContentRegionAvail().x);
+            imageClicked = ImGuiSound::InvisibleButton(
+                baseSystemAPI_,
+                "##image",
+                imageSize,
+                ImGuiButtonFlags_None,
+                ImGuiSoundType::Tap);
         }
 
         // 説明
@@ -111,7 +117,11 @@ void Card::Render() {
         }
 
         // クリック処理
-        if (enabled_ && ImGui::IsItemClicked()) {
+        const bool itemClicked = ImGui::IsItemClicked();
+        if (enabled_ && (imageClicked || itemClicked)) {
+            if (!imageClicked) {
+                ImGuiSound::PlaySound(baseSystemAPI_, ImGuiSoundType::Tap);
+            }
             if (onClickCallback_) {
                 onClickCallback_();
             }

@@ -23,7 +23,8 @@ FormationOverlay::FormationOverlay()
       drag_position_({0.0f, 0.0f}), is_dragging_(false),
       drag_start_pos_({0.0f, 0.0f}), drag_started_(false),
       selected_slot_index_(-1), selected_character_(nullptr),
-      animation_time_(0.0f), restored_from_context_(false) {
+      animation_time_(0.0f), restored_from_context_(false),
+      formation_dirty_(false) {
   InitializeSlots();
 }
 
@@ -47,6 +48,7 @@ bool FormationOverlay::Initialize(BaseSystemAPI *systemAPI, UISystemAPI* uiAPI) 
   // スロチE��初期匁E
   InitializeSlots();
   restored_from_context_ = false;
+  formation_dirty_ = false;
 
   // ドラチE��状態リセチE��
   dragging_character_ = nullptr;
@@ -105,6 +107,11 @@ void FormationOverlay::Update(SharedContext &ctx, float deltaTime) {
 
   // パ�EチE��ーサマリー更新
   UpdatePartySummary();
+
+  if (formation_dirty_) {
+    SaveFormationToContext(ctx);
+    formation_dirty_ = false;
+  }
 }
 
 void FormationOverlay::Render(SharedContext &ctx) {
@@ -137,10 +144,7 @@ void FormationOverlay::Render(SharedContext &ctx) {
   RenderDetailsPanel(ctx);
 
   // キャラクター一覧
-  RenderCharacterList();
-
-  // ボタン
-  RenderButtons();
+  RenderCharacterList(ctx);
 
   // ドラチE��中のキャラクター
   if (is_dragging_ && dragging_character_) {
@@ -223,6 +227,19 @@ void FormationOverlay::RestoreFormationFromContext(SharedContext& ctx) {
   }
 
   LOG_INFO("FormationOverlay: Restored formation from SharedContext: {} slots", ctx.formationData.slots.size());
+
+  formation_dirty_ = false;
+}
+
+void FormationOverlay::SaveFormationToContext(SharedContext& ctx) {
+  ctx.formationData.Clear();
+  for (int i = 0; i < 10; ++i) {
+    const auto* ch = squad_slots_[i].assigned_character;
+    if (!ch) {
+      continue;
+    }
+    ctx.formationData.slots.emplace_back(i, ch->id);
+  }
 }
 
 void FormationOverlay::FilterAvailableCharacters(SharedContext &ctx) {
@@ -232,12 +249,10 @@ void FormationOverlay::FilterAvailableCharacters(SharedContext &ctx) {
 
   m_characterList.available_characters.clear();
 
+  // 全キャラクターを表示対象に（ロック状態は表示時に反映）
   const auto &masters = ctx.gameplayDataAPI->GetAllCharacterMasters();
   for (const auto &[id, ch] : masters) {
-    const auto st = ctx.gameplayDataAPI->GetCharacterState(id);
-    if (st.unlocked) {
-      m_characterList.available_characters.push_back(&ch);
-    }
+    m_characterList.available_characters.push_back(&ch);
   }
 
   SortAvailableCharacters(ctx.gameplayDataAPI);
@@ -249,22 +264,55 @@ void FormationOverlay::FilterAvailableCharacters(SharedContext &ctx) {
 void FormationOverlay::SortAvailableCharacters(const GameplayDataAPI* gameplayDataAPI) {
   std::sort(m_characterList.available_characters.begin(),
             m_characterList.available_characters.end(),
-            [gameplayDataAPI](const entities::Character *a,
-                              const entities::Character *b) {
+            [this, gameplayDataAPI](const entities::Character *a,
+                                    const entities::Character *b) {
               if (!a || !b)
                 return false;
-              if (a->rarity != b->rarity)
-                return a->rarity > b->rarity;
-              int levelA = 1;
-              int levelB = 1;
-              if (gameplayDataAPI) {
-                levelA = gameplayDataAPI->GetCharacterState(a->id).level;
-                levelB = gameplayDataAPI->GetCharacterState(b->id).level;
+
+              auto cmpInt = [this](int lhs, int rhs) {
+                return sortAscending_ ? (lhs < rhs) : (lhs > rhs);
+              };
+              auto cmpStr = [this](const std::string& lhs, const std::string& rhs) {
+                return sortAscending_ ? (lhs < rhs) : (rhs < lhs);
+              };
+
+              switch (currentSortKey_) {
+                case SortKey::Name:
+                  if (a->name != b->name) return cmpStr(a->name, b->name);
+                  break;
+                case SortKey::Rarity:
+                  if (a->rarity != b->rarity) return cmpInt(a->rarity, b->rarity);
+                  break;
+                case SortKey::Cost:
+                  if (a->cost != b->cost) return cmpInt(a->cost, b->cost);
+                  break;
+                case SortKey::Level: {
+                  int levelA = 1;
+                  int levelB = 1;
+                  if (gameplayDataAPI) {
+                    levelA = gameplayDataAPI->GetCharacterState(a->id).level;
+                    levelB = gameplayDataAPI->GetCharacterState(b->id).level;
+                  }
+                  if (levelA != levelB) return cmpInt(levelA, levelB);
+                  break;
+                }
+                case SortKey::Owned: {
+                  bool ownedA = true;
+                  bool ownedB = true;
+                  if (gameplayDataAPI) {
+                    ownedA = gameplayDataAPI->GetCharacterState(a->id).unlocked;
+                    ownedB = gameplayDataAPI->GetCharacterState(b->id).unlocked;
+                  }
+                  if (ownedA != ownedB) {
+                    // 所持している方を先に（降順の場合はtrue > false）
+                    return sortAscending_ ? (!ownedA && ownedB) : (ownedA && !ownedB);
+                  }
+                  break;
+                }
               }
-              if (levelA != levelB)
-                return levelA > levelB;
-              if (a->cost != b->cost)
-                return a->cost < b->cost;
+              // タイブレーカー
+              if (a->rarity != b->rarity) return a->rarity > b->rarity;
+              if (a->cost != b->cost) return a->cost < b->cost;
               return a->name < b->name;
             });
 }
@@ -277,19 +325,96 @@ void FormationOverlay::RenderTitleBar() {
                             ui::OverlayColors::HEADER_BG);
 
   // タイトル
-  systemAPI_->Render().DrawTextDefault("編成画面", 120.0f, 105.0f, 32.0f,
+  systemAPI_->Render().DrawTextDefault("編成画面", 120.0f, 105.0f, 40.0f,
                               ui::OverlayColors::TEXT_PRIMARY);
+
+  // ソートUIはユニット一覧のヘッダへ移動（RenderCharacterList内で描画）
+}
+
+  void FormationOverlay::RenderSortUI() {
+  using namespace ui;
+
+  // ユニット一覧のヘッダ位置（list_y=535.0fの上）
+  const float sort_x = 100.0f;
+  const float sort_y = 470.0f;
+  const float sort_w = 1100.0f;
+  const float sort_bar_h = 36.0f;
+  const float sort_bar_y = sort_y;
+
+  // ソートラベル
+  systemAPI_->Render().DrawTextDefault(
+      "ソート", sort_x, sort_bar_y - 26.0f, 24.0f, OverlayColors::TEXT_GOLD);
+  systemAPI_->Render().DrawRectangle(
+      sort_x, sort_bar_y, sort_w, sort_bar_h, OverlayColors::PANEL_BG_SECONDARY);
+  systemAPI_->Render().DrawRectangleLines(
+      sort_x, sort_bar_y, sort_w, sort_bar_h, 2.0f,
+      OverlayColors::BORDER_DEFAULT);
+
+  auto sortKeyLabel = [](SortKey k) -> const char* {
+    switch (k) {
+      case SortKey::Name: return "名前";
+      case SortKey::Rarity: return "レア";
+      case SortKey::Cost: return "コスト";
+      case SortKey::Level: return "レベル";
+      case SortKey::Owned: return "所持";
+      default: return "SORT";
+    }
+  };
+
+  float btn_h = sort_bar_h - 8.0f;
+  float sort_btn_y = sort_bar_y + 4.0f;
+  float btn_gap = 8.0f;
+  float toggle_w = 90.0f;
+  float btn_w = (sort_w - toggle_w - btn_gap * 6.0f) / 5.0f;
+
+  SortKey keys[5] = {
+      SortKey::Name,
+      SortKey::Rarity,
+      SortKey::Cost,
+      SortKey::Level,
+      SortKey::Owned
+  };
+
+  for (int i = 0; i < 5; ++i) {
+    float x = sort_x + btn_gap + i * (btn_w + btn_gap);
+    bool active = (currentSortKey_ == keys[i]);
+    systemAPI_->Render().DrawRectangle(
+        x, sort_btn_y, btn_w, btn_h,
+        active ? OverlayColors::CARD_BG_SELECTED : OverlayColors::CARD_BG_NORMAL);
+    systemAPI_->Render().DrawRectangleLines(
+        x, sort_btn_y, btn_w, btn_h, active ? 3.0f : 2.0f,
+        active ? OverlayColors::BORDER_GOLD : OverlayColors::BORDER_DEFAULT);
+    Vector2 ts = systemAPI_->Render().MeasureTextDefault(
+        sortKeyLabel(keys[i]), 24.0f);
+    systemAPI_->Render().DrawTextDefault(
+        sortKeyLabel(keys[i]), x + (btn_w - ts.x) / 2.0f,
+        sort_btn_y + (btn_h - ts.y) / 2.0f, 24.0f,
+        OverlayColors::TEXT_PRIMARY);
+  }
+
+  // 昇順/降順トグル
+  const float toggle_x = sort_x + sort_w - toggle_w - btn_gap;
+  const bool asc = sortAscending_;
+  systemAPI_->Render().DrawRectangle(
+      toggle_x, sort_btn_y, toggle_w, btn_h, OverlayColors::CARD_BG_NORMAL);
+  systemAPI_->Render().DrawRectangleLines(
+      toggle_x, sort_btn_y, toggle_w, btn_h, 2.0f,
+      OverlayColors::BORDER_DEFAULT);
+  systemAPI_->Render().DrawTextDefault(
+      asc ? "↑昇順" : "↓降順", toggle_x + 12.0f, sort_btn_y + 10.0f, 24.0f,
+      OverlayColors::TEXT_SECONDARY);
+
 }
 
 void FormationOverlay::RenderDividers() {
   // 垂直区刁E��線（左側エリアと詳細パネルの間！E
   systemAPI_->Render().DrawRectangle(1205.0f, 155.0f, 3.0f, 825.0f,
                             ui::OverlayColors::DIVIDER);
-  // 水平区刁E��線（編成スロチE��とサマリーの間！E
-  systemAPI_->Render().DrawRectangle(100.0f, 500.0f, 1100.0f, 2.0f,
+  // 水平区刁E��線（編成スロチE��とソートUIの間）
+  systemAPI_->Render().DrawRectangle(100.0f, 450.0f, 1100.0f, 2.0f,
                             ui::OverlayColors::DIVIDER);
-  // 水平区刁E��線（サマリーとキャラクター一覧の間！E
-  systemAPI_->Render().DrawRectangle(100.0f, 590.0f, 1100.0f, 2.0f,
+  // 水平区刁E��線（ソートUIとキャラクター一覧の間）
+  systemAPI_->Render().DrawRectangle(100.0f, 508.0f, 1100.0f, 2.0f,
                             ui::OverlayColors::DIVIDER);
 }
 
@@ -332,21 +457,21 @@ void FormationOverlay::RenderSlot(const SquadSlot &slot) {
     }
 
     systemAPI_->Render().DrawTextDefault(
-        ch->name, slot.position.x + 10.0f, slot.position.y + 10.0f, 20.0f,
+        ch->name, slot.position.x + 10.0f, slot.position.y + 8.0f, 26.0f,
                                 OverlayColors::TEXT_PRIMARY);
 
     std::string rarity_str = "";
     for (int i = 0; i < ch->rarity; ++i)
       rarity_str += "★";
     systemAPI_->Render().DrawTextDefault(
-        rarity_str, slot.position.x + 10.0f, slot.position.y + 40.0f, 16.0f,
+        rarity_str, slot.position.x + 10.0f, slot.position.y + 38.0f, 22.0f,
                                 OverlayColors::TEXT_GOLD);
 
     std::string cost_str = "COST " + std::to_string(ch->cost);
-    Vector2 cost_size = systemAPI_->Render().MeasureTextDefault(cost_str, 18.0f);
+    Vector2 cost_size = systemAPI_->Render().MeasureTextDefault(cost_str, 24.0f);
     systemAPI_->Render().DrawTextDefault(
         cost_str, slot.position.x + slot.width - cost_size.x - 10.0f,
-        slot.position.y + slot.height - 25.0f, 18.0f,
+        slot.position.y + slot.height - 28.0f, 24.0f,
         OverlayColors::TEXT_ACCENT);
   } else {
     systemAPI_->Render().DrawTextDefault(
@@ -356,57 +481,49 @@ void FormationOverlay::RenderSlot(const SquadSlot &slot) {
   }
 }
 
-void FormationOverlay::RenderPartySummary() {
+void FormationOverlay::RenderResetButton() {
   using namespace ui;
 
-  float summary_x = 100.0f;
-  float summary_y = 505.0f;
-  float summary_w = 1100.0f;
-  float summary_h = 80.0f;
+  // スロットエリアの下部に配置（最後のスロットの下）
+  // スロットは最大2行（0-4が1行目、5-9が2行目）
+  // 2行目のスロットの下に配置
+  float slot_bottom_y = 0.0f;
+  for (int i = 5; i < 10; ++i) {
+    float slot_y = squad_slots_[i].position.y + squad_slots_[i].height;
+    if (slot_y > slot_bottom_y) {
+      slot_bottom_y = slot_y;
+    }
+  }
+  
+  float button_y = slot_bottom_y + 20.0f;  // スロットの下に20pxの余白
+  float button_h = 50.0f;
+  float button_w = 180.0f;
+  float button_x = 170.0f + 2.0f * 200.0f;  // 3列目（インデックス2）の位置に配置
 
-  // グラチE�Eションパネル
-  UIEffects::DrawGradientPanel(systemAPI_, summary_x, summary_y, summary_w,
-                               summary_h);
-
-  // ボ�Eダー
-  Rectangle rect = {summary_x, summary_y, summary_w, summary_h};
-  systemAPI_->Render().DrawRectangleRoundedLines(rect, 0.1f, 8,
-                                        OverlayColors::BORDER_GOLD);
-
-  float text_y = summary_y + 15.0f;
-  float font_size = 22.0f;
-
-  // 編成コスト上限なぁE
-  std::string cost_text =
-      "COST: " + std::to_string(m_partySummary.total_cost);
-  Color cost_color = ui::OverlayColors::TEXT_PRIMARY;
-  systemAPI_->Render().DrawTextDefault(cost_text, summary_x + 20.0f, text_y,
-                                       font_size, cost_color);
-
-  std::string count_text =
-      "UNIT: " + std::to_string(m_partySummary.character_count) + " / " +
-      std::to_string(m_partySummary.max_character_count);
+  UIEffects::DrawModernButton(systemAPI_, button_x, button_y, button_w, button_h,
+                              OverlayColors::BUTTON_RESET,
+                              OverlayColors::CARD_BG_SELECTED,
+                              reset_button_.is_hovered, false);
+  Vector2 reset_text_size =
+      systemAPI_->Render().MeasureTextDefault("リセット", 28.0f);
   systemAPI_->Render().DrawTextDefault(
-      count_text, summary_x + 280.0f, text_y, font_size,
-                              ui::OverlayColors::TEXT_PRIMARY);
-
-  std::string hp_text = "TOTAL HP: " + std::to_string(m_partySummary.total_hp);
-  systemAPI_->Render().DrawTextDefault(
-      hp_text, summary_x + 520.0f, text_y, font_size,
-                              ui::OverlayColors::TEXT_PRIMARY);
-
-  std::string atk_text =
-      "TOTAL ATK: " + std::to_string(m_partySummary.total_attack);
-  systemAPI_->Render().DrawTextDefault(
-      atk_text, summary_x + 800.0f, text_y, font_size,
-                              ui::OverlayColors::TEXT_PRIMARY);
+      "リセット", button_x + (button_w - reset_text_size.x) / 2.0f,
+      button_y + (button_h - reset_text_size.y) / 2.0f, 28.0f,
+      OverlayColors::TEXT_PRIMARY);
 }
 
-void FormationOverlay::RenderCharacterList() {
+void FormationOverlay::RenderPartySummary() {
+  // 編成サマリーの数値表示は廃止し、ソートUIの利用領域を優先
+}
+
+void FormationOverlay::RenderCharacterList(SharedContext& ctx) {
   float list_x = 100.0f;
-  float list_y = 595.0f;
+  float list_y = 510.0f;
   float list_w = 1100.0f;
-  float list_h = 310.0f;
+  float list_h = 450.0f;
+
+  // ソートUIをユニット一覧のヘッダに表示
+  RenderSortUI();
 
   systemAPI_->Render().DrawRectangle(list_x, list_y, list_w, list_h,
                             ui::OverlayColors::PANEL_BG);
@@ -421,7 +538,7 @@ void FormationOverlay::RenderCharacterList() {
 
   for (int i = start_index; i < end_index; ++i) {
     RenderCharacterCard(m_characterList.available_characters[i],
-                        i - start_index);
+                        i - start_index, ctx);
   }
 
   int total_rows =
@@ -451,11 +568,18 @@ void FormationOverlay::RenderCharacterList() {
 }
 
 void FormationOverlay::RenderCharacterCard(const entities::Character *character,
-                                           int card_index) {
+                                           int card_index, SharedContext& ctx) {
   if (!character)
     return;
 
   using namespace ui;
+
+  // ロック状態を取得
+  bool is_locked = false;
+  if (ctx.gameplayDataAPI) {
+    const auto st = ctx.gameplayDataAPI->GetCharacterState(character->id);
+    is_locked = !st.unlocked;
+  }
 
   Vec2 pos = GetCardPosition(card_index);
   bool is_in_squad = IsCharacterInSquad(character);
@@ -465,13 +589,18 @@ void FormationOverlay::RenderCharacterCard(const entities::Character *character,
   Color bg_color = is_in_squad ? OverlayColors::SLOT_ASSIGNED
                                : OverlayColors::CARD_BG_NORMAL;
 
+  // ロックされたキャラは半透明で描画
+  if (is_locked) {
+    bg_color.a = static_cast<unsigned char>(bg_color.a * 0.5f);
+  }
+
   // 立体カード描画
   UIEffects::DrawCard3D(systemAPI_, pos.x, pos.y, m_characterList.CARD_WIDTH,
                         m_characterList.CARD_HEIGHT, bg_color, is_selected,
                         is_hovered);
 
-  // portrait を薄く背景に敷く（誰が誰か判別しやすくする�E�E
-  if (!character->icon_path.empty()) {
+  // portrait を薄く背景に敷く（誰が誰か判別しやすくする）
+  if (!is_locked && !character->icon_path.empty()) {
     void *texturePtr = systemAPI_->Resource().GetTexture(character->icon_path);
     if (texturePtr) {
       Texture2D *texture = static_cast<Texture2D *>(texturePtr);
@@ -480,8 +609,9 @@ void FormationOverlay::RenderCharacterCard(const entities::Character *character,
                       static_cast<float>(texture->height)};
         Rectangle dst{pos.x, pos.y, m_characterList.CARD_WIDTH,
                       m_characterList.CARD_HEIGHT};
-        // 未選択時�E�編成に含まれてぁE��ぁE���E��E不透�E度を上げめE
-        Color tint{255, 255, 255, is_in_squad ? 70 : 120};
+        // 未選択時に編成に含まれている場合は不透明度を上げる
+        int alpha = is_in_squad ? 70 : 120;
+        Color tint{255, 255, 255, static_cast<unsigned char>(alpha)};
         systemAPI_->Render().DrawTexturePro(*texture, src, dst, {0.0f, 0.0f},
                                             0.0f, tint);
       }
@@ -489,77 +619,47 @@ void FormationOverlay::RenderCharacterCard(const entities::Character *character,
   }
 
   // 発光効果�Eーダー�E�選択時�E�E
-  if (is_selected) {
+  if (is_selected && !is_locked) {
     float pulse_alpha = UIEffects::CalculatePulseAlpha(animation_time_);
     UIEffects::DrawGlowingBorder(
         systemAPI_, pos.x, pos.y, m_characterList.CARD_WIDTH,
         m_characterList.CARD_HEIGHT, pulse_alpha, is_hovered);
   }
 
-  Color text_color =
-      is_in_squad ? OverlayColors::TEXT_DISABLED : OverlayColors::TEXT_PRIMARY;
-  systemAPI_->Render().DrawTextDefault(character->name, pos.x + 5.0f,
-                                       pos.y + 5.0f, 24.0f, text_color);
-  systemAPI_->Render().DrawTextDefault(
-      "C " + std::to_string(character->cost), pos.x + 5.0f,
-      pos.y + m_characterList.CARD_HEIGHT - 30.0f, 24.0f,
-      OverlayColors::TEXT_ACCENT);
+  if (is_locked) {
+    const char *locked_text = "未所有";
+    Vector2 label_size =
+        systemAPI_->Render().MeasureTextDefault(locked_text, 26.0f);
+    systemAPI_->Render().DrawTextDefault(
+        locked_text,
+        pos.x + (m_characterList.CARD_WIDTH - label_size.x) / 2.0f,
+        pos.y + (m_characterList.CARD_HEIGHT - label_size.y) / 2.0f,
+        26.0f, OverlayColors::TEXT_MUTED);
+  } else {
+    Color text_color = OverlayColors::TEXT_PRIMARY;
+    if (is_in_squad) {
+      text_color = OverlayColors::TEXT_DISABLED;
+    }
 
-  std::string rarity_stars = "";
-  for (int i = 0; i < character->rarity; ++i)
-    rarity_stars += "★";
-  systemAPI_->Render().DrawTextDefault(rarity_stars, pos.x + 5.0f,
-                                       pos.y + 30.0f, 24.0f,
-                              OverlayColors::TEXT_GOLD);
+    systemAPI_->Render().DrawTextDefault(character->name, pos.x + 5.0f,
+                                         pos.y + 5.0f, 28.0f, text_color);
+
+    std::string rarity_stars = "";
+    for (int i = 0; i < character->rarity; ++i)
+      rarity_stars += "★";
+    systemAPI_->Render().DrawTextDefault(rarity_stars, pos.x + 5.0f,
+                                         pos.y + 30.0f, 28.0f,
+                                         OverlayColors::TEXT_GOLD);
+
+    systemAPI_->Render().DrawTextDefault(
+        "C " + std::to_string(character->cost), pos.x + 5.0f,
+        pos.y + m_characterList.CARD_HEIGHT - 30.0f, 28.0f,
+        OverlayColors::TEXT_ACCENT);
+  }
 }
 
 void FormationOverlay::RenderButtons() {
-  using namespace ui;
-
-  float button_y = 920.0f;
-  float button_h = 55.0f;
-  float button_w = 180.0f;
-
-  // キャンセルボタン
-  float cancel_x = 120.0f;
-  UIEffects::DrawModernButton(systemAPI_, cancel_x, button_y, button_w,
-                              button_h, OverlayColors::BUTTON_RESET,
-                              OverlayColors::CARD_BG_SELECTED,
-                              cancel_button_.is_hovered, false);
-  Vector2 cancel_text_size =
-      systemAPI_->Render().MeasureTextDefault("キャンセル", 30.0f);
-  systemAPI_->Render().DrawTextDefault(
-      "キャンセル", cancel_x + (button_w - cancel_text_size.x) / 2.0f,
-      button_y + (button_h - cancel_text_size.y) / 2.0f, 30.0f,
-      OverlayColors::TEXT_PRIMARY);
-
-  // リセットボタン
-  float reset_x = cancel_x + button_w + 20.0f;
-  UIEffects::DrawModernButton(systemAPI_, reset_x, button_y, button_w, button_h,
-                              OverlayColors::BUTTON_RESET,
-                              OverlayColors::CARD_BG_SELECTED,
-                              reset_button_.is_hovered, false);
-  Vector2 reset_text_size =
-      systemAPI_->Render().MeasureTextDefault("リセット", 30.0f);
-  systemAPI_->Render().DrawTextDefault(
-      "リセット", reset_x + (button_w - reset_text_size.x) / 2.0f,
-      button_y + (button_h - reset_text_size.y) / 2.0f, 30.0f,
-      OverlayColors::TEXT_PRIMARY);
-
-  // 編成完了ボタン
-  float complete_x = 1620.0f;
-  bool is_disabled = !m_partySummary.IsComplete();
-  UIEffects::DrawModernButton(
-      systemAPI_, complete_x, button_y, button_w, button_h,
-      OverlayColors::BUTTON_PRIMARY_DARK, OverlayColors::BUTTON_PRIMARY_BRIGHT,
-      complete_button_.is_hovered && !is_disabled, is_disabled);
-  Vector2 complete_text_size =
-      systemAPI_->Render().MeasureTextDefault("編成完了", 30.0f);
-  Color text_color =
-      is_disabled ? OverlayColors::TEXT_DISABLED : OverlayColors::TEXT_DARK;
-  systemAPI_->Render().DrawTextDefault(
-      "編成完了", complete_x + (button_w - complete_text_size.x) / 2.0f,
-      button_y + (button_h - complete_text_size.y) / 2.0f, 30.0f, text_color);
+  // 下部の3つのボタンは削除（空実装）
 }
 
 void FormationOverlay::RenderDetailsPanel(SharedContext& ctx) {
@@ -586,22 +686,35 @@ void FormationOverlay::RenderDetailsPanel(SharedContext& ctx) {
     return;
   }
 
+  // ロック状態のキャラクターの場合は詳細を表示しない
+  bool is_locked = false;
+  if (ctx.gameplayDataAPI) {
+    is_locked = !ctx.gameplayDataAPI->GetCharacterState(display_char->id).unlocked;
+  }
+  if (is_locked) {
+    systemAPI_->Render().DrawTextDefault(
+        "キャラクターを選択してください", panel_x + m_detailsPanel.padding,
+        panel_y + panel_height / 2.0f - 18.0f, 32.0f,
+        ui::OverlayColors::TEXT_DISABLED);
+    return;
+  }
+
   float x = panel_x + m_detailsPanel.padding;
   float y = panel_y + m_detailsPanel.padding;
-  systemAPI_->Render().DrawTextDefault(display_char->name, x, y, 36.0f,
+  systemAPI_->Render().DrawTextDefault(display_char->name, x, y, 42.0f,
                               ui::OverlayColors::TEXT_PRIMARY);
 
   std::string rarity_str =
       "Rarity: " + (display_char->rarity_name.empty()
                         ? std::to_string(display_char->rarity)
                         : display_char->rarity_name);
-  systemAPI_->Render().DrawTextDefault(rarity_str, x, y + 45.0f, 24.0f,
+  systemAPI_->Render().DrawTextDefault(rarity_str, x, y + 45.0f, 28.0f,
                               ui::OverlayColors::TEXT_GOLD);
   systemAPI_->Render().DrawRectangle(
       x, y + 80.0f, panel_width - m_detailsPanel.padding * 2.0f, 2.0f,
                             ui::OverlayColors::DIVIDER);
 
-  float stats_y = y + 100.0f;
+  float stats_y = y + 110.0f;
   auto attackTypeToString = [](entities::AttackType type) -> std::string {
     if (type == entities::AttackType::Single)
       return "単体";
@@ -669,7 +782,7 @@ void FormationOverlay::RenderDetailsPanel(SharedContext& ctx) {
         x, desc_y - 10.0f, panel_width - m_detailsPanel.padding * 2.0f, 1.0f,
                               ui::OverlayColors::DIVIDER);
     systemAPI_->Render().DrawTextDefault(
-        display_char->description, x, desc_y, 20.0f,
+        display_char->description, x, desc_y, 26.0f,
                                 ui::OverlayColors::TEXT_SECONDARY);
   }
 }
@@ -707,10 +820,11 @@ void FormationOverlay::RenderDraggingCharacter() {
 Vec2 FormationOverlay::GetSlotPosition(int slot_id) {
   int row = slot_id / 5;
   int col = slot_id % 5;
+  // 下部ボタンを削除した分、スペースを拡大
   float start_x = 170.0f;
-  float start_y = 170.0f;
-  float spacing_x = 190.0f;
-  float spacing_y = 150.0f;
+  float start_y = 150.0f;  // 少し上に移動
+  float spacing_x = 200.0f;  // 190.0f → 200.0f
+  float spacing_y = 170.0f;  // 150.0f → 170.0f
   return {start_x + col * spacing_x, start_y + row * spacing_y};
 }
 
@@ -718,7 +832,7 @@ Vec2 FormationOverlay::GetCardPosition(int card_index) const {
   int row = card_index / m_characterList.visible_columns;
   int col = card_index % m_characterList.visible_columns;
   return {120.0f + col * m_characterList.CARD_SPACING_X,
-          615.0f + row * m_characterList.CARD_SPACING_Y};
+          530.0f + row * m_characterList.CARD_SPACING_Y};
 }
 
 int FormationOverlay::GetSlotAtPosition(Vec2 position) const {
@@ -735,8 +849,8 @@ int FormationOverlay::GetSlotAtPosition(Vec2 position) const {
 }
 
 int FormationOverlay::GetCardAtPosition(Vec2 position) const {
-  if (position.x < 100.0f || position.x >= 1200.0f || position.y < 595.0f ||
-      position.y >= 905.0f)
+  if (position.x < 100.0f || position.x >= 1200.0f || position.y < 510.0f ||
+      position.y >= 960.0f)
     return -1;
 
   int start_row = m_characterList.scroll_offset;
@@ -761,11 +875,22 @@ int FormationOverlay::GetCardAtPosition(Vec2 position) const {
 // ========== キャラクター管琁E==========
 
 void FormationOverlay::AssignCharacter(int slot_id,
-                                       const entities::Character *character) {
+                                       const entities::Character *character,
+                                       SharedContext& ctx) {
   if (slot_id < 0 || slot_id >= 10 || !character)
     return;
+  
+  // ロックされたキャラは配置できない
+  if (ctx.gameplayDataAPI) {
+    const auto st = ctx.gameplayDataAPI->GetCharacterState(character->id);
+    if (!st.unlocked) {
+      return; // ロックされている場合は配置しない
+    }
+  }
+  
   squad_slots_[slot_id].assigned_character = character;
   UpdatePartySummary();
+  formation_dirty_ = true;
 }
 
 void FormationOverlay::RemoveCharacter(int slot_id) {
@@ -773,6 +898,7 @@ void FormationOverlay::RemoveCharacter(int slot_id) {
     return;
   squad_slots_[slot_id].assigned_character = nullptr;
   UpdatePartySummary();
+  formation_dirty_ = true;
 }
 
 void FormationOverlay::SwapCharacters(int slot1_id, int slot2_id) {
@@ -783,6 +909,7 @@ void FormationOverlay::SwapCharacters(int slot1_id, int slot2_id) {
       squad_slots_[slot2_id].assigned_character;
   squad_slots_[slot2_id].assigned_character = temp;
   UpdatePartySummary();
+  formation_dirty_ = true;
 }
 
 // ========== パ�EチE��ー管琁E==========
@@ -823,6 +950,14 @@ void FormationOverlay::OnSlotRightClicked(int slot_id) {
 void FormationOverlay::OnDragStart(int source_slot,
                                    const entities::Character *character,
                                    SharedContext& ctx) {
+  // ロックされたキャラはドラッグできない
+  if (character && ctx.gameplayDataAPI) {
+    const auto st = ctx.gameplayDataAPI->GetCharacterState(character->id);
+    if (!st.unlocked) {
+      return; // ロックされている場合はドラッグを開始しない
+    }
+  }
+
   dragging_character_ = character;
   dragging_source_slot_ = source_slot;
   is_dragging_ = true;
@@ -836,7 +971,7 @@ void FormationOverlay::OnDragUpdate(Vec2 mouse_pos) {
     drag_position_ = mouse_pos;
 }
 
-void FormationOverlay::OnDragEnd(Vec2 mouse_pos) {
+void FormationOverlay::OnDragEnd(Vec2 mouse_pos, SharedContext& ctx) {
   if (!is_dragging_ || !dragging_character_)
     return;
 
@@ -846,7 +981,7 @@ void FormationOverlay::OnDragEnd(Vec2 mouse_pos) {
       if (target_slot != dragging_source_slot_)
         SwapCharacters(dragging_source_slot_, target_slot);
     } else {
-      AssignCharacter(target_slot, dragging_character_);
+      AssignCharacter(target_slot, dragging_character_, ctx);
     }
   }
 
@@ -857,28 +992,8 @@ void FormationOverlay::OnDragEnd(Vec2 mouse_pos) {
 }
 
 void FormationOverlay::OnButtonClicked(const std::string &button_name, SharedContext& ctx) {
-  if (button_name == "complete") {
-    if (ValidateSquadComposition()) {
-      // 編成データをSharedContextに保孁E
-      ctx.formationData.Clear();
-      for (int i = 0; i < 10; ++i) {
-        if (squad_slots_[i].assigned_character != nullptr) {
-          ctx.formationData.slots.push_back({i, squad_slots_[i].assigned_character->id});
-        }
-      }
-      LOG_INFO("Formation data saved: {} characters in formation", ctx.formationData.slots.size());
-
-      // 単一JSONへ保孁E
-      if (ctx.gameplayDataAPI) {
-        ctx.gameplayDataAPI->SetFormationFromSharedContext(ctx.formationData);
-        ctx.gameplayDataAPI->Save();
-      }
-
-      requestClose_ = true;
-    }
-  } else if (button_name == "cancel") {
-    requestClose_ = true;
-  } else if (button_name == "reset") {
+  // "complete"と"cancel"の処理は削除（下部ボタン削除に伴い）
+  if (button_name == "reset") {
     for (int i = 0; i < 10; ++i)
       RemoveCharacter(i);
   }
@@ -889,24 +1004,74 @@ void FormationOverlay::OnButtonClicked(const std::string &button_name, SharedCon
 void FormationOverlay::ProcessMouseInput(SharedContext &ctx) {
   auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
                                 : Vec2{0.0f, 0.0f};
-  UpdateHoverStates(mouse_pos);
+  UpdateHoverStates(mouse_pos, ctx);
 
   if (ctx.inputAPI && ctx.inputAPI->IsLeftClickPressed()) {
-    float button_y = 920.0f, button_h = 55.0f, button_w = 180.0f;
-    float cancel_x = 120.0f, reset_x = 320.0f, complete_x = 1620.0f;
+    // ソートUIクリック処理（ユニット一覧のヘッダ位置）
+    float sort_x = 100.0f;
+    float sort_y = 470.0f;
+    float sort_w = 1100.0f;
+    float sort_bar_h = 36.0f;
+    float sort_bar_y = sort_y;
+    float btn_h = sort_bar_h - 8.0f;
+    float sort_btn_y = sort_bar_y + 4.0f;
+    float btn_gap = 8.0f;
+    float toggle_w = 90.0f;
+    float btn_w = (sort_w - toggle_w - btn_gap * 6.0f) / 5.0f;
 
-    if (mouse_pos.x >= cancel_x && mouse_pos.x < cancel_x + button_w &&
-        mouse_pos.y >= button_y && mouse_pos.y < button_y + button_h)
-      OnButtonClicked("cancel", ctx);
-    else if (mouse_pos.x >= reset_x && mouse_pos.x < reset_x + button_w &&
-             mouse_pos.y >= button_y && mouse_pos.y < button_y + button_h)
-      OnButtonClicked("reset", ctx);
-    else if (mouse_pos.x >= complete_x && mouse_pos.x < complete_x + button_w &&
-             mouse_pos.y >= button_y && mouse_pos.y < button_y + button_h) {
-      if (m_partySummary.IsComplete())
-        OnButtonClicked("complete", ctx);
+    if (mouse_pos.y >= sort_btn_y && mouse_pos.y < sort_btn_y + btn_h &&
+        mouse_pos.x >= sort_x && mouse_pos.x < sort_x + sort_w) {
+      // ソートキーボタン
+      SortKey keys[5] = {
+          SortKey::Name,
+          SortKey::Rarity,
+          SortKey::Cost,
+          SortKey::Level,
+          SortKey::Owned
+      };
+      for (int i = 0; i < 5; ++i) {
+        float x = sort_x + btn_gap + i * (btn_w + btn_gap);
+        if (mouse_pos.x >= x && mouse_pos.x < x + btn_w) {
+          if (currentSortKey_ == keys[i]) {
+            // 同じキーをクリックした場合は昇順/降順を切り替え
+            sortAscending_ = !sortAscending_;
+          } else {
+            currentSortKey_ = keys[i];
+            sortAscending_ = false; // デフォルトは降順
+          }
+          SortAvailableCharacters(ctx.gameplayDataAPI);
+          return;
+        }
+      }
+      // 昇順/降順トグル
+      float toggle_x = sort_x + sort_w - toggle_w - btn_gap;
+      if (mouse_pos.x >= toggle_x && mouse_pos.x < toggle_x + toggle_w) {
+        sortAscending_ = !sortAscending_;
+        SortAvailableCharacters(ctx.gameplayDataAPI);
+        return;
+      }
     }
 
+    // 下部の3つのボタンは削除済み
+    
+    // リセットボタンのクリック処理（編成枠の下部）
+    float slot_bottom_y = 0.0f;
+    for (int i = 5; i < 10; ++i) {
+      float slot_y = squad_slots_[i].position.y + squad_slots_[i].height;
+      if (slot_y > slot_bottom_y) {
+        slot_bottom_y = slot_y;
+      }
+    }
+    float button_y = slot_bottom_y + 20.0f;
+    float button_h = 50.0f;
+    float button_w = 180.0f;
+    float button_x = 170.0f + 2.0f * 200.0f;
+    
+    if (mouse_pos.x >= button_x && mouse_pos.x < button_x + button_w &&
+        mouse_pos.y >= button_y && mouse_pos.y < button_y + button_h) {
+      OnButtonClicked("reset", ctx);
+    }
+    
     drag_start_pos_ = mouse_pos;
     drag_started_ = true;
   } else if (ctx.inputAPI && ctx.inputAPI->IsLeftClickDown() && drag_started_ &&
@@ -929,7 +1094,7 @@ void FormationOverlay::ProcessMouseInput(SharedContext &ctx) {
     }
   } else if (ctx.inputAPI && ctx.inputAPI->IsLeftClickReleased()) {
     if (is_dragging_)
-      OnDragEnd(mouse_pos);
+      OnDragEnd(mouse_pos, ctx);
     drag_started_ = false;
   }
 
@@ -942,7 +1107,7 @@ void FormationOverlay::ProcessMouseInput(SharedContext &ctx) {
   }
 }
 
-void FormationOverlay::UpdateHoverStates(Vec2 mouse_pos) {
+void FormationOverlay::UpdateHoverStates(Vec2 mouse_pos, SharedContext &ctx) {
   for (int i = 0; i < 10; ++i)
     squad_slots_[i].is_hovered = (GetSlotAtPosition(mouse_pos) == i);
 
@@ -954,21 +1119,35 @@ void FormationOverlay::UpdateHoverStates(Vec2 mouse_pos) {
     } else {
       int card_index = GetCardAtPosition(mouse_pos);
       if (card_index >= 0) {
-        selected_character_ = m_characterList.available_characters[card_index];
+        const entities::Character* ch = m_characterList.available_characters[card_index];
+        bool is_locked = false;
+        if (ctx.gameplayDataAPI && ch) {
+          is_locked = !ctx.gameplayDataAPI->GetCharacterState(ch->id).unlocked;
+        }
+        if (!is_locked) {
+          selected_character_ = ch;
+        }
       }
     }
   }
 
-  float button_y = 920.0f, button_h = 55.0f, button_w = 180.0f;
-  float cancel_x = 120.0f, reset_x = 320.0f, complete_x = 1620.0f;
-  cancel_button_.is_hovered =
-      (mouse_pos.x >= cancel_x && mouse_pos.x < cancel_x + button_w &&
-       mouse_pos.y >= button_y && mouse_pos.y < button_y + button_h);
+  // 下部の3つのボタンは削除済み
+  
+  // リセットボタンのホバー処理（編成枠の下部）
+  float slot_bottom_y = 0.0f;
+  for (int i = 5; i < 10; ++i) {
+    float slot_y = squad_slots_[i].position.y + squad_slots_[i].height;
+    if (slot_y > slot_bottom_y) {
+      slot_bottom_y = slot_y;
+    }
+  }
+  float button_y = slot_bottom_y + 20.0f;
+  float button_h = 50.0f;
+  float button_w = 180.0f;
+  float button_x = 170.0f + 2.0f * 200.0f;
+  
   reset_button_.is_hovered =
-      (mouse_pos.x >= reset_x && mouse_pos.x < reset_x + button_w &&
-       mouse_pos.y >= button_y && mouse_pos.y < button_y + button_h);
-  complete_button_.is_hovered =
-      (mouse_pos.x >= complete_x && mouse_pos.x < complete_x + button_w &&
+      (mouse_pos.x >= button_x && mouse_pos.x < button_x + button_w &&
        mouse_pos.y >= button_y && mouse_pos.y < button_y + button_h);
 }
 

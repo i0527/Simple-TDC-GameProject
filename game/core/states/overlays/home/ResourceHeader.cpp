@@ -13,7 +13,7 @@ namespace overlays {
 namespace home {
 
 ResourceHeader::ResourceHeader()
-    : gold_display_current_(0.0f), gems_display_current_(0.0f) {
+    : gold_display_current_(0.0f) {
   resources_ = {0, 0, 0, 100};
 }
 
@@ -21,18 +21,17 @@ ResourceHeader::~ResourceHeader() {}
 
 bool ResourceHeader::Initialize() {
   gold_display_current_ = static_cast<float>(resources_.gold);
-  gems_display_current_ = static_cast<float>(resources_.gems);
   return true;
 }
 
 void ResourceHeader::SetResources(const PlayerResources &resources) {
   resources_ = resources;
-  // アニメーション用の現在値を更新�E�忁E��に応じて�E�E
+  // アニメーション用の現在値を更新�E�忁E��に応じて�E�E
 }
 
 void ResourceHeader::Update(float deltaTime) {
-  // リソース変化アニメーション�E�オプション�E�E
-  // 金額が変わったとき、スムーズに数字がカウントアチE�Eするなど
+  // リソース変化アニメーション�E�オプション�E�E
+  // 金額が変わったとき、スムーズに数字がカウントアチE�Eするなど
   const float animationSpeed = 5.0f; // アニメーション速度
 
   // Gold アニメーション
@@ -48,20 +47,6 @@ void ResourceHeader::Update(float deltaTime) {
     if (gold_display_current_ < targetGold)
       gold_display_current_ = targetGold;
   }
-
-  // Gems アニメーション
-  float targetGems = static_cast<float>(resources_.gems);
-  if (gems_display_current_ < targetGems) {
-    gems_display_current_ +=
-        (targetGems - gems_display_current_) * animationSpeed * deltaTime;
-    if (gems_display_current_ > targetGems)
-      gems_display_current_ = targetGems;
-  } else if (gems_display_current_ > targetGems) {
-    gems_display_current_ -=
-        (gems_display_current_ - targetGems) * animationSpeed * deltaTime;
-    if (gems_display_current_ < targetGems)
-      gems_display_current_ = targetGems;
-  }
 }
 
 void ResourceHeader::Render(BaseSystemAPI *systemAPI) {
@@ -73,7 +58,7 @@ void ResourceHeader::Render(BaseSystemAPI *systemAPI) {
   systemAPI->Render().DrawRectangle(0, 0, 1920, HEADER_HEIGHT,
                                     ToCoreColor(ui::OverlayColors::HEADER_BG));
 
-  // ヘッダー下部の墁E��緁E
+  // ヘッダー下部の墁E��緁E
   systemAPI->Render().DrawLine(0, HEADER_HEIGHT, 1920, HEADER_HEIGHT, 2.0f,
                                ToCoreColor(ui::OverlayColors::BORDER_DEFAULT));
 
@@ -81,25 +66,16 @@ void ResourceHeader::Render(BaseSystemAPI *systemAPI) {
 
   float fontSize = 32.0f;
 
-  // 左側: Gold, Gems
+  // 左側: Gold
   float xPos = 40.0f;
   float yPos = HEADER_HEIGHT / 2.0f;
 
-  // Gold表示�E�絵斁E���Eフォント欠け�E可能性があるため使用しなぁE��E
+  // Gold表示�E�絵斁E���Eフォント欠け�E可能性があるため使用しなぁE��E
   std::string goldText =
       "Gold: " + std::to_string(static_cast<int>(gold_display_current_));
   Vec2 goldSize =
       systemAPI->Render().MeasureTextDefaultCore(goldText, fontSize, 1.0f);
   systemAPI->Render().DrawTextDefault(goldText, xPos, yPos - goldSize.y / 2.0f,
-                                      fontSize, textColor);
-
-  // Gems表示
-  xPos += goldSize.x + 80.0f;
-  std::string gemsText =
-      "💎 Gems: " + std::to_string(static_cast<int>(gems_display_current_));
-  Vec2 gemsSize =
-      systemAPI->Render().MeasureTextDefaultCore(gemsText, fontSize, 1.0f);
-  systemAPI->Render().DrawTextDefault(gemsText, xPos, yPos - gemsSize.y / 2.0f,
                                       fontSize, textColor);
 
   // 右側: Tickets

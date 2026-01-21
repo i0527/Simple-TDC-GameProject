@@ -185,6 +185,7 @@ void HomeScreen::RenderImGui() {
     if (content_ && sharedContext_) {
         content_->RenderImGui(*sharedContext_);
     }
+
 }
 
 bool HomeScreen::RequestTransition(GameState& nextState) {

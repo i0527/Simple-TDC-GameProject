@@ -78,7 +78,6 @@ private:
     std::vector<std::shared_ptr<ui::Card>> resultCards_;
     std::shared_ptr<ui::Button> singleGachaButton_;
     std::shared_ptr<ui::Button> tenGachaButton_;
-    std::shared_ptr<ui::Button> closeButton_;
     std::shared_ptr<ui::Button> skipRevealButton_;
     std::shared_ptr<ui::Button> tabDrawButton_;
     std::shared_ptr<ui::Button> tabRatesButton_;

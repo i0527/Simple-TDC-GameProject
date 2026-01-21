@@ -20,9 +20,9 @@ namespace states {
 /// @brief ゲームシーンクラス
 ///
 /// 責勁E
-/// - 1レーン横スクロール戦闘（にめE��こ型�E��E管琁E
-/// - 入力とUIの統合（段階的に実裁E��E
-/// - ゲームロジチE��の進行制御
+/// - 1レーン横スクロール戦闘（にめE��こ型�E��E管琁E
+/// - 入力とUIの統合（段階的に実裁E��E
+/// - ゲームロジチE��の進行制御
 class GameScene : public IScene {
 public:
     GameScene();
@@ -42,18 +42,18 @@ public:
     /// @brief HUD描画
     void RenderHUD() override;
 
-    /// @brief シーンのクリーンアチE�E
+    /// @brief シーンのクリーンアチE�E
     void Shutdown() override;
 
     /// @brief 遷移リクエストを取征E
     bool RequestTransition(GameState& nextState) override;
 
-    /// @brief 終亁E��クエストを取征E
+    /// @brief 終亁E��クエストを取征E
     bool RequestQuit() override;
 
     // ========== SharedContext設宁E==========
 
-    /// @brief SharedContextを設定！EameSystemから呼ばれる�E�E
+    /// @brief SharedContextを設定！EameSystemから呼ばれる�E�E
     void SetSharedContext(SharedContext* ctx) override {
         sharedContext_ = ctx;
         inputAPI_ = ctx ? ctx->inputAPI : nullptr;
@@ -64,7 +64,7 @@ public:
     }
 
 private:
-    // コアシスチE��
+    // コアシスチE��
     BaseSystemAPI* systemAPI_;
     SharedContext* sharedContext_;
 
@@ -72,7 +72,7 @@ private:
     InputSystemAPI* inputAPI_;
     std::unique_ptr<::game::core::ui::BattleHUDRenderer> battleHud_;
 
-    // ECS管琁E��戦闘ユニット用�E�E
+    // ECS管琁E��戦闘ユニット用�E�E
     std::unique_ptr<::game::core::game::BattleRenderer> battleRenderer_;
 
     // 戦闘進行API
@@ -83,17 +83,42 @@ private:
     mutable GameState nextState_;
     mutable bool requestQuit_;
 
-    // ========== 冁E��処琁E==========
+    // ========== ダメージホップアップ ==========
+    struct DamagePopup {
+        Vec2 position;      // 画面上の位置
+        int damage;         // ダメージ値
+        float lifetime;     // 残り表示時間（秒）
+        float maxLifetime;  // 最大表示時間（1.0秒推奨）
+        ColorRGBA color;    // 色（デフォルト：赤）
+    };
+    std::vector<DamagePopup> damagePopups_;
+    size_t lastAttackLogSize_ = 0;  // 前回フレームの攻撃ログサイズ
 
-    /// @brief 入力�E琁E
+    // ========== 冁E��処琁E==========
+
+    /// @brief 入力�E琁E
     void ProcessInput();
 
-    /// @brief ボタンクリチE��処琁E
+    /// @brief ボタンクリチE��処琁E
     void HandleButtonClick(const std::string& buttonId);
 
-    // 描画�E�にめE��こ型�E�E
+    // 描画�E�にめE��こ型�E�E
     void RenderBattle();
     void HandleHUDAction(const ::game::core::ui::BattleHUDAction& action);
+    
+    // ========== ヘルパー関数 ==========
+    
+    /// @brief ステージIDから背景画像パスを生成
+    std::string GetStageBackgroundPath(const std::string& stageId) const;
+    
+    /// @brief クエスト表示を描画
+    void RenderQuestPanel();
+    
+    /// @brief ダメージホップアップを更新
+    void UpdateDamagePopups(float deltaTime);
+    
+    /// @brief ダメージホップアップを描画
+    void RenderDamagePopups();
 };
 
 } // namespace states

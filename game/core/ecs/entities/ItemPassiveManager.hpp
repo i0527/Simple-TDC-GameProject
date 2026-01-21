@@ -11,7 +11,7 @@ namespace core {
 namespace entities {
 
 /**
- * @brief 裁E��アイチE��とパッシブスキルのマスターチE�Eタを管琁E��るクラス
+ * @brief 装備アイテムとパッシブスキルのマスターデータを管理するクラス
  */
 class ItemPassiveManager {
 public:
@@ -19,22 +19,22 @@ public:
     ~ItemPassiveManager();
 
     /**
-     * @brief 初期匁E
-     * @param json_path マスターチE�EタのJSONパス
-     * @return 成功した場合�Etrue
+     * @brief 初期化
+     * @param json_path マスターデータのJSONパス
+     * @return 成功した場合true
      */
     bool Initialize(const std::string& json_path = "");
 
     /**
-     * @brief 持E��したIDのパッシブスキルを取征E
+     * @brief 指定したIDのパッシブスキルを取得
      * @param id スキルID
-     * @return パッシブスキル定義のポインタ�E�見つからなぁE��合�Enullptr�E�E
+     * @return パッシブスキル定義のポインタ。見つからない場合nullptr。
      */
     const PassiveSkill* GetPassiveSkill(const std::string& id) const;
 
     /**
-     * @brief 全パッシブスキル定義を取征E
-     * @return パッシブスキル定義ポインタのリスチE
+     * @brief 全パッシブスキル定義を取得
+     * @return パッシブスキル定義ポインタのリスト
      */
     std::vector<const PassiveSkill*> GetAllPassiveSkills() const;
     const std::unordered_map<std::string, PassiveSkill>& GetPassiveMasters() const {
@@ -42,15 +42,15 @@ public:
     }
 
     /**
-     * @brief 持E��したIDの裁E��アイチE��を取征E
-     * @param id 裁E��ID
-     * @return 裁E��定義のポインタ�E�見つからなぁE��合�Enullptr�E�E
+     * @brief 指定したIDの装備アイテムを取得
+     * @param id 装備ID
+     * @return 装備定義のポインタ。見つからない場合nullptr。
      */
     const Equipment* GetEquipment(const std::string& id) const;
 
     /**
-     * @brief 全裁E��アイチE��定義を取征E
-     * @return 裁E��定義ポインタのリスチE
+     * @brief 全装備アイテム定義を取得
+     * @return 装備定義ポインタのリスト
      */
     std::vector<const Equipment*> GetAllEquipment() const;
     const std::unordered_map<std::string, Equipment>& GetEquipmentMasters() const {
@@ -58,7 +58,7 @@ public:
     }
 
     /**
-     * @brief 終亁E�E琁E
+     * @brief 終了処理
      */
     void Shutdown();
     void SetMasters(const std::unordered_map<std::string, PassiveSkill>& passives,
@@ -68,7 +68,8 @@ private:
     std::unordered_map<std::string, PassiveSkill> passive_masters_;
     std::unordered_map<std::string, Equipment> equipment_masters_;
 
-    // ロード�E ItemPassiveLoader に委譲
+    bool LoadFromJSON(const std::string& json_path);
+    void InitializeHardcodedData();
 };
 
 } // namespace entities

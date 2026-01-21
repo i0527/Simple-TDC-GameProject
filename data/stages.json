@@ -4,276 +4,563 @@
       "id": "1",
       "stageNumber": 1,
       "chapter": 1,
-      "chapterName": "Chapter 1: 城壁の王国",
-      "stageName": "砦への道 1",
+      "chapterName": "Chapter 1: 森",
+      "stageName": "森の入口",
       "difficulty": 1,
       "isBoss": false,
       "isLocked": false,
       "rewardGold": 100,
+      "rewardTickets": 1,
       "waveCount": 2,
-      "recommendedLevel": 10,
+      "recommendedLevel": 3,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 450,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 300},
       "waves": [
-        {"type": "char_sub_hatslime_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_hatslime_001", "count": 2, "interval": 0.5, "level": 1},
+        {"type": "char_sub_hatslime_001", "count": 3, "interval": 0.5, "level": 2}
       ],
       "unlockOnClear": ["2"],
-      "timeLimit": 120
+      "timeLimit": 180,
+      "bonusConditions": [
+        {"description": "3分以内クリア", "conditionType": "clear_time", "conditionValue": 180, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 30},
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 50},
+        {"description": "召喚したユニット数が8以下", "conditionType": "unit_count", "conditionValue": 8, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 40},
+        {"description": "使用したゴールドが800以下", "conditionType": "gold_spent", "conditionValue": 800, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 50}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "hatslime", "level": 1}
+      ],
+      "enemySpawns": [
+        {"monsterId": "hatslime", "minLevel": 1, "maxLevel": 2, "count": 4, "spawnPattern": "slow_sequence"}
+      ]
     },
     {
       "id": "2",
       "stageNumber": 2,
       "chapter": 1,
-      "chapterName": "Chapter 1: 城壁の王国",
-      "stageName": "砦への道 2",
-      "difficulty": 1,
+      "chapterName": "Chapter 1: 森",
+      "stageName": "深まる森",
+      "difficulty": 2,
       "isBoss": false,
-      "isLocked": false,
+      "isLocked": true,
       "rewardGold": 150,
-      "waveCount": 2,
-      "recommendedLevel": 15,
+      "rewardTickets": 1,
+      "waveCount": 3,
+      "recommendedLevel": 5,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 450,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 400},
       "waves": [
-        {"type": "char_sub_seahorse_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_hatslime_001", "count": 2, "interval": 0.5, "level": 2},
+        {"type": "char_sub_blueslime_001", "count": 2, "interval": 0.5, "level": 2},
+        {"type": "char_sub_hatslime_001", "count": 3, "interval": 0.5, "level": 3}
       ],
       "unlockOnClear": ["3"],
-      "timeLimit": 120
+      "timeLimit": 180,
+      "bonusConditions": [
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 75},
+        {"description": "召喚したユニット数が10以下", "conditionType": "unit_count", "conditionValue": 10, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 60}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "blueslime", "level": 3}
+      ],
+      "enemySpawns": [
+        {"monsterId": "hatslime", "minLevel": 2, "maxLevel": 3, "count": 4, "spawnPattern": "slow_sequence"},
+        {"monsterId": "blueslime", "minLevel": 2, "maxLevel": 2, "count": 2, "spawnPattern": "slow_sequence"}
+      ]
     },
     {
       "id": "3",
       "stageNumber": 3,
       "chapter": 1,
-      "chapterName": "Chapter 1: 城壁の王国",
-      "stageName": "砦への道 3",
-      "difficulty": 2,
+      "chapterName": "Chapter 1: 森",
+      "stageName": "暗がりの森",
+      "difficulty": 3,
       "isBoss": false,
-      "isLocked": false,
+      "isLocked": true,
       "rewardGold": 220,
-      "waveCount": 2,
-      "recommendedLevel": 20,
+      "rewardTickets": 1,
+      "waveCount": 4,
+      "recommendedLevel": 8,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 450,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 500},
       "waves": [
-        {"type": "char_sub_orca_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_hatslime_001", "count": 2, "interval": 0.5, "level": 3},
+        {"type": "char_sub_blueslime_001", "count": 2, "interval": 0.5, "level": 3},
+        {"type": "char_sub_mush_001", "count": 2, "interval": 0.5, "level": 3},
+        {"type": "char_sub_blueslime_001", "count": 3, "interval": 0.5, "level": 4}
       ],
       "unlockOnClear": ["4"],
-      "timeLimit": 120
+      "timeLimit": 180,
+      "bonusConditions": [
+        {"description": "ノーダメージクリア", "conditionType": "tower_hp_percent", "conditionValue": 100, "conditionOperator": "eq", "rewardType": "gold", "rewardValue": 110},
+        {"description": "召喚したユニット数が12以下", "conditionType": "unit_count", "conditionValue": 12, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 88},
+        {"description": "使用したゴールドが1200以下", "conditionType": "gold_spent", "conditionValue": 1200, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 110}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "mush", "level": 3}
+      ],
+      "enemySpawns": [
+        {"monsterId": "hatslime", "minLevel": 3, "maxLevel": 3, "count": 2, "spawnPattern": "fast"},
+        {"monsterId": "blueslime", "minLevel": 3, "maxLevel": 4, "count": 4, "spawnPattern": "fast"},
+        {"monsterId": "mush", "minLevel": 3, "maxLevel": 3, "count": 2, "spawnPattern": "fast"}
+      ]
     },
     {
       "id": "4",
       "stageNumber": 4,
       "chapter": 1,
-      "chapterName": "Chapter 1: 城壁の王国",
-      "stageName": "砦への道 4",
-      "difficulty": 2,
+      "chapterName": "Chapter 1: 森",
+      "stageName": "ボス戦 - グリーンボススライム",
+      "difficulty": 5,
       "isBoss": true,
-      "isLocked": false,
-      "rewardGold": 300,
-      "waveCount": 2,
-      "recommendedLevel": 25,
+      "isLocked": true,
+      "rewardGold": 500,
+      "rewardTickets": 2,
+      "waveCount": 6,
+      "recommendedLevel": 15,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 500,
-      "enemyLevel": 1,
+      "enemyLevel": 20,
+      "castle_hp": {"enemy_castle_hp": 1200},
       "waves": [
-        {"type": "char_sub_longtailedtit_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_chainsword_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_hatslime_001", "count": 3, "interval": 0.5, "level": 6},
+        {"type": "char_sub_blueslime_001", "count": 3, "interval": 0.5, "level": 7},
+        {"type": "char_sub_mush_001", "count": 2, "interval": 0.5, "level": 6},
+        {"type": "char_sub_hatslime_001", "count": 4, "interval": 0.5, "level": 8},
+        {"type": "char_sub_blueslime_001", "count": 3, "interval": 0.5, "level": 9},
+        {"type": "char_sub_greenbossslime_001", "count": 1, "interval": 0.5, "level": 20}
       ],
       "unlockOnClear": ["5"],
-      "timeLimit": 130
+      "timeLimit": 300,
+      "bonusConditions": [
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 300},
+        {"description": "召喚したユニット数が18以下", "conditionType": "unit_count", "conditionValue": 18, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 250},
+        {"description": "使用したゴールドが1800以下", "conditionType": "gold_spent", "conditionValue": 1800, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 300}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "greenbossslime", "level": 10}
+      ],
+      "enemySpawns": [
+        {"monsterId": "hatslime", "minLevel": 6, "maxLevel": 8, "count": 6, "spawnPattern": "boss_phase1"},
+        {"monsterId": "blueslime", "minLevel": 7, "maxLevel": 9, "count": 5, "spawnPattern": "boss_phase1"},
+        {"monsterId": "mush", "minLevel": 6, "maxLevel": 6, "count": 2, "spawnPattern": "boss_phase1"},
+        {"monsterId": "greenbossslime", "minLevel": 20, "maxLevel": 20, "count": 1, "spawnPattern": "boss"}
+      ],
+      "bossPhases": [
+        {
+          "hpPercentMin": 60,
+          "hpPercentMax": 100,
+          "description": "フェーズ1（HP 100-60%）",
+          "actions": ["小型スライム召喚（帽子スライム2体）"]
+        },
+        {
+          "hpPercentMin": 30,
+          "hpPercentMax": 60,
+          "description": "フェーズ2（HP 60-30%）",
+          "actions": ["連続ジャンプ攻撃", "小型スライム追加召喚（ブルースライム2体）", "毒ガス発生"]
+        },
+        {
+          "hpPercentMin": 0,
+          "hpPercentMax": 30,
+          "description": "フェーズ3（HP 30-0%）",
+          "actions": ["画面全体毒ガス", "高速移動・攻撃"]
+        }
+      ]
     },
     {
       "id": "5",
       "stageNumber": 5,
       "chapter": 2,
-      "chapterName": "Chapter 2: 魔法学園",
-      "stageName": "学園の試練 1",
+      "chapterName": "Chapter 2: 海岸",
+      "stageName": "静かな浜辺",
       "difficulty": 2,
       "isBoss": false,
-      "isLocked": false,
+      "isLocked": true,
       "rewardGold": 180,
-      "waveCount": 2,
-      "recommendedLevel": 25,
+      "rewardTickets": 1,
+      "waveCount": 3,
+      "recommendedLevel": 10,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 500,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 600},
       "waves": [
-        {"type": "char_sub_hatslime_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_hatslime_001", "count": 2, "interval": 0.5, "level": 4},
+        {"type": "char_sub_orca_001", "count": 2, "interval": 0.5, "level": 3},
+        {"type": "char_sub_orca_001", "count": 2, "interval": 0.5, "level": 4}
       ],
       "unlockOnClear": ["6"],
-      "timeLimit": 150
+      "timeLimit": 180,
+      "bonusConditions": [
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 90},
+        {"description": "召喚したユニット数が10以下", "conditionType": "unit_count", "conditionValue": 10, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 72},
+        {"description": "使用したゴールドが1000以下", "conditionType": "gold_spent", "conditionValue": 1000, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 90}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "orca", "level": 2}
+      ],
+      "enemySpawns": [
+        {"monsterId": "hatslime", "minLevel": 4, "maxLevel": 4, "count": 2, "spawnPattern": "slow_sequence"},
+        {"monsterId": "orca", "minLevel": 3, "maxLevel": 4, "count": 3, "spawnPattern": "slow_sequence"}
+      ]
     },
     {
       "id": "6",
       "stageNumber": 6,
       "chapter": 2,
-      "chapterName": "Chapter 2: 魔法学園",
-      "stageName": "学園の試練 2",
-      "difficulty": 2,
+      "chapterName": "Chapter 2: 海岸",
+      "stageName": "波打ち際",
+      "difficulty": 3,
       "isBoss": false,
-      "isLocked": false,
+      "isLocked": true,
       "rewardGold": 260,
-      "waveCount": 2,
-      "recommendedLevel": 30,
+      "rewardTickets": 1,
+      "waveCount": 4,
+      "recommendedLevel": 12,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 520,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 700},
       "waves": [
-        {"type": "char_sub_seahorse_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_yodarehaki_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_hatslime_001", "count": 2, "interval": 0.5, "level": 5},
+        {"type": "char_sub_orca_001", "count": 2, "interval": 0.5, "level": 5},
+        {"type": "char_sub_seahorse_001", "count": 2, "interval": 0.5, "level": 4},
+        {"type": "char_sub_dkurage_001", "count": 1, "interval": 0.5, "level": 4}
       ],
       "unlockOnClear": ["7"],
-      "timeLimit": 150
+      "timeLimit": 300,
+      "bonusConditions": [
+        {"description": "クリア時間5分以内", "conditionType": "clear_time", "conditionValue": 300, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 104},
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 130},
+        {"description": "召喚したユニット数が12以下", "conditionType": "unit_count", "conditionValue": 12, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 104}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "seahorse", "level": 2},
+        {"monsterId": "dkurage", "level": 2}
+      ],
+      "enemySpawns": [
+        {"monsterId": "hatslime", "minLevel": 5, "maxLevel": 5, "count": 2, "spawnPattern": "complex_alternating"},
+        {"monsterId": "orca", "minLevel": 5, "maxLevel": 5, "count": 2, "spawnPattern": "complex_alternating"},
+        {"monsterId": "seahorse", "minLevel": 4, "maxLevel": 4, "count": 2, "spawnPattern": "complex_alternating"},
+        {"monsterId": "dkurage", "minLevel": 4, "maxLevel": 4, "count": 1, "spawnPattern": "complex_alternating"}
+      ]
     },
     {
       "id": "7",
       "stageNumber": 7,
       "chapter": 2,
-      "chapterName": "Chapter 2: 魔法学園",
-      "stageName": "学園の試練 3",
-      "difficulty": 3,
+      "chapterName": "Chapter 2: 海岸",
+      "stageName": "荒れる海",
+      "difficulty": 4,
       "isBoss": false,
-      "isLocked": false,
+      "isLocked": true,
       "rewardGold": 340,
-      "waveCount": 2,
-      "recommendedLevel": 35,
+      "rewardTickets": 1,
+      "waveCount": 5,
+      "recommendedLevel": 15,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 520,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 900},
       "waves": [
-        {"type": "char_sub_orca_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_orca_001", "count": 2, "interval": 0.5, "level": 6},
+        {"type": "char_sub_seahorse_001", "count": 2, "interval": 0.5, "level": 6},
+        {"type": "char_sub_dkurage_001", "count": 2, "interval": 0.5, "level": 5},
+        {"type": "char_sub_kimokimo_001", "count": 1, "interval": 0.5, "level": 5},
+        {"type": "char_sub_yodarehaki_001", "count": 1, "interval": 0.5, "level": 5}
       ],
       "unlockOnClear": ["8"],
-      "timeLimit": 150
+      "timeLimit": 180,
+      "bonusConditions": [
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 170},
+        {"description": "召喚したユニット数が15以下", "conditionType": "unit_count", "conditionValue": 15, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 136},
+        {"description": "使用したゴールドが1500以下", "conditionType": "gold_spent", "conditionValue": 1500, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 170}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "kimokimo", "level": 3},
+        {"monsterId": "yodarehaki", "level": 2}
+      ],
+      "enemySpawns": [
+        {"monsterId": "orca", "minLevel": 6, "maxLevel": 6, "count": 2, "spawnPattern": "very_fast"},
+        {"monsterId": "seahorse", "minLevel": 6, "maxLevel": 6, "count": 2, "spawnPattern": "very_fast"},
+        {"monsterId": "dkurage", "minLevel": 5, "maxLevel": 5, "count": 2, "spawnPattern": "very_fast"},
+        {"monsterId": "kimokimo", "minLevel": 5, "maxLevel": 5, "count": 1, "spawnPattern": "very_fast"},
+        {"monsterId": "yodarehaki", "minLevel": 5, "maxLevel": 5, "count": 1, "spawnPattern": "very_fast"}
+      ]
     },
     {
       "id": "8",
       "stageNumber": 8,
       "chapter": 2,
-      "chapterName": "Chapter 2: 魔法学園",
-      "stageName": "学園の試練 4",
-      "difficulty": 3,
+      "chapterName": "Chapter 2: 海岸",
+      "stageName": "ボス戦 - シーサーペント",
+      "difficulty": 5,
       "isBoss": true,
-      "isLocked": false,
-      "rewardGold": 450,
-      "waveCount": 2,
-      "recommendedLevel": 40,
+      "isLocked": true,
+      "rewardGold": 600,
+      "rewardTickets": 2,
+      "waveCount": 6,
+      "recommendedLevel": 20,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 540,
-      "enemyLevel": 1,
+      "enemyLevel": 25,
+      "castle_hp": {"enemy_castle_hp": 1500},
       "waves": [
-        {"type": "char_sub_longtailedtit_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_chainsword_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_orca_001", "count": 2, "interval": 0.5, "level": 8},
+        {"type": "char_sub_seahorse_001", "count": 2, "interval": 0.5, "level": 7},
+        {"type": "char_sub_dkurage_001", "count": 2, "interval": 0.5, "level": 7},
+        {"type": "char_sub_kimokimo_001", "count": 1, "interval": 0.5, "level": 6},
+        {"type": "char_sub_yodarehaki_001", "count": 1, "interval": 0.5, "level": 6},
+        {"type": "char_sub_seaserpentboss_001", "count": 1, "interval": 0.5, "level": 25}
       ],
       "unlockOnClear": ["9"],
-      "timeLimit": 160
+      "timeLimit": 300,
+      "bonusConditions": [
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 360},
+        {"description": "召喚したユニット数が20以下", "conditionType": "unit_count", "conditionValue": 20, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 300},
+        {"description": "使用したゴールドが2000以下", "conditionType": "gold_spent", "conditionValue": 2000, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 360}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "seaserpentboss", "level": 15}
+      ],
+      "enemySpawns": [
+        {"monsterId": "orca", "minLevel": 8, "maxLevel": 8, "count": 2, "spawnPattern": "boss_phase1"},
+        {"monsterId": "seahorse", "minLevel": 7, "maxLevel": 7, "count": 2, "spawnPattern": "boss_phase1"},
+        {"monsterId": "dkurage", "minLevel": 7, "maxLevel": 7, "count": 2, "spawnPattern": "boss_phase1"},
+        {"monsterId": "kimokimo", "minLevel": 6, "maxLevel": 6, "count": 1, "spawnPattern": "boss_phase1"},
+        {"monsterId": "yodarehaki", "minLevel": 6, "maxLevel": 6, "count": 1, "spawnPattern": "boss_phase1"},
+        {"monsterId": "seaserpentboss", "minLevel": 25, "maxLevel": 25, "count": 1, "spawnPattern": "boss"}
+      ],
+      "bossPhases": [
+        {
+          "hpPercentMin": 70,
+          "hpPercentMax": 100,
+          "description": "フェーズ1（HP 100-70%）",
+          "actions": ["通常噛みつき攻撃", "水ブレス（直線状）"]
+        },
+        {
+          "hpPercentMin": 40,
+          "hpPercentMax": 70,
+          "description": "フェーズ2（HP 70-40%）",
+          "actions": ["連続噛みつき", "水ブレス（扇状）", "巻きつき攻撃", "敵追加召喚"]
+        },
+        {
+          "hpPercentMin": 0,
+          "hpPercentMax": 40,
+          "description": "フェーズ3（HP 40-0%）",
+          "actions": ["高速移動＋連続攻撃", "全方向水ブレス", "画面を蛇行しながら襲撃"]
+        }
+      ]
     },
     {
       "id": "9",
       "stageNumber": 9,
       "chapter": 3,
-      "chapterName": "Chapter 3: 竜の巣窟",
-      "stageName": "竜の領域 1",
+      "chapterName": "Chapter 3: 古代遺跡",
+      "stageName": "遺跡の外壁",
       "difficulty": 3,
       "isBoss": false,
-      "isLocked": false,
+      "isLocked": true,
       "rewardGold": 300,
-      "waveCount": 2,
-      "recommendedLevel": 40,
+      "rewardTickets": 1,
+      "waveCount": 4,
+      "recommendedLevel": 15,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 560,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 1000},
       "waves": [
-        {"type": "char_sub_rainbow_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_lanterfish_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_chainsword_001", "count": 2, "interval": 0.5, "level": 6},
+        {"type": "char_sub_hatslime_001", "count": 3, "interval": 0.5, "level": 6},
+        {"type": "char_sub_orca_001", "count": 2, "interval": 0.5, "level": 6},
+        {"type": "char_sub_chainsword_001", "count": 3, "interval": 0.5, "level": 7}
       ],
       "unlockOnClear": ["10"],
-      "timeLimit": 170
+      "timeLimit": 240,
+      "bonusConditions": [
+        {"description": "クリア時間4分以内", "conditionType": "clear_time", "conditionValue": 240, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 120},
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 150},
+        {"description": "召喚したユニット数が12以下", "conditionType": "unit_count", "conditionValue": 12, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 120},
+        {"description": "使用したゴールドが1200以下", "conditionType": "gold_spent", "conditionValue": 1200, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 150}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "chainsword", "level": 3}
+      ],
+      "enemySpawns": [
+        {"monsterId": "chainsword", "minLevel": 6, "maxLevel": 7, "count": 4, "spawnPattern": "fast"},
+        {"monsterId": "hatslime", "minLevel": 6, "maxLevel": 6, "count": 3, "spawnPattern": "fast"},
+        {"monsterId": "orca", "minLevel": 6, "maxLevel": 6, "count": 2, "spawnPattern": "fast"}
+      ]
     },
     {
       "id": "10",
       "stageNumber": 10,
       "chapter": 3,
-      "chapterName": "Chapter 3: 竜の巣窟",
-      "stageName": "竜の領域 2",
-      "difficulty": 3,
+      "chapterName": "Chapter 3: 古代遺跡",
+      "stageName": "遺跡の内部",
+      "difficulty": 4,
       "isBoss": false,
-      "isLocked": false,
+      "isLocked": true,
       "rewardGold": 420,
-      "waveCount": 2,
-      "recommendedLevel": 45,
+      "rewardTickets": 1,
+      "waveCount": 5,
+      "recommendedLevel": 18,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 580,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 1400},
       "waves": [
-        {"type": "char_sub_seahorse_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_yodarehaki_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_chainsword_001", "count": 3, "interval": 0.5, "level": 7},
+        {"type": "char_sub_bat_001", "count": 2, "interval": 0.5, "level": 6},
+        {"type": "char_sub_rainbow_001", "count": 2, "interval": 0.5, "level": 6},
+        {"type": "char_sub_orca_001", "count": 2, "interval": 0.5, "level": 7},
+        {"type": "char_sub_chainsword_001", "count": 3, "interval": 0.5, "level": 8}
       ],
       "unlockOnClear": ["11"],
-      "timeLimit": 170
+      "timeLimit": 360,
+      "bonusConditions": [
+        {"description": "クリア時間6分以内", "conditionType": "clear_time", "conditionValue": 360, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 168},
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 210},
+        {"description": "召喚したユニット数が15以下", "conditionType": "unit_count", "conditionValue": 15, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 168}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "bat", "level": 3},
+        {"monsterId": "rainbow", "level": 2},
+        {"monsterId": "longtailedtit", "level": 2}
+      ],
+      "enemySpawns": [
+        {"monsterId": "chainsword", "minLevel": 7, "maxLevel": 8, "count": 5, "spawnPattern": "fast"},
+        {"monsterId": "bat", "minLevel": 6, "maxLevel": 6, "count": 2, "spawnPattern": "fast"},
+        {"monsterId": "rainbow", "minLevel": 6, "maxLevel": 6, "count": 2, "spawnPattern": "fast"},
+        {"monsterId": "orca", "minLevel": 7, "maxLevel": 7, "count": 2, "spawnPattern": "fast"}
+      ]
     },
     {
       "id": "11",
       "stageNumber": 11,
       "chapter": 3,
-      "chapterName": "Chapter 3: 竜の巣窟",
-      "stageName": "竜の領域 3",
-      "difficulty": 4,
+      "chapterName": "Chapter 3: 古代遺跡",
+      "stageName": "最深部への道",
+      "difficulty": 5,
       "isBoss": false,
-      "isLocked": false,
+      "isLocked": true,
       "rewardGold": 560,
-      "waveCount": 2,
-      "recommendedLevel": 50,
+      "rewardTickets": 2,
+      "waveCount": 6,
+      "recommendedLevel": 22,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 600,
       "enemyLevel": 1,
+      "castle_hp": {"enemy_castle_hp": 2000},
       "waves": [
-        {"type": "char_sub_orca_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_chainsword_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_chainsword_001", "count": 3, "interval": 0.5, "level": 8},
+        {"type": "char_sub_bat_001", "count": 2, "interval": 0.5, "level": 7},
+        {"type": "char_sub_rainbow_001", "count": 2, "interval": 0.5, "level": 7},
+        {"type": "char_sub_lanterfish_001", "count": 2, "interval": 0.5, "level": 6},
+        {"type": "char_sub_anglerfish_001", "count": 1, "interval": 0.5, "level": 6},
+        {"type": "char_sub_orca_001", "count": 2, "interval": 0.5, "level": 8}
       ],
       "unlockOnClear": ["12"],
-      "timeLimit": 180
+      "timeLimit": 240,
+      "bonusConditions": [
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 336},
+        {"description": "召喚したユニット数が20以下", "conditionType": "unit_count", "conditionValue": 20, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 280},
+        {"description": "使用したゴールドが2000以下", "conditionType": "gold_spent", "conditionValue": 2000, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 336}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "lanterfish", "level": 3},
+        {"monsterId": "anglerfish", "level": 2},
+        {"monsterId": "crystalboss", "level": 4}
+      ],
+      "enemySpawns": [
+        {"monsterId": "chainsword", "minLevel": 8, "maxLevel": 8, "count": 3, "spawnPattern": "super_fast"},
+        {"monsterId": "bat", "minLevel": 7, "maxLevel": 7, "count": 2, "spawnPattern": "super_fast"},
+        {"monsterId": "rainbow", "minLevel": 7, "maxLevel": 7, "count": 2, "spawnPattern": "super_fast"},
+        {"monsterId": "lanterfish", "minLevel": 6, "maxLevel": 6, "count": 2, "spawnPattern": "super_fast"},
+        {"monsterId": "anglerfish", "minLevel": 6, "maxLevel": 6, "count": 1, "spawnPattern": "super_fast"},
+        {"monsterId": "orca", "minLevel": 8, "maxLevel": 8, "count": 2, "spawnPattern": "super_fast"}
+      ]
     },
     {
       "id": "12",
       "stageNumber": 12,
       "chapter": 3,
-      "chapterName": "Chapter 3: 竜の巣窟",
-      "stageName": "竜の領域 4",
+      "chapterName": "Chapter 3: 古代遺跡",
+      "stageName": "最終ボス戦 - 巨大浮遊水晶",
       "difficulty": 5,
       "isBoss": true,
-      "isLocked": false,
-      "rewardGold": 700,
-      "waveCount": 2,
-      "recommendedLevel": 55,
+      "isLocked": true,
+      "rewardGold": 800,
+      "rewardTickets": 3,
+      "waveCount": 6,
+      "recommendedLevel": 30,
       "previewImageId": "",
       "playerLife": 100,
       "startingCost": 620,
-      "enemyLevel": 1,
+      "enemyLevel": 30,
+      "castle_hp": {"enemy_castle_hp": 3000},
       "waves": [
-        {"type": "char_sub_longtailedtit_001", "count": 1, "interval": 0.5, "level": 1},
-        {"type": "char_sub_chainsword_001", "count": 1, "interval": 0.5, "level": 1}
+        {"type": "char_sub_chainsword_001", "count": 2, "interval": 0.5, "level": 9},
+        {"type": "char_sub_bat_001", "count": 2, "interval": 0.5, "level": 8},
+        {"type": "char_sub_rainbow_001", "count": 2, "interval": 0.5, "level": 8},
+        {"type": "char_sub_lanterfish_001", "count": 2, "interval": 0.5, "level": 7},
+        {"type": "char_sub_crystalboss_001", "count": 1, "interval": 0.5, "level": 9},
+        {"type": "char_sub_crystalboss_001", "count": 1, "interval": 0.5, "level": 30}
       ],
-      "timeLimit": 180
+      "timeLimit": 420,
+      "bonusConditions": [
+        {"description": "城のHPが50%以上", "conditionType": "tower_hp_percent", "conditionValue": 50, "conditionOperator": "gte", "rewardType": "gold", "rewardValue": 480},
+        {"description": "召喚したユニット数が25以下", "conditionType": "unit_count", "conditionValue": 25, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 400},
+        {"description": "使用したゴールドが2200以下", "conditionType": "gold_spent", "conditionValue": 2200, "conditionOperator": "lte", "rewardType": "gold", "rewardValue": 480}
+      ],
+      "rewardMonsters": [
+        {"monsterId": "crystalboss", "level": 20}
+      ],
+      "enemySpawns": [
+        {"monsterId": "chainsword", "minLevel": 9, "maxLevel": 9, "count": 2, "spawnPattern": "boss_phase1"},
+        {"monsterId": "bat", "minLevel": 8, "maxLevel": 8, "count": 2, "spawnPattern": "boss_phase1"},
+        {"monsterId": "rainbow", "minLevel": 8, "maxLevel": 8, "count": 2, "spawnPattern": "boss_phase1"},
+        {"monsterId": "lanterfish", "minLevel": 7, "maxLevel": 7, "count": 2, "spawnPattern": "boss_phase1"},
+        {"monsterId": "crystalboss", "minLevel": 9, "maxLevel": 9, "count": 1, "spawnPattern": "miniboss"},
+        {"monsterId": "crystalboss", "minLevel": 30, "maxLevel": 30, "count": 1, "spawnPattern": "boss"}
+      ],
+      "bossPhases": [
+        {
+          "hpPercentMin": 70,
+          "hpPercentMax": 100,
+          "description": "フェーズ1（HP 100-70%）",
+          "actions": ["4方向レーザー発射", "魔法弾3連射（プレイヤー方向）", "低速浮遊・回転"]
+        },
+        {
+          "hpPercentMin": 40,
+          "hpPercentMax": 70,
+          "description": "フェーズ2（HP 70-40%）",
+          "actions": ["8方向レーザー発射", "魔法弾5連射（扇状）", "回転速度上昇", "敵追加召喚"]
+        },
+        {
+          "hpPercentMin": 0,
+          "hpPercentMax": 40,
+          "description": "フェーズ3（HP 40-0%）",
+          "actions": ["画面全体結晶の雨", "誘導弾（プレイヤー追尾）", "高速回転＋移動", "最高難易度攻撃"]
+        }
+      ]
     }
   ]
 }

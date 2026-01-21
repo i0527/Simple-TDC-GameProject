@@ -6,6 +6,7 @@
 namespace game {
 namespace core {
 
+class BaseSystemAPI;
 class UISystemAPI;
 
 namespace ui {
@@ -73,7 +74,12 @@ public:
     /// @brief 描画用UIシステムAPIを設定
     void SetUISystemAPI(::game::core::UISystemAPI* uiAPI) { uiAPI_ = uiAPI; }
 
+    /// @brief オーディオ用システムAPIを設定
+    void SetBaseSystemAPI(::game::core::BaseSystemAPI* systemAPI) { baseSystemAPI_ = systemAPI; }
+
 private:
+    void PlayClickSound();
+
     Rect bounds_;
     Margin margin_;
     std::vector<std::shared_ptr<IUIComponent>> children_;
@@ -85,6 +91,7 @@ private:
     std::string actionId_;  // P1: 構造化イベント用
     std::function<void()> onClickCallback_;
     ::game::core::UISystemAPI* uiAPI_ = nullptr;
+    ::game::core::BaseSystemAPI* baseSystemAPI_ = nullptr;
 };
 
 } // namespace ui

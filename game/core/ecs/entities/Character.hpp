@@ -60,6 +60,7 @@ struct Equipment {
     std::string id;           // 装備ID
     std::string name;         // 装備名
     std::string description;  // 装備説明
+    std::string icon_path;    // UIアイコンパス
     float attack_bonus;       // 攻撃力ボーナス
     float defense_bonus;      // 防御力ボーナス
     float hp_bonus;           // HP ボーナス

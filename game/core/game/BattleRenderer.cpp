@@ -1,6 +1,6 @@
 #include "BattleRenderer.hpp"
 
-// プロジェクト�E
+// プロジェクト�E
 #include "../../utils/Log.h"
 
 namespace game {
@@ -78,14 +78,27 @@ void BattleRenderer::RenderEntity(const ecs::components::Position& pos,
     const bool flip = (team && team->faction == ecs::components::Faction::Player);
     Rectangle src = MakeSourceRect(sprite, anim, flip);
 
+    // 描画サイズ（2倍スケール）
+    const float drawWidth = static_cast<float>(sprite.frame_width) * 2.0f;
+    const float drawHeight = static_cast<float>(sprite.frame_height) * 2.0f;
+
+    // 位置計算：pos.yは元のサイズでの左上Y座標（lane_.y - frame_height）
+    // スケール2倍でも足元がlane_.yに来るように調整
+    // pos.y = lane_.y - frame_height なので、
+    // drawY = lane_.y - drawHeight = pos.y + frame_height - drawHeight = pos.y - frame_height
+    const float drawX = pos.x;  // X座標は左端基準のまま
+    const float drawY = pos.y - static_cast<float>(sprite.frame_height);  // 元の高さ分だけ上に
+
     Rectangle dst{
-        pos.x,
-        pos.y,
-        static_cast<float>(sprite.frame_width),
-        static_cast<float>(sprite.frame_height)
+        drawX,
+        drawY,
+        drawWidth,
+        drawHeight
     };
 
-    // 位置は「足允E��準」ではなく簡易に左上基準（後で調整�E�E
+    // 位置は「足允E��準」ではなく簡易に左上基準（後で調整�E�E
+    // 回転中心は足元（基底ライン上）
+    // 左上基準で描画（元のコードと同じ基準点）
     systemAPI_->Render().DrawTexturePro(*texture, src, dst, {0.0f, 0.0f}, 0.0f,
                                         WHITE);
 }

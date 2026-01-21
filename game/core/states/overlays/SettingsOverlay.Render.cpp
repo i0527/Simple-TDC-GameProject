@@ -147,9 +147,108 @@ void SettingsOverlay::RenderDisplaySection(SharedContext& ctx, float x, float y,
     RenderButton(ctx, x, startY, width - 20.0f, buttonHeight, fullscreenText,
                  fullscreenButtonHovered_);
 
-    // FPS表示チェックボックス
-    RenderCheckbox(ctx, x, startY + buttonSpacing, 30.0f, "FPS表示", &currentSettings_.showFPS,
-                   fpsCheckboxHovered_);
+    // モニター選択（フルスクリーン時のみ表示）
+    if (currentSettings_.isFullscreen && systemAPI_) {
+        int monitorCount = systemAPI_->Window().GetMonitorCount();
+        if (monitorCount > 1) {
+            float monitorY = startY + buttonSpacing;
+            float monitorButtonWidth = 40.0f;
+            float monitorTextWidth = width - 20.0f - monitorButtonWidth * 2.0f - 20.0f;
+            
+            // 前のモニターボタン
+            RenderButton(ctx, x, monitorY, monitorButtonWidth, buttonHeight, "<",
+                         monitorPrevButtonHovered_);
+            
+            // モニター情報表示
+            float monitorTextX = x + monitorButtonWidth + 10.0f;
+            int monitor = currentSettings_.selectedMonitor;
+            if (monitor < 0 || monitor >= monitorCount) {
+                monitor = 0;
+            }
+            const char* monitorName = systemAPI_->Window().GetMonitorName(monitor);
+            char monitorText[256];
+            snprintf(monitorText, sizeof(monitorText), "モニター %d/%d: %s", 
+                     monitor + 1, monitorCount, monitorName);
+            float labelFontSize = 22.0f;
+            systemAPI_->Render().DrawTextDefault(
+                monitorText, monitorTextX, monitorY + (buttonHeight - labelFontSize) / 2.0f,
+                labelFontSize, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+            
+            // 次のモニターボタン
+            float monitorNextX = monitorTextX + monitorTextWidth + 10.0f;
+            RenderButton(ctx, monitorNextX, monitorY, monitorButtonWidth, buttonHeight, ">",
+                         monitorNextButtonHovered_);
+            
+            // FPS表示チェックボックスの位置を調整
+            RenderCheckbox(ctx, x, monitorY + buttonSpacing, 30.0f, "FPS表示", &currentSettings_.showFPS,
+                           fpsCheckboxHovered_);
+        } else {
+            // モニターが1つしかない場合は通常通りFPS表示チェックボックスを表示
+            RenderCheckbox(ctx, x, startY + buttonSpacing, 30.0f, "FPS表示", &currentSettings_.showFPS,
+                           fpsCheckboxHovered_);
+        }
+    } else {
+        // ウィンドウモード時はFPS表示チェックボックスと解像度選択
+        float fpsCheckboxY = startY + buttonSpacing;
+        RenderCheckbox(ctx, x, fpsCheckboxY, 30.0f, "FPS表示", &currentSettings_.showFPS,
+                       fpsCheckboxHovered_);
+        
+        // 解像度選択（次回起動時に有効）
+        float resolutionY = fpsCheckboxY + buttonSpacing;
+        float resolutionButtonWidth = 40.0f;
+        float resolutionTextWidth = width - 20.0f - resolutionButtonWidth * 2.0f - 20.0f;
+        
+        // 前の解像度ボタン
+        RenderButton(ctx, x, resolutionY, resolutionButtonWidth, buttonHeight, "<",
+                     resolutionPrevButtonHovered_);
+        
+        // 解像度情報表示
+        float resolutionTextX = x + resolutionButtonWidth + 10.0f;
+        const char* resolutionName = currentSettings_.resolution.c_str();
+        char resolutionText[256];
+        snprintf(resolutionText, sizeof(resolutionText), "解像度: %s (次回起動時に有効)", resolutionName);
+        float labelFontSize = 20.0f;
+        systemAPI_->Render().DrawTextDefault(
+            resolutionText, resolutionTextX, resolutionY + (buttonHeight - labelFontSize) / 2.0f,
+            labelFontSize, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+        
+        // 次の解像度ボタン
+        float resolutionNextX = resolutionTextX + resolutionTextWidth + 10.0f;
+        RenderButton(ctx, resolutionNextX, resolutionY, resolutionButtonWidth, buttonHeight, ">",
+                     resolutionNextButtonHovered_);
+    }
+    
+    // フルスクリーン時も解像度選択を表示（FPS表示の下）
+    if (currentSettings_.isFullscreen && systemAPI_) {
+        float resolutionY;
+        if (systemAPI_->Window().GetMonitorCount() > 1) {
+            resolutionY = startY + buttonSpacing * 2;
+        } else {
+            resolutionY = startY + buttonSpacing;
+        }
+        
+        float resolutionButtonWidth = 40.0f;
+        float resolutionTextWidth = width - 20.0f - resolutionButtonWidth * 2.0f - 20.0f;
+        
+        // 前の解像度ボタン
+        RenderButton(ctx, x, resolutionY, resolutionButtonWidth, buttonHeight, "<",
+                     resolutionPrevButtonHovered_);
+        
+        // 解像度情報表示
+        float resolutionTextX = x + resolutionButtonWidth + 10.0f;
+        const char* resolutionName = currentSettings_.resolution.c_str();
+        char resolutionText[256];
+        snprintf(resolutionText, sizeof(resolutionText), "解像度: %s (次回起動時に有効)", resolutionName);
+        float labelFontSize = 20.0f;
+        systemAPI_->Render().DrawTextDefault(
+            resolutionText, resolutionTextX, resolutionY + (buttonHeight - labelFontSize) / 2.0f,
+            labelFontSize, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+        
+        // 次の解像度ボタン
+        float resolutionNextX = resolutionTextX + resolutionTextWidth + 10.0f;
+        RenderButton(ctx, resolutionNextX, resolutionY, resolutionButtonWidth, buttonHeight, ">",
+                     resolutionNextButtonHovered_);
+    }
 }
 
 void SettingsOverlay::RenderSlider(float x, float y, float width, float height, const char* label,

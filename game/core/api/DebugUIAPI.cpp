@@ -14,6 +14,7 @@
 #include "../api/BaseSystemAPI.hpp"
 #include "../api/GameplayDataAPI.hpp"
 #include "../api/InputSystemAPI.hpp"
+#include "../ui/ImGuiSoundHelpers.hpp"
 
 namespace game {
 namespace core {
@@ -165,7 +166,7 @@ void DebugUIAPI::RenderCommonPanel(SharedContext& ctx) {
             editTickets_ = std::max(0, editTickets_);
             editMaxTickets_ = std::max(0, editMaxTickets_);
 
-            if (ImGui::Button("Apply##Currency")) {
+            if (ui::ImGuiSound::Button(ctx.systemAPI, "Apply##Currency")) {
                 // maxTickets は先に適用し、tickets は maxTickets を超えないように調整
                 ctx.gameplayDataAPI->SetGold(editGold_);
                 ctx.gameplayDataAPI->SetGems(editGems_);
@@ -174,13 +175,13 @@ void DebugUIAPI::RenderCommonPanel(SharedContext& ctx) {
             }
 
             ImGui::SameLine();
-            if (ImGui::Button("Save##Currency")) {
+            if (ui::ImGuiSound::Button(ctx.systemAPI, "Save##Currency")) {
                 lastSaveResult_ = ctx.gameplayDataAPI->Save();
                 hasLastSaveResult_ = true;
             }
 
             ImGui::SameLine();
-            if (ImGui::Button("Reload##Currency")) {
+            if (ui::ImGuiSound::Button(ctx.systemAPI, "Reload##Currency")) {
                 SyncEditFieldsFromSave(*ctx.gameplayDataAPI);
             }
 
@@ -297,6 +298,113 @@ void DebugUIAPI::RenderCommonPanel(SharedContext& ctx) {
                 }
 
                 ImGui::EndTable();
+            }
+        }
+    }
+
+    // ===== Character/Stage Lock State Editing =====
+    if (ImGui::CollapsingHeader("Lock State Editing", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (!ctx.gameplayDataAPI) {
+            ImGui::TextDisabled("gameplayDataAPI: null");
+        } else {
+            // タブでキャラクターとステージを分離
+            if (ImGui::BeginTabBar("LockStateTabs")) {
+                // キャラクターロック編集タブ
+                if (ImGui::BeginTabItem("Characters")) {
+                    static char char_search_filter[128] = "";
+                    ImGui::InputText("Search##Char", char_search_filter, sizeof(char_search_filter));
+                    ImGui::Separator();
+
+                    const auto& masters = ctx.gameplayDataAPI->GetAllCharacterMasters();
+                    ImGui::Text("Total: %d characters", static_cast<int>(masters.size()));
+                    ImGui::Separator();
+
+                    // スクロール可能なリスト
+                    ImGui::BeginChild("CharacterLockList", ImVec2(0, 300), true);
+                    for (const auto& [id, ch] : masters) {
+                        // 検索フィルター
+                        if (char_search_filter[0] != '\0') {
+                            if (!ContainsCaseInsensitive(ch.name, std::string(char_search_filter)) &&
+                                !ContainsCaseInsensitive(id, std::string(char_search_filter))) {
+                                continue;
+                            }
+                        }
+
+                        auto st = ctx.gameplayDataAPI->GetCharacterState(id);
+                        bool unlocked = st.unlocked;
+                        
+                        ImGui::PushID(id.c_str());
+                        if (ImGui::Checkbox(ch.name.c_str(), &unlocked)) {
+                            // 状態を更新
+                            st.unlocked = unlocked;
+                            ctx.gameplayDataAPI->SetCharacterState(id, st);
+                        }
+                        ImGui::SameLine();
+                        ImGui::TextDisabled("(%s)", id.c_str());
+                        ImGui::PopID();
+                    }
+                    ImGui::EndChild();
+                    ImGui::EndTabItem();
+                }
+
+                // ステージロック編集タブ
+                if (ImGui::BeginTabItem("Stages")) {
+                    static char stage_search_filter[128] = "";
+                    ImGui::InputText("Search##Stage", stage_search_filter, sizeof(stage_search_filter));
+                    ImGui::Separator();
+
+                    const auto& stages = ctx.gameplayDataAPI->GetAllStages();
+                    ImGui::Text("Total: %d stages", static_cast<int>(stages.size()));
+                    ImGui::Separator();
+
+                    // スクロール可能なリスト
+                    ImGui::BeginChild("StageLockList", ImVec2(0, 300), true);
+                    for (const auto& [id, stage] : stages) {
+                        // 検索フィルター
+                        if (stage_search_filter[0] != '\0') {
+                            if (!ContainsCaseInsensitive(stage.stageName, std::string(stage_search_filter)) &&
+                                !ContainsCaseInsensitive(id, std::string(stage_search_filter))) {
+                                continue;
+                            }
+                        }
+
+                        auto st = ctx.gameplayDataAPI->GetStageState(id);
+                        bool is_locked = st.isLocked;
+                        
+                        ImGui::PushID(id.c_str());
+                        std::string label = stage.stageName + " (Lv." + std::to_string(stage.stageNumber) + ")";
+                        if (ImGui::Checkbox(label.c_str(), &is_locked)) {
+                            // 状態を更新
+                            st.isLocked = is_locked;
+                            ctx.gameplayDataAPI->SetStageState(id, st);
+                        }
+                        ImGui::SameLine();
+                        ImGui::TextDisabled("(%s)", id.c_str());
+                        if (st.isCleared) {
+                            ImGui::SameLine();
+                            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "★");
+                        }
+                        ImGui::PopID();
+                    }
+                    ImGui::EndChild();
+                    ImGui::EndTabItem();
+                }
+
+                ImGui::EndTabBar();
+            }
+
+            ImGui::Separator();
+            if (ui::ImGuiSound::Button(ctx.systemAPI, "Save Lock States")) {
+                lastSaveResult_ = ctx.gameplayDataAPI->Save();
+                hasLastSaveResult_ = true;
+            }
+            if (hasLastSaveResult_) {
+                ImGui::SameLine();
+                if (lastSaveResult_) {
+                    ImGui::TextUnformatted("Save: OK");
+                } else {
+                    ImGui::TextUnformatted("Save: FAILED (see logs)");
+                }
             }
         }
     }

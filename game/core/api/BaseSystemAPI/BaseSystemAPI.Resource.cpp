@@ -201,16 +201,41 @@ void *ResourceSystemAPI::GetSound(const std::string &name) {
     return it->second.get();
   }
 
-  std::string path = "data/assets/sounds/" + name + ".wav";
+  std::vector<std::string> candidatePaths = {
+      "data/assets/sounds/" + name + ".wav",
+      "data/assets/sounds/" + name + ".ogg"};
+  if (name == "button_click") {
+    candidatePaths.push_back(
+        "data/assets/other/kenney_ui-pack/Sounds/click-a.ogg");
+  }
+  const std::vector<std::string> kenneyNames = {
+      "click-a", "click-b", "switch-a", "switch-b", "tap-a", "tap-b"};
+  if (std::find(kenneyNames.begin(), kenneyNames.end(), name) !=
+      kenneyNames.end()) {
+    candidatePaths.push_back(
+        "data/assets/other/kenney_ui-pack/Sounds/" + name + ".ogg");
+  }
 
-  Sound sound = ::LoadSound(path.c_str());
+  Sound sound{};
+  std::string loadedPath;
+  for (const auto &path : candidatePaths) {
+    if (!std::filesystem::exists(path)) {
+      continue;
+    }
+
+    sound = ::LoadSound(path.c_str());
+    if (sound.frameCount != 0) {
+      loadedPath = path;
+      break;
+    }
+  }
 
   if (sound.frameCount == 0) {
-    LOG_ERROR("Failed to load sound: {}", path);
+    LOG_ERROR("Failed to load sound: {}", name);
     return nullptr;
   }
 
-  LOG_INFO("Loaded sound: {}", path);
+  LOG_INFO("Loaded sound: {}", loadedPath);
 
   auto soundPtr = std::shared_ptr<Sound>(new Sound(sound), [](Sound *s) {
     if (s && s->frameCount != 0) {
@@ -369,8 +394,10 @@ int ResourceSystemAPI::ScanResourceFiles() {
     ScanDirectoryRecursive("data/assets/other", ResourceType::Texture,
                            {".png"});
 
-    // ScanDirectoryRecursive("data/assets/sounds", ResourceType::Sound,
-    // {".mp3", ".wav"});
+    ScanDirectoryRecursive("data/assets/sounds", ResourceType::Sound,
+                           {".wav", ".ogg"});
+    ScanDirectoryRecursive("data/assets/other/kenney_ui-pack/Sounds",
+                           ResourceType::Sound, {".ogg", ".wav"});
 
     ScanDirectory("data", ResourceType::Json, {".json"});
 
@@ -692,7 +719,7 @@ void ResourceSystemAPI::LoadSound(const std::string &path,
     });
 
     owner_->musics_[name] = musicPtr;
-  } else if (ext == ".wav") {
+  } else if (ext == ".wav" || ext == ".ogg") {
     if (owner_->sounds_.find(name) != owner_->sounds_.end()) {
       return;
     }
@@ -711,6 +738,13 @@ void ResourceSystemAPI::LoadSound(const std::string &path,
     });
 
     owner_->sounds_[name] = soundPtr;
+    if (path.find("kenney_ui-pack/Sounds") != std::string::npos &&
+        name == "click-a") {
+      const std::string aliasName = "button_click";
+      if (owner_->sounds_.find(aliasName) == owner_->sounds_.end()) {
+        owner_->sounds_[aliasName] = soundPtr;
+      }
+    }
   }
 }
 

@@ -1,6 +1,9 @@
 #include "GachaOverlay.hpp"
 #include "GachaOverlayInternal.hpp"
 
+// 標準ライブラリ
+#include <array>
+
 // 外部ライブラリ
 #include <imgui.h>
 
@@ -21,15 +24,6 @@ void GachaOverlay::Render(SharedContext& ctx) {
     const float alpha = introEase;
     const float pulse = 0.5f + 0.5f * std::sin(pulseTime_ * kPi * 2.0f * 0.6f);
 
-    if (const ImGuiViewport* viewport = ImGui::GetMainViewport()) {
-        ImDrawList* bg = ImGui::GetBackgroundDrawList();
-        const ImVec2 vpPos = viewport->Pos;
-        const ImVec2 vpSize = viewport->Size;
-        const ImU32 dimColor =
-            ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 0.35f * alpha));
-        bg->AddRectFilled(vpPos, ImVec2(vpPos.x + vpSize.x, vpPos.y + vpSize.y),
-                          dimColor);
-    }
 
     ImDrawList* fg = ImGui::GetForegroundDrawList();
     const ImVec2 panelMin(panelX_, panelY_);
@@ -102,28 +96,47 @@ void GachaOverlay::Render(SharedContext& ctx) {
             ImVec4(GACHA_BADGE_BG_R, GACHA_BADGE_BG_G, GACHA_BADGE_BG_B,
                    GACHA_BADGE_BG_A * alpha));
         const float rightX = panelX_ + panelW_ - GACHA_HEADER_PADDING_X;
-        float badgeY = panelY_ + GACHA_HEADER_PADDING_Y + 2.0f;
+        const float badgeFontSize = fontSize * 0.9f;
+        const float badgePadX = GACHA_STATUS_BADGE_PAD_X;
+        const float badgePadY = GACHA_STATUS_BADGE_PAD_Y;
+        const float badgeSpacing = GACHA_STATUS_BADGE_SPACING;
+        const float headerTop = panelY_ + 8.0f;
+        const float headerBottom = panelY_ + GACHA_HEADER_DIVIDER_Y - 6.0f;
+
+        const std::array<std::string, 3> badges = {
+            "所持チケット: " + std::to_string(ctx.gameplayDataAPI->GetTickets()),
+            "天井: " + std::to_string(ctx.gameplayDataAPI->GetGachaPityCounter()) +
+                " / " + std::to_string(PITY_HARD),
+            "ダスト: " + std::to_string(ctx.gameplayDataAPI->GetGachaDust())
+        };
+
+        float totalBadgeH = 0.0f;
+        for (const auto& text : badges) {
+            const ImVec2 textSize =
+                font->CalcTextSizeA(badgeFontSize, FLT_MAX, 0.0f, text.c_str());
+            totalBadgeH += textSize.y + badgePadY * 2.0f;
+        }
+        totalBadgeH += badgeSpacing * (static_cast<float>(badges.size()) - 1.0f);
+
+        float badgeY = std::max(headerTop, headerBottom - totalBadgeH);
         auto drawBadge = [&](const std::string& text) {
-            const ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
-            const float badgeW = textSize.x + GACHA_STATUS_BADGE_PAD_X * 2.0f;
-            const float badgeH = textSize.y + GACHA_STATUS_BADGE_PAD_Y * 2.0f;
+            const ImVec2 textSize =
+                font->CalcTextSizeA(badgeFontSize, FLT_MAX, 0.0f, text.c_str());
+            const float badgeW = textSize.x + badgePadX * 2.0f;
+            const float badgeH = textSize.y + badgePadY * 2.0f;
             const ImVec2 badgeMin(rightX - badgeW, badgeY);
             const ImVec2 badgeMax(rightX, badgeY + badgeH);
             fg->AddRectFilled(badgeMin, badgeMax, badgeBg, GACHA_STATUS_BADGE_RADIUS);
-            fg->AddText(font, fontSize,
-                        ImVec2(badgeMin.x + GACHA_STATUS_BADGE_PAD_X,
-                               badgeMin.y + GACHA_STATUS_BADGE_PAD_Y),
+            fg->AddText(font, badgeFontSize,
+                        ImVec2(badgeMin.x + badgePadX,
+                               badgeMin.y + badgePadY),
                         subColor, text.c_str());
-            badgeY += badgeH + GACHA_STATUS_BADGE_SPACING;
+            badgeY += badgeH + badgeSpacing;
         };
 
-        drawBadge("所持チケット: " +
-                  std::to_string(ctx.gameplayDataAPI->GetTickets()));
-        drawBadge("天井: " +
-                  std::to_string(ctx.gameplayDataAPI->GetGachaPityCounter()) +
-                  " / " + std::to_string(PITY_HARD));
-        drawBadge("ダスト: " +
-                  std::to_string(ctx.gameplayDataAPI->GetGachaDust()));
+        for (const auto& badgeText : badges) {
+            drawBadge(badgeText);
+        }
     }
 
     if (currentTab_ == GachaTab::Draw) {
@@ -194,6 +207,7 @@ void GachaOverlay::ShowMessageCard(float contentWidth, float contentHeight,
     const float y = contentTop_ + (availableH - cardH) / 2.0f;
 
     auto card = std::make_shared<ui::Card>();
+    card->SetBaseSystemAPI(systemAPI_);
     card->SetId("gacha_message");
     card->SetPosition(x, y);
     card->SetSize(cardW, cardH);
@@ -278,6 +292,7 @@ void GachaOverlay::AddEquipmentResultCard(float contentWidth, float contentHeigh
     const float y = startY + r * (cardH + spacingY);
 
     auto card = std::make_shared<ui::Card>();
+    card->SetBaseSystemAPI(systemAPI_);
     card->SetId("gacha_result_" + std::to_string(index));
     card->SetPosition(x, y);
     card->SetSize(cardW, cardH);

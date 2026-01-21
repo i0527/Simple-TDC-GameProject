@@ -64,6 +64,10 @@ private:
     GameState nextState_;
     bool requestQuit_;
 
+    // アニメーション用
+    float animationTime_;
+    float smoothProgress_;
+
     void renderInitScreen();
     void renderErrorScreen();
     void updateCategoryStats(const LoadProgress& progress);

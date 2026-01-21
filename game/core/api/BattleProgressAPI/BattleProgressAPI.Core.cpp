@@ -273,6 +273,10 @@ void BattleProgressAPI::InitializeFromSetupData(const BattleSetupData& data) {
     gameSpeed_ = data.gameSpeed;
     isPaused_ = data.isPaused;
     gameStateText_ = data.gameStateText;
+    
+    // 統計情報をリセット
+    spawnedUnitCount_ = 0;
+    totalGoldSpent_ = 0;
 
     if (!spawnSchedule_.empty()) {
         LOG_INFO("Spawn schedule loaded: {} events", spawnSchedule_.size());
@@ -304,6 +308,16 @@ void BattleProgressAPI::SetGameSpeed(float speed) {
 
 void BattleProgressAPI::SetPaused(bool paused) {
     isPaused_ = paused;
+}
+
+BattleProgressAPI::BattleStats BattleProgressAPI::GetBattleStats() const {
+    BattleStats stats;
+    stats.playerTowerHp = playerTower_.currentHp;
+    stats.playerTowerMaxHp = playerTower_.maxHp;
+    stats.spawnedUnitCount = spawnedUnitCount_;
+    stats.totalGoldSpent = totalGoldSpent_;
+    stats.clearTime = battleTime_;
+    return stats;
 }
 
 } // namespace core

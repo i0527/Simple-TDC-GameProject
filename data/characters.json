@@ -80,7 +80,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 280,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_seahorse_001",
@@ -121,7 +121,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 120,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_rainbow_001",
@@ -162,7 +162,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 250,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_lanterfish_001",
@@ -203,7 +203,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 190,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_yodarehaki_001",
@@ -244,7 +244,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 220,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_longtailedtit_001",
@@ -326,7 +326,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 210,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_bat_001",
@@ -367,7 +367,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 130,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_blueslime_001",
@@ -449,7 +449,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 300,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_crystalgolem_001",
@@ -490,7 +490,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 290,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_seaserpent_001",
@@ -531,7 +531,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 310,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_poisonjellyfish_001",
@@ -572,7 +572,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 200,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_kimoisogin_001",
@@ -613,7 +613,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 195,
-      "is_discovered": true
+      "is_discovered": false
     },
     {
       "id": "char_sub_mushmeramera_001",
@@ -654,7 +654,7 @@
       "passive_skills": [],
       "equipment": [],
       "cost": 205,
-      "is_discovered": true
+      "is_discovered": false
     }
   ]
 }

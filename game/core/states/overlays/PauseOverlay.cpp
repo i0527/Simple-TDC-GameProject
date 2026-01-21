@@ -77,7 +77,7 @@ void PauseOverlay::Render(SharedContext& ctx) {
     const float btnW = 440.0f;
     const float btnH = 62.0f;
     const float btnX = windowX + (windowW - btnW) * 0.5f;
-    const float btnY0 = windowY + 250.0f;
+    const float btnY0 = windowY + 200.0f;
     const float gapY = 22.0f;
 
     Rect resumeRect{ btnX, btnY0, btnW, btnH };
@@ -142,7 +142,7 @@ void PauseOverlay::HandleMouseInput(SharedContext& ctx) {
     const float btnW = 440.0f;
     const float btnH = 62.0f;
     const float btnX = windowX + (windowW - btnW) * 0.5f;
-    const float btnY0 = windowY + 250.0f;
+    const float btnY0 = windowY + 200.0f;
     const float gapY = 22.0f;
 
     Rect resumeRect{ btnX, btnY0, btnW, btnH };

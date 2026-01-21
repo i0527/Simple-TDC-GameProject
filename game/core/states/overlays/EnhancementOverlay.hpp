@@ -35,6 +35,20 @@ private:
     int selectedSlotIndex_ = 0;
     std::string selectedAttachmentId_;
     float attachmentListScroll_ = 0.0f;
+
+    void OnBaseEnhancementUp(SharedContext& ctx, int rowIndex);
+    void OnBaseEnhancementDown(SharedContext& ctx, int rowIndex);
+    void OnBaseEnhancementUpBatch(SharedContext& ctx, int rowIndex, int levels);
+    void OnBaseEnhancementDownBatch(SharedContext& ctx, int rowIndex, int levels);
+    void OnBaseEnhancementUpMax(SharedContext& ctx, int rowIndex);
+    void OnBaseEnhancementDownMax(SharedContext& ctx, int rowIndex);
+
+    void OnAttachmentLevelUp(SharedContext& ctx, int slotIndex);
+    void OnAttachmentLevelDown(SharedContext& ctx, int slotIndex);
+    void OnAttachmentLevelUpBatch(SharedContext& ctx, int slotIndex, int levels);
+    void OnAttachmentLevelDownBatch(SharedContext& ctx, int slotIndex, int levels);
+    void OnAttachmentLevelUpMax(SharedContext& ctx, int slotIndex);
+    void OnAttachmentLevelDownMax(SharedContext& ctx, int slotIndex);
 };
 
 } // namespace core

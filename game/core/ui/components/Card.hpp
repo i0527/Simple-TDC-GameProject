@@ -6,6 +6,7 @@
 
 namespace game {
 namespace core {
+class BaseSystemAPI;
 namespace ui {
 
 /// @brief カードコンテンツ構造体
@@ -76,6 +77,9 @@ public:
     /// @return アクションID
     const std::string& GetActionId() const;
 
+    /// @brief オーディオ用システムAPIを設定
+    void SetBaseSystemAPI(::game::core::BaseSystemAPI* systemAPI) { baseSystemAPI_ = systemAPI; }
+
 private:
     Rect bounds_;
     Margin margin_;
@@ -87,6 +91,7 @@ private:
     std::function<void()> onClickCallback_;
     std::string id_;
     std::string actionId_;  // P1: 構造化イベント用
+    ::game::core::BaseSystemAPI* baseSystemAPI_ = nullptr;
 };
 
 } // namespace ui

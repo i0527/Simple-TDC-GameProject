@@ -99,7 +99,8 @@ void CodexOverlay::Update(SharedContext &ctx, float deltaTime) {
         tryOnState_ = {};
         tryOnState_.level = std::max(1, ch->default_level);
       }
-      tryOnState_.unlocked = true; // 図鑑�EレビューではロチE��扱ぁE��しなぁE
+      // ロックされたキャラは試着できない（unlocked を false のままにする）
+      // tryOnState_.unlocked は GetCharacterState で取得した値を使用 // 図鑑�EレビューではロチE��扱ぁE��しなぁE
     }
   }
 
@@ -194,7 +195,7 @@ void CodexOverlay::Update(SharedContext &ctx, float deltaTime) {
           mouse_pos.y >= listY && mouse_pos.y < listY + listH) {
         const float innerX = mouse_pos.x - listX - list_panel_.padding;
         const float innerY =
-            mouse_pos.y - listY - list_panel_.padding - kPanelHeaderH;
+            mouse_pos.y - listY - list_panel_.padding - kPanelHeaderH - 32.0f;  // ソートUIの高さを考慮
         if (innerX >= 0.0f && innerY >= 0.0f) {
           const int columns = std::max(
               1,
@@ -438,6 +439,17 @@ void CodexOverlay::Update(SharedContext &ctx, float deltaTime) {
         relative_y >= status_panel_.y &&
         relative_y < status_panel_.y + status_panel_.height) {
 
+      // ロックされたキャラの場合は試着UIを無効化
+      const auto *ch = GetSelectedCharacter();
+      if (ch && ctx.gameplayDataAPI) {
+        const auto st = ctx.gameplayDataAPI->GetCharacterState(ch->id);
+        if (!st.unlocked) {
+          // ロックされたキャラの場合は試着UIのクリックを無効化
+          closeDropdown();
+          return;
+        }
+      }
+
       const float x0 = status_panel_.x + status_panel_.padding;
       float y0 = status_panel_.y + status_panel_.padding + kPanelHeaderH;
       const float btn = 28.0f;
@@ -566,7 +578,8 @@ void CodexOverlay::Update(SharedContext &ctx, float deltaTime) {
             break;
           }
         }
-        tryOnState_.unlocked = true;
+        // ロックされたキャラは試着できない（unlocked を false のままにする）
+        // tryOnState_.unlocked は GetCharacterState で取得した値を使用
       };
 
       ensureTryOnTarget();
@@ -752,6 +765,7 @@ void CodexOverlay::Render(SharedContext &ctx) {
 
   RenderTabBar(contentOffsetX, contentOffsetY);
   RenderListPanel();
+  RenderSortUI();
   RenderCharacterViewport();
   RenderStatusPanel(ctx);
   RenderInfoPanel();
@@ -891,9 +905,9 @@ void CodexOverlay::RenderListPanel() {
                                        ui::OverlayColors::TEXT_PRIMARY);
 
   const float innerX = x + list_panel_.padding;
-  const float innerY = y + kPanelHeaderH + list_panel_.padding;
+  const float innerY = y + kPanelHeaderH + 32.0f + list_panel_.padding;  // ソートUIの高さ（32.0f）を追加
   const float innerW = w - list_panel_.padding * 2.0f;
-  const float innerH = h - kPanelHeaderH - list_panel_.padding * 2.0f;
+  const float innerH = h - kPanelHeaderH - 32.0f - list_panel_.padding * 2.0f;  // ソートUIの高さを考慮
 
   const int columns =
       std::max(1, static_cast<int>(std::floor(
@@ -935,38 +949,55 @@ void CodexOverlay::RenderListPanel() {
           border);
 
       const auto &entry = entries[index];
-      if (entry.type == CodexEntry::Type::Character && entry.character &&
-          !entry.character->icon_path.empty()) {
-        void *texturePtr =
-            systemAPI_->Resource().GetTexture(entry.character->icon_path);
-        if (texturePtr) {
-          Texture2D *texture = static_cast<Texture2D *>(texturePtr);
-          if (texture && texture->id != 0) {
-            Rectangle src{0.0f, 0.0f, static_cast<float>(texture->width),
-                          static_cast<float>(texture->height)};
-            const float pad = 6.0f;
-            const float maxW =
-                std::max(0.0f, list_panel_.card_width - pad * 2.0f);
-            const float maxH =
-                std::max(0.0f, list_panel_.card_height - pad * 2.0f - 20.0f);
-            const float scale =
-                std::min(maxW / static_cast<float>(texture->width),
-                         maxH / static_cast<float>(texture->height));
-            const float drawW = static_cast<float>(texture->width) * scale;
-            const float drawH = static_cast<float>(texture->height) * scale;
-            Rectangle dst{cardX + (list_panel_.card_width - drawW) * 0.5f,
-                          cardY + pad, drawW, drawH};
-            systemAPI_->Render().DrawTexturePro(*texture, src, dst,
-                                                {0.0f, 0.0f}, 0.0f, WHITE);
-          }
+      auto drawEntryIcon = [&](const std::string &iconPath) {
+        if (iconPath.empty()) {
+          return;
         }
+        void *texturePtr = systemAPI_->Resource().GetTexture(iconPath);
+        if (!texturePtr) {
+          return;
+        }
+        Texture2D *texture = static_cast<Texture2D *>(texturePtr);
+        if (!texture || texture->id == 0) {
+          return;
+        }
+        Rectangle src{0.0f, 0.0f, static_cast<float>(texture->width),
+                      static_cast<float>(texture->height)};
+        const float pad = 6.0f;
+        const float maxW =
+            std::max(0.0f, list_panel_.card_width - pad * 2.0f);
+        const float maxH =
+            std::max(0.0f, list_panel_.card_height - pad * 2.0f - 20.0f);
+        const float scale =
+            std::min(maxW / static_cast<float>(texture->width),
+                     maxH / static_cast<float>(texture->height));
+        const float drawW = static_cast<float>(texture->width) * scale;
+        const float drawH = static_cast<float>(texture->height) * scale;
+        Rectangle dst{cardX + (list_panel_.card_width - drawW) * 0.5f,
+                      cardY + pad, drawW, drawH};
+        systemAPI_->Render().DrawTexturePro(*texture, src, dst,
+                                            {0.0f, 0.0f}, 0.0f, WHITE);
+      };
+
+      if (entry.type == CodexEntry::Type::Character && entry.character) {
+        drawEntryIcon(entry.character->icon_path);
+      } else if (entry.type == CodexEntry::Type::Equipment && entry.equipment) {
+        drawEntryIcon(entry.equipment->icon_path);
       }
 
-      const float labelY = cardY + list_panel_.card_height - 22.0f;
-      systemAPI_->Render().DrawTextDefault(
-          entry.name, cardX + 6.0f, labelY, 18.0f,
-          entry.is_discovered ? ui::OverlayColors::TEXT_PRIMARY
-                              : ui::OverlayColors::TEXT_MUTED);
+      // 未所持の場合は名前を非表示、ロックアイコンのみ表示
+      if (!entry.is_discovered && entry.type == CodexEntry::Type::Character) {
+        systemAPI_->Render().DrawTextDefault("🔒", 
+                                           cardX + list_panel_.card_width - 25.0f,
+                                           cardY + 6.0f, 16.0f,
+                                           ui::OverlayColors::TEXT_MUTED);
+      } else {
+        // 所持している場合は名前を表示
+        const float labelY = cardY + list_panel_.card_height - 22.0f;
+        systemAPI_->Render().DrawTextDefault(
+            entry.name, cardX + 6.0f, labelY, 18.0f,
+            ui::OverlayColors::TEXT_PRIMARY);
+      }
     }
   }
 
@@ -987,6 +1018,120 @@ void CodexOverlay::RenderListPanel() {
                                        ui::OverlayColors::PANEL_BG_PRIMARY);
     systemAPI_->Render().DrawRectangle(scrollBarX, thumbY, scrollBarW, thumbH,
                                        ui::OverlayColors::BORDER_BLUE);
+  }
+}
+
+void CodexOverlay::RenderSortUI() {
+  using namespace ui;
+  
+  const int ti = TabIndex(activeTab_);
+  const float x = list_panel_.x + list_panel_.padding;
+  const float y = list_panel_.y + kPanelHeaderH;
+  const float w = list_panel_.width - list_panel_.padding * 2.0f;
+  const float sort_bar_h = 32.0f;
+  const float sort_bar_y = y;
+  
+  // ソートバーの背景
+  systemAPI_->Render().DrawRectangle(
+      x, sort_bar_y, w, sort_bar_h, OverlayColors::PANEL_BG_SECONDARY);
+  systemAPI_->Render().DrawRectangleLines(
+      x, sort_bar_y, w, sort_bar_h, 2.0f, OverlayColors::BORDER_DEFAULT);
+  
+  auto sortKeyLabel = [](SortKey k) -> const char* {
+    switch (k) {
+      case SortKey::Name: return "名前";
+      case SortKey::Rarity: return "レア";
+      case SortKey::Cost: return "コスト";
+      case SortKey::Level: return "レベル";
+      case SortKey::Owned: return "所持";
+      default: return "SORT";
+    }
+  };
+  
+  float btn_h = sort_bar_h - 6.0f;
+  float sort_btn_y = sort_bar_y + 3.0f;
+  float btn_gap = 6.0f;
+  float toggle_w = 70.0f;
+  
+  // キャラクタータブ: 5つのソートキーボタン
+  // Equipment/Passivesタブ: 名前ソートのみ
+  int sort_key_count = (activeTab_ == CodexTab::Characters) ? 5 : 1;
+  float btn_w = (w - toggle_w - btn_gap * (sort_key_count + 1)) / static_cast<float>(sort_key_count);
+  
+  if (activeTab_ == CodexTab::Characters) {
+    SortKey keys[5] = {
+        SortKey::Name, SortKey::Rarity, SortKey::Cost,
+        SortKey::Level, SortKey::Owned
+    };
+    
+    for (int i = 0; i < 5; ++i) {
+      float btn_x = x + btn_gap + i * (btn_w + btn_gap);
+      bool active = (currentSortKey_[ti] == keys[i]);
+      systemAPI_->Render().DrawRectangle(
+          btn_x, sort_btn_y, btn_w, btn_h,
+          active ? OverlayColors::CARD_BG_SELECTED : OverlayColors::CARD_BG_NORMAL);
+      systemAPI_->Render().DrawRectangleLines(
+          btn_x, sort_btn_y, btn_w, btn_h, active ? 3.0f : 2.0f,
+          active ? OverlayColors::BORDER_GOLD : OverlayColors::BORDER_DEFAULT);
+      Vector2 ts = systemAPI_->Render().MeasureTextDefault(
+          sortKeyLabel(keys[i]), 16.0f);
+      systemAPI_->Render().DrawTextDefault(
+          sortKeyLabel(keys[i]), btn_x + (btn_w - ts.x) / 2.0f,
+          sort_btn_y + (btn_h - ts.y) / 2.0f, 16.0f,
+          OverlayColors::TEXT_PRIMARY);
+    }
+  } else {
+    // Equipment/Passivesタブ: 名前ソートのみ
+    float btn_x = x + btn_gap;
+    bool active = (currentSortKey_[ti] == SortKey::Name);
+    systemAPI_->Render().DrawRectangle(
+        btn_x, sort_btn_y, btn_w, btn_h,
+        active ? OverlayColors::CARD_BG_SELECTED : OverlayColors::CARD_BG_NORMAL);
+    systemAPI_->Render().DrawRectangleLines(
+        btn_x, sort_btn_y, btn_w, btn_h, active ? 3.0f : 2.0f,
+        active ? OverlayColors::BORDER_GOLD : OverlayColors::BORDER_DEFAULT);
+    Vector2 ts = systemAPI_->Render().MeasureTextDefault("名前", 16.0f);
+    systemAPI_->Render().DrawTextDefault(
+        "名前", btn_x + (btn_w - ts.x) / 2.0f,
+        sort_btn_y + (btn_h - ts.y) / 2.0f, 16.0f,
+        OverlayColors::TEXT_PRIMARY);
+  }
+  
+  // 昇順/降順トグル
+  const float toggle_x = x + w - toggle_w - btn_gap;
+  const bool asc = sortAscending_[ti];
+  systemAPI_->Render().DrawRectangle(
+      toggle_x, sort_btn_y, toggle_w, btn_h, OverlayColors::CARD_BG_NORMAL);
+  systemAPI_->Render().DrawRectangleLines(
+      toggle_x, sort_btn_y, toggle_w, btn_h, 2.0f,
+      OverlayColors::BORDER_DEFAULT);
+  systemAPI_->Render().DrawTextDefault(
+      asc ? "↑昇順" : "↓降順", toggle_x + 8.0f, sort_btn_y + 6.0f, 14.0f,
+      OverlayColors::TEXT_SECONDARY);
+  
+  // 保持チェックボックス（キャラクタータブのみ）
+  if (activeTab_ == CodexTab::Characters) {
+    const float checkbox_w = 20.0f;
+    const float checkbox_h = 20.0f;
+    const float checkbox_x = x + 10.0f;
+    const float checkbox_y = sort_bar_y - 25.0f;
+    
+    systemAPI_->Render().DrawRectangle(
+        checkbox_x, checkbox_y, checkbox_w, checkbox_h,
+        showOwnedOnly_[ti] ? OverlayColors::CARD_BG_SELECTED : OverlayColors::CARD_BG_NORMAL);
+    systemAPI_->Render().DrawRectangleLines(
+        checkbox_x, checkbox_y, checkbox_w, checkbox_h, 2.0f,
+        OverlayColors::BORDER_DEFAULT);
+    
+    if (showOwnedOnly_[ti]) {
+      systemAPI_->Render().DrawTextDefault(
+          "✓", checkbox_x + 4.0f, checkbox_y + 2.0f, 16.0f,
+          OverlayColors::TEXT_PRIMARY);
+    }
+    
+    systemAPI_->Render().DrawTextDefault(
+        "保持", checkbox_x + checkbox_w + 6.0f, checkbox_y + 2.0f, 16.0f,
+        OverlayColors::TEXT_PRIMARY);
   }
 }
 
@@ -1946,6 +2091,87 @@ void CodexOverlay::SortCharactersById(std::vector<CodexEntry> &entries) {
             });
 }
 
+void CodexOverlay::SortEntries(int tabIndex, SharedContext& ctx) {
+  if (tabIndex < 0 || tabIndex >= 3) {
+    return;
+  }
+  
+  auto& entries = tabEntries_[tabIndex];
+  if (entries.empty()) {
+    return;
+  }
+  
+  const bool ascending = sortAscending_[tabIndex];
+  const SortKey sortKey = currentSortKey_[tabIndex];
+  
+  std::sort(entries.begin(), entries.end(),
+            [this, tabIndex, ascending, sortKey, &ctx](const CodexEntry &a, const CodexEntry &b) {
+              // 保持チェックボックスがONの場合、ロック解除→ロック順でソート（キャラクタータブのみ）
+              if (tabIndex == TabIndex(CodexTab::Characters) && showOwnedOnly_[tabIndex]) {
+                bool ownedA = a.is_discovered;
+                bool ownedB = b.is_discovered;
+                if (ownedA != ownedB) {
+                  // ロック解除（ownedA=true）を先に
+                  return ownedA && !ownedB;
+                }
+              }
+              
+              auto cmpInt = [ascending](int lhs, int rhs) {
+                return ascending ? (lhs < rhs) : (lhs > rhs);
+              };
+              auto cmpStr = [ascending](const std::string& lhs, const std::string& rhs) {
+                return ascending ? (lhs < rhs) : (rhs < lhs);
+              };
+              
+              // キャラクタータブ
+              if (tabIndex == TabIndex(CodexTab::Characters) && a.character && b.character) {
+                switch (sortKey) {
+                  case SortKey::Name:
+                    if (a.name != b.name) return cmpStr(a.name, b.name);
+                    break;
+                  case SortKey::Rarity:
+                    if (a.character->rarity != b.character->rarity) 
+                      return cmpInt(a.character->rarity, b.character->rarity);
+                    break;
+                  case SortKey::Cost:
+                    if (a.character->cost != b.character->cost) 
+                      return cmpInt(a.character->cost, b.character->cost);
+                    break;
+                  case SortKey::Level: {
+                    int levelA = 1;
+                    int levelB = 1;
+                    if (ctx.gameplayDataAPI) {
+                      levelA = ctx.gameplayDataAPI->GetCharacterState(a.id).level;
+                      levelB = ctx.gameplayDataAPI->GetCharacterState(b.id).level;
+                    }
+                    if (levelA != levelB) return cmpInt(levelA, levelB);
+                    break;
+                  }
+                  case SortKey::Owned: {
+                    bool ownedA = a.is_discovered;
+                    bool ownedB = b.is_discovered;
+                    if (ownedA != ownedB) {
+                      return ascending ? (!ownedA && ownedB) : (ownedA && !ownedB);
+                    }
+                    break;
+                  }
+                }
+                // タイブレーカー
+                if (a.character->rarity != b.character->rarity) 
+                  return a.character->rarity > b.character->rarity;
+                if (a.character->cost != b.character->cost) 
+                  return a.character->cost < b.character->cost;
+                return a.name < b.name;
+              }
+              // Equipment/Passivesタブ（名前でソート）
+              else {
+                return cmpStr(a.name, b.name);
+              }
+              
+              return a.id < b.id;
+            });
+}
+
 void CodexOverlay::EnsureEntriesLoaded(SharedContext &ctx) {
   // どれかが埋まってぁE��ばロード済みとみなす（�E回だけ構築！E
   if (!tabEntries_[0].empty() || !tabEntries_[1].empty() ||
@@ -1959,6 +2185,14 @@ void CodexOverlay::EnsureEntriesLoaded(SharedContext &ctx) {
     auto &out = tabEntries_[TabIndex(CodexTab::Characters)];
     out.reserve(masters.size());
     for (const auto &[id, ch] : masters) {
+      // 未所持の非表示処理
+      if (showOwnedOnly_[TabIndex(CodexTab::Characters)]) {
+        const auto st = ctx.gameplayDataAPI->GetCharacterState(id);
+        if (!st.unlocked) {
+          continue;  // ロックされたキャラクターを除外
+        }
+      }
+      
       CodexEntry e;
       e.type = CodexEntry::Type::Character;
       e.id = id;
@@ -1971,7 +2205,7 @@ void CodexOverlay::EnsureEntriesLoaded(SharedContext &ctx) {
       e.character = &ch;
       out.push_back(std::move(e));
     }
-    SortCharactersById(out);
+    SortEntries(TabIndex(CodexTab::Characters), ctx);
     if (!out.empty()) {
       tabSelectedIndex_[TabIndex(CodexTab::Characters)] = 0;
     }
@@ -1996,9 +2230,7 @@ void CodexOverlay::EnsureEntriesLoaded(SharedContext &ctx) {
         e.equipment = eq;
         out.push_back(std::move(e));
       }
-      std::sort(
-          out.begin(), out.end(),
-          [](const CodexEntry &a, const CodexEntry &b) { return a.id < b.id; });
+      SortEntries(TabIndex(CodexTab::Equipment), ctx);
       if (!out.empty())
         tabSelectedIndex_[TabIndex(CodexTab::Equipment)] = 0;
       LOG_INFO("CodexOverlay: Loaded {} equipment", out.size());
@@ -2020,9 +2252,7 @@ void CodexOverlay::EnsureEntriesLoaded(SharedContext &ctx) {
         e.passive = ps;
         out.push_back(std::move(e));
       }
-      std::sort(
-          out.begin(), out.end(),
-          [](const CodexEntry &a, const CodexEntry &b) { return a.id < b.id; });
+      SortEntries(TabIndex(CodexTab::Passives), ctx);
       if (!out.empty())
         tabSelectedIndex_[TabIndex(CodexTab::Passives)] = 0;
       LOG_INFO("CodexOverlay: Loaded {} passives", out.size());

@@ -14,9 +14,18 @@
 #include "../ecs/entities/StageManager.hpp"
 #include "../ecs/entities/TowerAttachmentManager.hpp"
 #include "../system/PlayerDataManager.hpp"
+#include "../api/BattleProgressAPI.hpp"
 
 namespace game {
 namespace core {
+
+/// @brief ステージクリア報酬レポート
+struct StageClearReport {
+    std::vector<std::string> newCharacters;  // 新規解放されたキャラクターIDリスト
+    int ticketsRewarded;                     // 付与されたチケット数
+    
+    StageClearReport() : ticketsRewarded(0) {}
+};
 
 /// @brief ゲームプレイのデータアクセス統合API
 ///
@@ -69,8 +78,10 @@ public:
     PlayerDataManager::PlayerSaveData::StageState GetStageState(const std::string& stageId) const;
     void SetStageState(const std::string& stageId,
                        const PlayerDataManager::PlayerSaveData::StageState& state);
-    void MarkStageCleared(const std::string& stageId, int starsEarned = 3);
+    void MarkStageCleared(const std::string& stageId, int starsEarned = 3, 
+                         const BattleProgressAPI::BattleStats* battleStats = nullptr);
     std::string GetPreferredNextStageId(const std::string& stageId) const;
+    const StageClearReport& GetLastStageClearReport() const;
 
     // ===== PlayerData (limited write) =====
     bool Save() const;
@@ -127,6 +138,9 @@ private:
     std::string playerSavePath_;
     std::string towerAttachmentJsonPath_;
     bool isInitialized_ = false;
+    
+    // 最後のクリア報酬レポート
+    StageClearReport lastClearReport_;
 };
 
 } // namespace core

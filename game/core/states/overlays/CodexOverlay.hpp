@@ -15,7 +15,7 @@ namespace core {
 /// @brief アニメーションタイチE
 enum class AnimationType {
     Move,   // 移動アニメーション
-    Attack  // 攻撁E��ニメーション
+    Attack  // 攻撁E��ニメーション
 };
 
 /// @brief 図鑑タチE
@@ -25,10 +25,10 @@ enum class CodexTab {
     Passives
 };
 
-/// @brief 図鑑オーバ�Eレイ
+/// @brief 図鑑オーバ�Eレイ
 ///
-/// 3パネルレイアウト�E図鑑画面を表示するオーバ�Eレイ、E
-/// 左�E�リスト、中央�E�ビューア+スチE�Eタス、右�E�説昁E
+/// 3パネルレイアウト�E図鑑画面を表示するオーバ�Eレイ、E
+/// 左�E�リスト、中央�E�ビューア+スチE�Eタス、右�E�説昁E
 class CodexOverlay : public IOverlay {
 public:
     CodexOverlay();
@@ -64,19 +64,19 @@ private:
         std::string description;
         bool is_discovered = true;
 
-        // 参�E先（所有権なし！E
+        // 参�E先（所有権なし！E
         const entities::Character* character = nullptr;
         const entities::Equipment* equipment = nullptr;
         const entities::PassiveSkill* passive = nullptr;
     };
 
     // ========== UI パネル構造 ==========
-    // コンチE��チE��域: 1880x900
-    // マ�Eジン: 吁E��ネル間に20px、エチE��に10px
+    // コンチE��チE��域: 1880x900
+    // マ�Eジン: 吁E��ネル間に20px、エチE��に10px
     
     struct ListPanel {
         float x = 10.0f, y = 70.0f;
-        float width = 520.0f, height = 820.0f;  // 左パネル: グリチE��一覧
+        float width = 520.0f, height = 820.0f;  // 左パネル: グリチE��一覧
         float margin_right = 20.0f;
 
         float padding = 16.0f;
@@ -102,7 +102,7 @@ private:
     };
     
     struct StatusPanel {
-        // 右パネル: スチE�Eタス/試着/統計（縦長で使ぁE��すく�E�E
+        // 右パネル: スチE�Eタス/試着/統計（縦長で使ぁE��すく�E�E
         float x = 1140.0f, y = 70.0f;
         float width = 730.0f, height = 820.0f;
         float margin_right = 20.0f;
@@ -112,7 +112,7 @@ private:
     };
     
     struct InfoPanel {
-        // 中央下部: 説明（折り返し/スクロール�E�E
+        // 中央下部: 説明（折り返し/スクロール�E�E
         float x = 380.0f, y = 490.0f;
         float width = 740.0f, height = 400.0f;
         float padding = 20.0f;
@@ -126,48 +126,61 @@ private:
     StatusPanel status_panel_;
     InfoPanel info_panel_;
 
-    // タブ�Eエントリ状慁E
+    // タブ�Eエントリ状慁E
     CodexTab activeTab_ = CodexTab::Characters;
     std::array<std::vector<CodexEntry>, 3> tabEntries_{};
     std::array<int, 3> tabSelectedIndex_{{-1, -1, -1}};
     std::array<int, 3> tabScrollOffset_{{0, 0, 0}};
 
-    // 試着�E��Eレビュー専用・保存なし！E
+    // 試着�E��Eレビュー専用・保存なし！E
     std::string tryOnCharacterId_;
     PlayerDataManager::CharacterState tryOnState_{};
 
-    // ドロチE�Eダウン�E�裁E��/パッシブ選択！E
+    // ドロチE�Eダウン�E�裁E��/パッシブ選択！E
     DropdownKind dropdownKind_ = DropdownKind::None;
     int dropdownSlotIndex_ = -1; // 0..2
     float dropdownScrollPx_ = 0.0f;
 
-    // 右説明パネル�E�折り返し/スクロールのキャチE��ュ�E�E
+    // 右説明パネル�E�折り返し/スクロールのキャチE��ュ�E�E
     float infoScrollPx_ = 0.0f;
     float infoCachedMaxWidth_ = -1.0f;
     std::string infoCachedKey_;
     std::vector<std::string> infoWrappedLines_;
     
-    // ========== シスチE�� ==========
+    // ソート関連（タブごと）
+    enum class SortKey {
+        Name,
+        Rarity,
+        Cost,
+        Level,
+        Owned
+    };
+    std::array<SortKey, 3> currentSortKey_{{SortKey::Owned, SortKey::Name, SortKey::Name}};
+    std::array<bool, 3> sortAscending_{{false, false, false}};
+    std::array<bool, 3> showOwnedOnly_{{false, false, false}};
+    
+    // ========== シスチE�� ==========
     BaseSystemAPI* systemAPI_;
     bool isInitialized_;
     mutable bool requestClose_;
     mutable bool hasTransitionRequest_;
     mutable GameState requestedNextState_;
     
-    // ========== 描画ヘルパ�E ==========
+    // ========== 描画ヘルパ�E ==========
     void LayoutPanels();
     void RenderTabBar(float offsetX, float offsetY);
     void RenderListPanel();
+    void RenderSortUI();
     void RenderCharacterViewport();
     void RenderStatusPanel(SharedContext& ctx);
     void RenderInfoPanel();
     
-    // ========== イベント�E琁E==========
+    // ========== イベント�E琁E==========
     void SwitchTab(CodexTab tab);
     void OnListItemClick(int index);
     void OnListScroll(int delta);
     
-    // ========== ユーチE��リチE�� ==========
+    // ========== ユーチE��リチE�� ==========
     int TabIndex(CodexTab tab) const;
     CodexEntry* GetSelectedEntry();
     const CodexEntry* GetSelectedEntry() const;
@@ -178,6 +191,7 @@ private:
     // ========== IDソート用 ==========
     static int ExtractIdNumber(const std::string& id);
     void SortCharactersById(std::vector<CodexEntry>& entries);
+    void SortEntries(int tabIndex, SharedContext& ctx);
     void EnsureEntriesLoaded(SharedContext& ctx);
 };
 

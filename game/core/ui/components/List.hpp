@@ -98,6 +98,9 @@ public:
     /// @return アイテム数
     size_t GetItemCount() const;
 
+    /// @brief 画像テクスチャ描画を有効/無効化
+    void SetUseTextures(bool useTextures);
+
     /// @brief 描画用UIシステムAPIを設定
     void SetUISystemAPI(::game::core::UISystemAPI* uiAPI) { uiAPI_ = uiAPI; }
 
@@ -114,6 +117,7 @@ private:
     int itemsPerPage_;
     float itemHeight_;
     float scrollOffset_;
+    bool useTextures_ = true;
     std::function<void(const ListItem&)> onSelectionChanged_;
     ::game::core::UISystemAPI* uiAPI_ = nullptr;
 };

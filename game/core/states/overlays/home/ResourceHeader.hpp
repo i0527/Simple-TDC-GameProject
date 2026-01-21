@@ -46,7 +46,6 @@ private:
     
     // アニメーション用
     float gold_display_current_;   // 現在の表示値（増減アニメ用）
-    float gems_display_current_;
 };
 
 } // namespace home

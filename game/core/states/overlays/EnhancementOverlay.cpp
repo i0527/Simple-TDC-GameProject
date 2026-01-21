@@ -206,8 +206,8 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
             layout.right.height - panelPadding * 2.0f
         };
 
-        const float slotHeight = 150.0f;
-        const float detailHeight = 170.0f;
+        const float slotHeight = 260.0f;
+        const float detailHeight = 320.0f;
         const float listHeight =
             layout.rightInner.height - slotHeight - detailHeight - 24.0f;
 
@@ -231,9 +231,9 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
         };
         layout.listInner = {
             layout.listCard.x + 8.0f,
-            layout.listCard.y + 34.0f,
+            layout.listCard.y + 56.0f,
             layout.listCard.width - 16.0f,
-            std::max(120.0f, layout.listCard.height - 42.0f)
+            std::max(120.0f, layout.listCard.height - 64.0f)
         };
         return layout;
     };
@@ -249,7 +249,7 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
     if (inRect(layout.listInner)) {
         const float wheel = ctx.inputAPI->GetMouseWheelMove();
         if (wheel != 0.0f) {
-            const float itemHeight = 36.0f;
+            const float itemHeight = 72.0f;
             const int visibleCount = std::max(1, static_cast<int>(layout.listInner.height / itemHeight));
             const int maxOffset = std::max(0, static_cast<int>(allAttachments.size()) - visibleCount);
             attachmentListScroll_ = std::clamp(attachmentListScroll_ - wheel, 0.0f, static_cast<float>(maxOffset));
@@ -261,8 +261,8 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
     }
 
     // スロット選択
-    const float slotRowH = 36.0f;
-    const float slotStartY = layout.slotCard.y + 38.0f;
+    const float slotRowH = 64.0f;
+    const float slotStartY = layout.slotCard.y + 64.0f;
     for (int i = 0; i < 3; ++i) {
         Rect row{layout.slotCard.x + 8.0f, slotStartY + slotRowH * i,
                  layout.slotCard.width - 16.0f, slotRowH};
@@ -277,7 +277,7 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
         }
     }
 
-    // 左パネル: 基礎強化の + ボタン
+    // 左パネル: 基礎強化ボタン
     constexpr int MAX_LEVEL = 50;
     struct BaseRow {
         const char* name;
@@ -292,23 +292,52 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
         {"味方HP", &st.allyHpLevel, 0.02f}
     }};
 
-    const float tableY = layout.leftInner.y + 80.0f;
-    const float rowHeight = 42.0f;
+    const float tableY = layout.leftInner.y + 110.0f;
+    const float rowHeight = 88.0f;
+    const float baseButtonAreaW = 270.0f;
+    const float baseButtonGapX = 8.0f;
+    const float baseButtonGapY = 6.0f;
+    const float baseButtonH = 36.0f;
+    const float baseButtonW = (baseButtonAreaW - baseButtonGapX * 2.0f) / 3.0f;
+    const float baseButtonAreaX = layout.leftInner.x + layout.leftInner.width - baseButtonAreaW;
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const float rowY = tableY + rowHeight * i;
-        Rect btnRect{
-            layout.leftInner.x + layout.leftInner.width - 52.0f,
-            rowY + 6.0f,
-            40.0f,
-            28.0f
-        };
-        if (inRect(btnRect)) {
-            int& lv = *rows[i].levelRef;
-            if (lv < MAX_LEVEL) {
-                lv = std::min(MAX_LEVEL, lv + 1);
-                ctx.gameplayDataAPI->SetTowerEnhancements(st);
-                ctx.gameplayDataAPI->Save();
-            }
+        const float rowTop = rowY + 6.0f;
+        const float rowBottom = rowTop + baseButtonH + baseButtonGapY;
+        Rect down1Rect{baseButtonAreaX, rowTop, baseButtonW, baseButtonH};
+        Rect up1Rect{baseButtonAreaX + baseButtonW + baseButtonGapX, rowTop, baseButtonW, baseButtonH};
+        Rect downMaxRect{baseButtonAreaX + (baseButtonW + baseButtonGapX) * 2.0f, rowTop, baseButtonW, baseButtonH};
+        Rect down5Rect{baseButtonAreaX, rowBottom, baseButtonW, baseButtonH};
+        Rect up5Rect{baseButtonAreaX + baseButtonW + baseButtonGapX, rowBottom, baseButtonW, baseButtonH};
+        Rect upMaxRect{baseButtonAreaX + (baseButtonW + baseButtonGapX) * 2.0f, rowBottom, baseButtonW, baseButtonH};
+
+        if (inRect(down1Rect)) {
+            OnBaseEnhancementDown(ctx, i);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(up1Rect)) {
+            OnBaseEnhancementUp(ctx, i);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(down5Rect)) {
+            OnBaseEnhancementDownBatch(ctx, i, 5);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(up5Rect)) {
+            OnBaseEnhancementUpBatch(ctx, i, 5);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(downMaxRect)) {
+            OnBaseEnhancementDownMax(ctx, i);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(upMaxRect)) {
+            OnBaseEnhancementUpMax(ctx, i);
             ctx.inputAPI->ConsumeLeftClick();
             return;
         }
@@ -317,18 +346,59 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
     // 右パネル: スロット操作
     const auto* slotAttachment = findAttachment(attachments[selectedSlotIndex_].id);
     if (slotAttachment) {
-        Rect enhanceBtn{layout.detailCard.x + 12.0f, layout.detailCard.y + layout.detailCard.height - 44.0f, 120.0f, 32.0f};
-        Rect removeBtn{layout.detailCard.x + 140.0f, layout.detailCard.y + layout.detailCard.height - 44.0f, 120.0f, 32.0f};
-        if (inRect(enhanceBtn)) {
-            if (attachments[selectedSlotIndex_].level < slotAttachment->max_level) {
-                attachments[selectedSlotIndex_].level =
-                    std::min(slotAttachment->max_level, attachments[selectedSlotIndex_].level + 1);
-                ctx.gameplayDataAPI->SetTowerAttachments(attachments);
-                ctx.gameplayDataAPI->Save();
-            }
+        const float actionPadding = 12.0f;
+        const float actionGap = 8.0f;
+        const float actionButtonH = 40.0f;
+        const float levelButtonAreaH = actionButtonH * 2.0f + actionGap;
+        const float actionAreaH = levelButtonAreaH + actionButtonH + actionGap;
+        const float actionStartY = layout.detailCard.y + layout.detailCard.height - actionAreaH - 12.0f;
+        const float levelButtonW = (layout.detailCard.width - actionPadding * 2.0f - actionGap * 2.0f) / 3.0f;
+        const float levelButtonX = layout.detailCard.x + actionPadding;
+        const float levelRowTop = actionStartY;
+        const float levelRowBottom = levelRowTop + actionButtonH + actionGap;
+
+        Rect down1Rect{levelButtonX, levelRowTop, levelButtonW, actionButtonH};
+        Rect up1Rect{levelButtonX + levelButtonW + actionGap, levelRowTop, levelButtonW, actionButtonH};
+        Rect downMaxRect{levelButtonX + (levelButtonW + actionGap) * 2.0f, levelRowTop, levelButtonW, actionButtonH};
+        Rect down5Rect{levelButtonX, levelRowBottom, levelButtonW, actionButtonH};
+        Rect up5Rect{levelButtonX + levelButtonW + actionGap, levelRowBottom, levelButtonW, actionButtonH};
+        Rect upMaxRect{levelButtonX + (levelButtonW + actionGap) * 2.0f, levelRowBottom, levelButtonW, actionButtonH};
+
+        if (inRect(down1Rect)) {
+            OnAttachmentLevelDown(ctx, selectedSlotIndex_);
             ctx.inputAPI->ConsumeLeftClick();
             return;
         }
+        if (inRect(up1Rect)) {
+            OnAttachmentLevelUp(ctx, selectedSlotIndex_);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(down5Rect)) {
+            OnAttachmentLevelDownBatch(ctx, selectedSlotIndex_, 5);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(up5Rect)) {
+            OnAttachmentLevelUpBatch(ctx, selectedSlotIndex_, 5);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(downMaxRect)) {
+            OnAttachmentLevelDownMax(ctx, selectedSlotIndex_);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+        if (inRect(upMaxRect)) {
+            OnAttachmentLevelUpMax(ctx, selectedSlotIndex_);
+            ctx.inputAPI->ConsumeLeftClick();
+            return;
+        }
+
+        Rect removeBtn{layout.detailCard.x + actionPadding,
+                       actionStartY + levelButtonAreaH + actionGap,
+                       (layout.detailCard.width - actionPadding * 2.0f - actionGap) / 2.0f,
+                       actionButtonH};
         if (inRect(removeBtn)) {
             attachments[selectedSlotIndex_].id.clear();
             attachments[selectedSlotIndex_].level = 1;
@@ -340,7 +410,7 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
     }
 
     // アタッチメント一覧: 選択
-    const float itemHeight = 36.0f;
+    const float itemHeight = 72.0f;
     const int startIndex = std::max(0, static_cast<int>(attachmentListScroll_));
     const int visibleCount = std::max(1, static_cast<int>(layout.listInner.height / itemHeight));
     for (int i = 0; i < visibleCount; ++i) {
@@ -360,11 +430,18 @@ void EnhancementOverlay::Update(SharedContext& ctx, float deltaTime) {
     }
 
     // 装着ボタン
+    const float attachButtonH = 40.0f;
+    const float attachButtonGap = 8.0f;
+    const float attachPadding = 12.0f;
+    const float attachActionAreaH = attachButtonH * 3.0f + attachButtonGap * 2.0f;
+    const float attachRowY = layout.detailCard.y + layout.detailCard.height - attachActionAreaH - 12.0f
+                             + (attachButtonH * 2.0f + attachButtonGap * 2.0f);
     Rect attachBtn{
-        layout.detailCard.x + 268.0f,
-        layout.detailCard.y + layout.detailCard.height - 44.0f,
-        120.0f,
-        32.0f
+        layout.detailCard.x + attachPadding +
+            (layout.detailCard.width - attachPadding * 2.0f - attachButtonGap) / 2.0f + attachButtonGap,
+        attachRowY,
+        (layout.detailCard.width - attachPadding * 2.0f - attachButtonGap) / 2.0f,
+        attachButtonH
     };
     if (inRect(attachBtn) && !selectedAttachmentId_.empty()) {
         attachments[selectedSlotIndex_].id = selectedAttachmentId_;
@@ -521,7 +598,7 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
                               2.0f, ui::OverlayColors::BORDER_DEFAULT);
 
     render.DrawTextDefault("タワー強化", layout.window.x + 24.0f, layout.window.y + 12.0f,
-                           34.0f, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+                           68.0f, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
 
     render.DrawRectangle(layout.left.x, layout.left.y, layout.left.width, layout.left.height,
                          ui::OverlayColors::PANEL_BG_PRIMARY);
@@ -538,9 +615,9 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
                              ui::OverlayColors::CARD_BG_NORMAL);
         render.DrawRectangleLines(rect.x, rect.y, rect.width, rect.height,
                                   2.0f, ui::OverlayColors::BORDER_DEFAULT);
-        render.DrawRectangle(rect.x, rect.y, rect.width, 28.0f,
+        render.DrawRectangle(rect.x, rect.y, rect.width, 56.0f,
                              ui::OverlayColors::CARD_BG_SELECTED);
-        render.DrawTextDefault(title, rect.x + 12.0f, rect.y + 4.0f, 18.0f,
+        render.DrawTextDefault(title, rect.x + 12.0f, rect.y + 10.0f, 36.0f,
                                ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
     };
 
@@ -548,7 +625,7 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
         layout.leftInner.x,
         layout.leftInner.y,
         layout.leftInner.width,
-        layout.leftInner.height * 0.62f
+        layout.leftInner.height * 0.70f
     };
     const Rect summaryCard{
         layout.leftInner.x,
@@ -559,8 +636,8 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
 
     drawCard(baseCard, "基礎強化");
     render.DrawTextDefault("※ v1は無料で強化できます（通貨消費なし）",
-                           baseCard.x + 12.0f, baseCard.y + 34.0f,
-                           16.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
+                           baseCard.x + 12.0f, baseCard.y + 62.0f,
+                           28.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
 
     constexpr int MAX_LEVEL = 50;
     struct BaseRow {
@@ -576,19 +653,19 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
         {"味方HP", st.allyHpLevel, 0.02f}
     }};
 
-    const float tableY = baseCard.y + 64.0f;
-    const float rowHeight = 42.0f;
+    const float tableY = baseCard.y + 98.0f;
+    const float rowHeight = 78.0f;
     const float colNameX = layout.leftInner.x;
     const float colLvX = layout.leftInner.x + 220.0f;
-    const float colCurX = layout.leftInner.x + 300.0f;
-    const float colNextX = layout.leftInner.x + 400.0f;
-    render.DrawTextDefault("項目", colNameX, tableY - 26.0f, 16.0f,
+    const float colCurX = layout.leftInner.x + 330.0f;
+    const float colNextX = layout.leftInner.x + 440.0f;
+    render.DrawTextDefault("項目", colNameX, tableY - 34.0f, 28.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_MUTED));
-    render.DrawTextDefault("現在", colLvX, tableY - 26.0f, 16.0f,
+    render.DrawTextDefault("現在", colLvX, tableY - 34.0f, 28.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_MUTED));
-    render.DrawTextDefault("効果", colCurX, tableY - 26.0f, 16.0f,
+    render.DrawTextDefault("効果", colCurX, tableY - 34.0f, 28.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_MUTED));
-    render.DrawTextDefault("次", colNextX, tableY - 26.0f, 16.0f,
+    render.DrawTextDefault("次", colNextX, tableY - 34.0f, 28.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_MUTED));
 
     for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
@@ -597,59 +674,80 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
         const float cur = rows[i].perLevel * static_cast<float>(level) * 100.0f;
         const float next = rows[i].perLevel * static_cast<float>(std::min(MAX_LEVEL, level + 1)) * 100.0f;
 
-        render.DrawTextDefault(rows[i].name, colNameX, rowY + 8.0f, 18.0f,
+        render.DrawTextDefault(rows[i].name, colNameX, rowY + 10.0f, 30.0f,
                                ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
-        render.DrawTextDefault(("Lv " + std::to_string(level)).c_str(), colLvX, rowY + 8.0f,
-                               18.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
-        render.DrawTextDefault(("+" + FormatFloat(cur, 1) + "%").c_str(), colCurX, rowY + 8.0f,
-                               18.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
-        render.DrawTextDefault(("-> +" + FormatFloat(next, 1) + "%").c_str(), colNextX, rowY + 8.0f,
-                               18.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
+        render.DrawTextDefault(("Lv " + std::to_string(level)).c_str(), colLvX, rowY + 10.0f,
+                               30.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
+        render.DrawTextDefault(("+" + FormatFloat(cur, 1) + "%").c_str(), colCurX, rowY + 10.0f,
+                               30.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
+        render.DrawTextDefault(("-> +" + FormatFloat(next, 1) + "%").c_str(), colNextX, rowY + 10.0f,
+                               30.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
 
-        Rect btnRect{
-            layout.leftInner.x + layout.leftInner.width - 52.0f,
-            rowY + 6.0f,
-            40.0f,
-            28.0f
+        const float baseButtonAreaW = 240.0f;
+        const float baseButtonGapX = 8.0f;
+        const float baseButtonGapY = 4.0f;
+        const float baseButtonH = 32.0f;
+        const float baseButtonW = (baseButtonAreaW - baseButtonGapX * 2.0f) / 3.0f;
+        const float baseButtonAreaX = layout.leftInner.x + layout.leftInner.width - baseButtonAreaW;
+        const float rowTop = rowY + 6.0f;
+        const float rowBottom = rowTop + baseButtonH + baseButtonGapY;
+
+        Rect down1Rect{baseButtonAreaX, rowTop, baseButtonW, baseButtonH};
+        Rect up1Rect{baseButtonAreaX + baseButtonW + baseButtonGapX, rowTop, baseButtonW, baseButtonH};
+        Rect downMaxRect{baseButtonAreaX + (baseButtonW + baseButtonGapX) * 2.0f, rowTop, baseButtonW, baseButtonH};
+        Rect down5Rect{baseButtonAreaX, rowBottom, baseButtonW, baseButtonH};
+        Rect up5Rect{baseButtonAreaX + baseButtonW + baseButtonGapX, rowBottom, baseButtonW, baseButtonH};
+        Rect upMaxRect{baseButtonAreaX + (baseButtonW + baseButtonGapX) * 2.0f, rowBottom, baseButtonW, baseButtonH};
+
+        auto drawBaseButton = [&](const Rect& rect, const char* label, bool hovered, bool isPositive) {
+            const Color btnColor = hovered
+                                       ? (isPositive ? ui::OverlayColors::BUTTON_PRIMARY_HOVER
+                                                     : ui::OverlayColors::BUTTON_RESET_HOVER)
+                                       : (isPositive ? ui::OverlayColors::BUTTON_PRIMARY
+                                                     : ui::OverlayColors::BUTTON_RESET);
+            render.DrawRectangle(rect.x, rect.y, rect.width, rect.height, btnColor);
+            render.DrawRectangleLines(rect.x, rect.y, rect.width, rect.height,
+                                      2.0f, ui::OverlayColors::BORDER_DEFAULT);
+            render.DrawTextDefault(label, rect.x + 8.0f, rect.y + 2.0f, 28.0f,
+                                   ToCoreColor(ui::OverlayColors::TEXT_DARK));
         };
-        const bool hovered = inRect(btnRect);
-        const Color btnColor = hovered ? ui::OverlayColors::BUTTON_PRIMARY_HOVER
-                                       : ui::OverlayColors::BUTTON_PRIMARY;
-        render.DrawRectangle(btnRect.x, btnRect.y, btnRect.width, btnRect.height, btnColor);
-        render.DrawRectangleLines(btnRect.x, btnRect.y, btnRect.width, btnRect.height,
-                                  2.0f, ui::OverlayColors::BORDER_DEFAULT);
-        render.DrawTextDefault("+", btnRect.x + 14.0f, btnRect.y + 4.0f, 20.0f,
-                               ToCoreColor(ui::OverlayColors::TEXT_DARK));
+
+        drawBaseButton(down1Rect, "-1", inRect(down1Rect), false);
+        drawBaseButton(up1Rect, "+1", inRect(up1Rect), true);
+        drawBaseButton(downMaxRect, "一括-", inRect(downMaxRect), false);
+        drawBaseButton(down5Rect, "-5", inRect(down5Rect), false);
+        drawBaseButton(up5Rect, "+5", inRect(up5Rect), true);
+        drawBaseButton(upMaxRect, "一括+", inRect(upMaxRect), true);
     }
 
     const auto mul = system::CalculateTowerEnhancementMultipliers(st, attachments, masters);
     drawCard(summaryCard, "現在倍率");
-    const float summaryY = summaryCard.y + 36.0f;
-    render.DrawTextDefault("現在倍率", summaryCard.x + 12.0f, summaryCard.y + 4.0f, 18.0f,
+    const float summaryY = summaryCard.y + 70.0f;
+    render.DrawTextDefault("現在倍率", summaryCard.x + 12.0f, summaryCard.y + 10.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
     render.DrawTextDefault(("城HP x" + FormatFloat(mul.playerTowerHpMul, 2)).c_str(),
-                           summaryCard.x + 12.0f, summaryY + 18.0f, 18.0f,
+                           summaryCard.x + 12.0f, summaryY + 18.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     render.DrawTextDefault(("お金成長 x" + FormatFloat(mul.walletGrowthMul, 2)).c_str(),
-                           summaryCard.x + 200.0f, summaryY + 18.0f, 18.0f,
+                           summaryCard.x + 260.0f, summaryY + 18.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     render.DrawTextDefault(("コスト回復 x" + FormatFloat(mul.costRegenMul, 2)).c_str(),
-                           summaryCard.x + 400.0f, summaryY + 18.0f, 18.0f,
+                           summaryCard.x + 520.0f, summaryY + 18.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     render.DrawTextDefault(("味方ATK x" + FormatFloat(mul.allyAttackMul, 2)).c_str(),
-                           summaryCard.x + 12.0f, summaryY + 42.0f, 18.0f,
+                           summaryCard.x + 12.0f, summaryY + 60.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     render.DrawTextDefault(("味方HP x" + FormatFloat(mul.allyHpMul, 2)).c_str(),
-                           summaryCard.x + 200.0f, summaryY + 42.0f, 18.0f,
+                           summaryCard.x + 260.0f, summaryY + 60.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     render.DrawTextDefault(("敵HP x" + FormatFloat(mul.enemyHpMul, 2)).c_str(),
-                           summaryCard.x + 12.0f, summaryY + 66.0f, 18.0f,
+                           summaryCard.x + 12.0f, summaryY + 102.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     render.DrawTextDefault(("敵ATK x" + FormatFloat(mul.enemyAttackMul, 2)).c_str(),
-                           summaryCard.x + 200.0f, summaryY + 66.0f, 18.0f,
+                           summaryCard.x + 260.0f, summaryY + 102.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     render.DrawTextDefault(("敵速度 x" + FormatFloat(mul.enemyMoveSpeedMul, 2)).c_str(),
-                           summaryCard.x + 400.0f, summaryY + 66.0f, 18.0f,
+                           summaryCard.x + 520.0f, summaryY + 102.0f, 36.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
 
     // 右: アタッチメント
@@ -657,13 +755,13 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
         layout.rightInner.x,
         layout.rightInner.y,
         layout.rightInner.width,
-        150.0f
+        260.0f
     };
     const Rect detailCard{
         layout.rightInner.x,
         slotCard.y + slotCard.height + 12.0f,
         layout.rightInner.width,
-        170.0f
+        320.0f
     };
     const Rect listCard{
         layout.rightInner.x,
@@ -674,8 +772,8 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
 
     drawCard(slotCard, "スロット");
 
-    const float slotRowH = 36.0f;
-    const float slotStartY = slotCard.y + 38.0f;
+    const float slotRowH = 64.0f;
+    const float slotStartY = slotCard.y + 64.0f;
     for (int i = 0; i < 3; ++i) {
         const auto* slotAttachment = findAttachment(attachments[i].id);
         Rect row{slotCard.x + 8.0f, slotStartY + slotRowH * i,
@@ -686,11 +784,11 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
         }
         std::string label = "スロット " + std::to_string(i + 1) + ": " +
                             (slotAttachment ? slotAttachment->name : "空");
-        render.DrawTextDefault(label.c_str(), row.x + 8.0f, row.y + 8.0f, 18.0f,
+        render.DrawTextDefault(label.c_str(), row.x + 8.0f, row.y + 14.0f, 36.0f,
                                ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
         if (slotAttachment) {
             render.DrawTextDefault(("Lv " + std::to_string(attachments[i].level)).c_str(),
-                                   row.x + row.width - 80.0f, row.y + 8.0f, 18.0f,
+                                   row.x + row.width - 140.0f, row.y + 14.0f, 36.0f,
                                    ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
         }
     }
@@ -700,67 +798,103 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
     drawCard(detailCard, "スロット詳細");
     if (slotAttachment) {
         render.DrawTextDefault(("装着: " + slotAttachment->name).c_str(),
-                               detailCard.x + 12.0f, detailCard.y + 34.0f, 18.0f,
+                               detailCard.x + 12.0f, detailCard.y + 52.0f, 36.0f,
                                ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
         render.DrawTextDefault(
             ("効果: " + std::string(ToAttachmentTargetLabel(slotAttachment->target_stat)) + " " +
              BuildAttachmentEffectText(*slotAttachment, attachments[selectedSlotIndex_].level)).c_str(),
-            detailCard.x + 12.0f, detailCard.y + 58.0f, 18.0f,
+            detailCard.x + 12.0f, detailCard.y + 96.0f, 36.0f,
             ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
         render.DrawTextDefault(
             ("Lv " + std::to_string(attachments[selectedSlotIndex_].level) + " / " +
              std::to_string(slotAttachment->max_level)).c_str(),
-            detailCard.x + 12.0f, detailCard.y + 82.0f, 18.0f,
+            detailCard.x + 12.0f, detailCard.y + 140.0f, 36.0f,
             ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     } else {
         render.DrawTextDefault("装着: 空",
-                               detailCard.x + 12.0f, detailCard.y + 34.0f, 18.0f,
+                               detailCard.x + 12.0f, detailCard.y + 52.0f, 36.0f,
                                ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     }
 
-    Rect enhanceBtn{detailCard.x + 12.0f, detailCard.y + detailCard.height - 44.0f, 120.0f, 32.0f};
-    Rect removeBtn{detailCard.x + 140.0f, detailCard.y + detailCard.height - 44.0f, 120.0f, 32.0f};
-    Rect attachBtn{detailCard.x + 268.0f, detailCard.y + detailCard.height - 44.0f, 120.0f, 32.0f};
+    const float actionPadding = 12.0f;
+    const float actionGap = 8.0f;
+    const float actionButtonH = 40.0f;
+    const float levelButtonAreaH = actionButtonH * 2.0f + actionGap;
+    const float actionAreaH = levelButtonAreaH + actionButtonH + actionGap;
+    const float actionStartY = detailCard.y + detailCard.height - actionAreaH - 12.0f;
+    const float levelButtonW = (detailCard.width - actionPadding * 2.0f - actionGap * 2.0f) / 3.0f;
+    const float levelButtonX = detailCard.x + actionPadding;
+    const float levelRowTop = actionStartY;
+    const float levelRowBottom = levelRowTop + actionButtonH + actionGap;
 
-    const Color enhanceColor = inRect(enhanceBtn) ? ui::OverlayColors::BUTTON_PRIMARY_HOVER
-                                                  : ui::OverlayColors::BUTTON_PRIMARY;
+    Rect down1Rect{levelButtonX, levelRowTop, levelButtonW, actionButtonH};
+    Rect up1Rect{levelButtonX + levelButtonW + actionGap, levelRowTop, levelButtonW, actionButtonH};
+    Rect downMaxRect{levelButtonX + (levelButtonW + actionGap) * 2.0f, levelRowTop, levelButtonW, actionButtonH};
+    Rect down5Rect{levelButtonX, levelRowBottom, levelButtonW, actionButtonH};
+    Rect up5Rect{levelButtonX + levelButtonW + actionGap, levelRowBottom, levelButtonW, actionButtonH};
+    Rect upMaxRect{levelButtonX + (levelButtonW + actionGap) * 2.0f, levelRowBottom, levelButtonW, actionButtonH};
+
+    Rect removeBtn{detailCard.x + actionPadding,
+                   actionStartY + levelButtonAreaH + actionGap,
+                   (detailCard.width - actionPadding * 2.0f - actionGap) / 2.0f,
+                   actionButtonH};
+    Rect attachBtn{detailCard.x + actionPadding +
+                       (detailCard.width - actionPadding * 2.0f - actionGap) / 2.0f + actionGap,
+                   actionStartY + levelButtonAreaH + actionGap,
+                   (detailCard.width - actionPadding * 2.0f - actionGap) / 2.0f,
+                   actionButtonH};
+
+    auto drawLevelButton = [&](const Rect& rect, const char* label, bool hovered, bool isPositive) {
+        const Color btnColor = hovered
+                                   ? (isPositive ? ui::OverlayColors::BUTTON_PRIMARY_HOVER
+                                                 : ui::OverlayColors::BUTTON_RESET_HOVER)
+                                   : (isPositive ? ui::OverlayColors::BUTTON_PRIMARY
+                                                 : ui::OverlayColors::BUTTON_RESET);
+        render.DrawRectangle(rect.x, rect.y, rect.width, rect.height, btnColor);
+        render.DrawRectangleLines(rect.x, rect.y, rect.width, rect.height,
+                                  2.0f, ui::OverlayColors::BORDER_DEFAULT);
+        render.DrawTextDefault(label, rect.x + 10.0f, rect.y + 2.0f, 32.0f,
+                               ToCoreColor(ui::OverlayColors::TEXT_DARK));
+    };
+
+    drawLevelButton(down1Rect, "-1", inRect(down1Rect), false);
+    drawLevelButton(up1Rect, "+1", inRect(up1Rect), true);
+    drawLevelButton(downMaxRect, "一括-", inRect(downMaxRect), false);
+    drawLevelButton(down5Rect, "-5", inRect(down5Rect), false);
+    drawLevelButton(up5Rect, "+5", inRect(up5Rect), true);
+    drawLevelButton(upMaxRect, "一括+", inRect(upMaxRect), true);
+
     const Color removeColor = inRect(removeBtn) ? ui::OverlayColors::BUTTON_RESET_HOVER
                                                 : ui::OverlayColors::BUTTON_RESET;
     const Color attachColor = inRect(attachBtn) ? ui::OverlayColors::BUTTON_BLUE_HOVER
                                                 : ui::OverlayColors::BUTTON_BLUE;
 
-    render.DrawRectangle(enhanceBtn.x, enhanceBtn.y, enhanceBtn.width, enhanceBtn.height, enhanceColor);
-    render.DrawRectangleLines(enhanceBtn.x, enhanceBtn.y, enhanceBtn.width, enhanceBtn.height,
-                              2.0f, ui::OverlayColors::BORDER_DEFAULT);
-    render.DrawTextDefault("強化 +", enhanceBtn.x + 24.0f, enhanceBtn.y + 6.0f, 18.0f,
-                           ToCoreColor(ui::OverlayColors::TEXT_DARK));
-
     render.DrawRectangle(removeBtn.x, removeBtn.y, removeBtn.width, removeBtn.height, removeColor);
     render.DrawRectangleLines(removeBtn.x, removeBtn.y, removeBtn.width, removeBtn.height,
                               2.0f, ui::OverlayColors::BORDER_DEFAULT);
-    render.DrawTextDefault("解除", removeBtn.x + 36.0f, removeBtn.y + 6.0f, 18.0f,
+    render.DrawTextDefault("解除", removeBtn.x + 32.0f, removeBtn.y + 4.0f, 32.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
 
     render.DrawRectangle(attachBtn.x, attachBtn.y, attachBtn.width, attachBtn.height, attachColor);
     render.DrawRectangleLines(attachBtn.x, attachBtn.y, attachBtn.width, attachBtn.height,
                               2.0f, ui::OverlayColors::BORDER_DEFAULT);
-    render.DrawTextDefault("装着", attachBtn.x + 36.0f, attachBtn.y + 6.0f, 18.0f,
+    render.DrawTextDefault("装着", attachBtn.x + 32.0f, attachBtn.y + 4.0f, 32.0f,
                            ToCoreColor(ui::OverlayColors::TEXT_DARK));
 
     // 右: アタッチメント一覧
     drawCard(listCard, "アタッチメント一覧");
     Rect listInner{
         listCard.x + 8.0f,
-        listCard.y + 34.0f,
+        listCard.y + 56.0f,
         listCard.width - 16.0f,
-        listCard.height - 42.0f
+        listCard.height - 64.0f
     };
     render.DrawRectangle(listInner.x, listInner.y, listInner.width,
                          listInner.height, ui::OverlayColors::PANEL_BG_SECONDARY);
     render.DrawRectangleLines(listInner.x, listInner.y, listInner.width,
                               listInner.height, 2.0f, ui::OverlayColors::BORDER_DEFAULT);
 
-    const float itemHeight = 36.0f;
+    const float itemHeight = 72.0f;
     const int startIndex = std::max(0, static_cast<int>(attachmentListScroll_));
     const int visibleCount = std::max(1, static_cast<int>(listInner.height / itemHeight));
     for (int i = 0; i < visibleCount; ++i) {
@@ -781,20 +915,254 @@ void EnhancementOverlay::Render(SharedContext& ctx) {
                                  ui::OverlayColors::CARD_BG_NORMAL);
         }
         if (attachment) {
-            render.DrawTextDefault(attachment->name.c_str(), itemRect.x + 8.0f, itemRect.y + 8.0f,
-                                   18.0f, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+            render.DrawTextDefault(attachment->name.c_str(), itemRect.x + 8.0f, itemRect.y + 16.0f,
+                                   36.0f, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
             render.DrawTextDefault(ToAttachmentTargetLabel(attachment->target_stat),
-                                   itemRect.x + itemRect.width - 140.0f, itemRect.y + 8.0f,
-                                   18.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
+                                   itemRect.x + itemRect.width - 260.0f, itemRect.y + 16.0f,
+                                   36.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
         }
     }
 
     const auto* selectedAttachment = findAttachment(selectedAttachmentId_);
     if (selectedAttachment) {
         render.DrawTextDefault(("選択: " + selectedAttachment->name).c_str(),
-                               listCard.x + 12.0f, listCard.y + listCard.height - 24.0f,
-                               18.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
+                               listCard.x + 12.0f, listCard.y + listCard.height - 48.0f,
+                               36.0f, ToCoreColor(ui::OverlayColors::TEXT_SECONDARY));
     }
+}
+
+void EnhancementOverlay::OnBaseEnhancementUp(SharedContext& ctx, int rowIndex) {
+    OnBaseEnhancementUpBatch(ctx, rowIndex, 1);
+}
+
+void EnhancementOverlay::OnBaseEnhancementDown(SharedContext& ctx, int rowIndex) {
+    OnBaseEnhancementDownBatch(ctx, rowIndex, 1);
+}
+
+void EnhancementOverlay::OnBaseEnhancementUpBatch(SharedContext& ctx, int rowIndex, int levels) {
+    if (!ctx.gameplayDataAPI || levels <= 0) {
+        return;
+    }
+
+    auto st = ctx.gameplayDataAPI->GetTowerEnhancements();
+    int* levelRef = nullptr;
+    switch (rowIndex) {
+    case 0: levelRef = &st.towerHpLevel; break;
+    case 1: levelRef = &st.walletGrowthLevel; break;
+    case 2: levelRef = &st.costRegenLevel; break;
+    case 3: levelRef = &st.allyAttackLevel; break;
+    case 4: levelRef = &st.allyHpLevel; break;
+    default: return;
+    }
+
+    constexpr int MAX_LEVEL = 50;
+    const int nextLevel = std::min(MAX_LEVEL, *levelRef + levels);
+    if (nextLevel == *levelRef) {
+        return;
+    }
+    *levelRef = nextLevel;
+    ctx.gameplayDataAPI->SetTowerEnhancements(st);
+    ctx.gameplayDataAPI->Save();
+}
+
+void EnhancementOverlay::OnBaseEnhancementDownBatch(SharedContext& ctx, int rowIndex, int levels) {
+    if (!ctx.gameplayDataAPI || levels <= 0) {
+        return;
+    }
+
+    auto st = ctx.gameplayDataAPI->GetTowerEnhancements();
+    int* levelRef = nullptr;
+    switch (rowIndex) {
+    case 0: levelRef = &st.towerHpLevel; break;
+    case 1: levelRef = &st.walletGrowthLevel; break;
+    case 2: levelRef = &st.costRegenLevel; break;
+    case 3: levelRef = &st.allyAttackLevel; break;
+    case 4: levelRef = &st.allyHpLevel; break;
+    default: return;
+    }
+
+    constexpr int MIN_LEVEL = 0;
+    const int nextLevel = std::max(MIN_LEVEL, *levelRef - levels);
+    if (nextLevel == *levelRef) {
+        return;
+    }
+    *levelRef = nextLevel;
+    ctx.gameplayDataAPI->SetTowerEnhancements(st);
+    ctx.gameplayDataAPI->Save();
+}
+
+void EnhancementOverlay::OnBaseEnhancementUpMax(SharedContext& ctx, int rowIndex) {
+    constexpr int MAX_LEVEL = 50;
+    if (!ctx.gameplayDataAPI) {
+        return;
+    }
+
+    auto st = ctx.gameplayDataAPI->GetTowerEnhancements();
+    int* levelRef = nullptr;
+    switch (rowIndex) {
+    case 0: levelRef = &st.towerHpLevel; break;
+    case 1: levelRef = &st.walletGrowthLevel; break;
+    case 2: levelRef = &st.costRegenLevel; break;
+    case 3: levelRef = &st.allyAttackLevel; break;
+    case 4: levelRef = &st.allyHpLevel; break;
+    default: return;
+    }
+
+    if (*levelRef >= MAX_LEVEL) {
+        return;
+    }
+    *levelRef = MAX_LEVEL;
+    ctx.gameplayDataAPI->SetTowerEnhancements(st);
+    ctx.gameplayDataAPI->Save();
+}
+
+void EnhancementOverlay::OnBaseEnhancementDownMax(SharedContext& ctx, int rowIndex) {
+    if (!ctx.gameplayDataAPI) {
+        return;
+    }
+
+    auto st = ctx.gameplayDataAPI->GetTowerEnhancements();
+    int* levelRef = nullptr;
+    switch (rowIndex) {
+    case 0: levelRef = &st.towerHpLevel; break;
+    case 1: levelRef = &st.walletGrowthLevel; break;
+    case 2: levelRef = &st.costRegenLevel; break;
+    case 3: levelRef = &st.allyAttackLevel; break;
+    case 4: levelRef = &st.allyHpLevel; break;
+    default: return;
+    }
+
+    if (*levelRef <= 0) {
+        return;
+    }
+    *levelRef = 0;
+    ctx.gameplayDataAPI->SetTowerEnhancements(st);
+    ctx.gameplayDataAPI->Save();
+}
+
+void EnhancementOverlay::OnAttachmentLevelUp(SharedContext& ctx, int slotIndex) {
+    OnAttachmentLevelUpBatch(ctx, slotIndex, 1);
+}
+
+void EnhancementOverlay::OnAttachmentLevelDown(SharedContext& ctx, int slotIndex) {
+    OnAttachmentLevelDownBatch(ctx, slotIndex, 1);
+}
+
+void EnhancementOverlay::OnAttachmentLevelUpBatch(SharedContext& ctx, int slotIndex, int levels) {
+    if (!ctx.gameplayDataAPI || levels <= 0) {
+        return;
+    }
+
+    auto attachments = ctx.gameplayDataAPI->GetTowerAttachments();
+    if (slotIndex < 0 || slotIndex >= static_cast<int>(attachments.size())) {
+        return;
+    }
+
+    const auto& masters = ctx.gameplayDataAPI->GetAllTowerAttachmentMasters();
+    const auto& slot = attachments[slotIndex];
+    if (slot.id.empty()) {
+        return;
+    }
+    auto it = masters.find(slot.id);
+    if (it == masters.end()) {
+        return;
+    }
+
+    const int maxLevel = std::max(1, it->second.max_level);
+    const int nextLevel = std::min(maxLevel, std::max(1, slot.level + levels));
+    if (nextLevel == slot.level) {
+        return;
+    }
+    attachments[slotIndex].level = nextLevel;
+    ctx.gameplayDataAPI->SetTowerAttachments(attachments);
+    ctx.gameplayDataAPI->Save();
+}
+
+void EnhancementOverlay::OnAttachmentLevelDownBatch(SharedContext& ctx, int slotIndex, int levels) {
+    if (!ctx.gameplayDataAPI || levels <= 0) {
+        return;
+    }
+
+    auto attachments = ctx.gameplayDataAPI->GetTowerAttachments();
+    if (slotIndex < 0 || slotIndex >= static_cast<int>(attachments.size())) {
+        return;
+    }
+
+    const auto& masters = ctx.gameplayDataAPI->GetAllTowerAttachmentMasters();
+    const auto& slot = attachments[slotIndex];
+    if (slot.id.empty()) {
+        return;
+    }
+    auto it = masters.find(slot.id);
+    if (it == masters.end()) {
+        return;
+    }
+
+    const int maxLevel = std::max(1, it->second.max_level);
+    const int nextLevel = std::max(1, std::min(maxLevel, slot.level - levels));
+    if (nextLevel == slot.level) {
+        return;
+    }
+    attachments[slotIndex].level = nextLevel;
+    ctx.gameplayDataAPI->SetTowerAttachments(attachments);
+    ctx.gameplayDataAPI->Save();
+}
+
+void EnhancementOverlay::OnAttachmentLevelUpMax(SharedContext& ctx, int slotIndex) {
+    if (!ctx.gameplayDataAPI) {
+        return;
+    }
+
+    auto attachments = ctx.gameplayDataAPI->GetTowerAttachments();
+    if (slotIndex < 0 || slotIndex >= static_cast<int>(attachments.size())) {
+        return;
+    }
+
+    const auto& masters = ctx.gameplayDataAPI->GetAllTowerAttachmentMasters();
+    const auto& slot = attachments[slotIndex];
+    if (slot.id.empty()) {
+        return;
+    }
+    auto it = masters.find(slot.id);
+    if (it == masters.end()) {
+        return;
+    }
+
+    const int maxLevel = std::max(1, it->second.max_level);
+    if (slot.level >= maxLevel) {
+        return;
+    }
+    attachments[slotIndex].level = maxLevel;
+    ctx.gameplayDataAPI->SetTowerAttachments(attachments);
+    ctx.gameplayDataAPI->Save();
+}
+
+void EnhancementOverlay::OnAttachmentLevelDownMax(SharedContext& ctx, int slotIndex) {
+    if (!ctx.gameplayDataAPI) {
+        return;
+    }
+
+    auto attachments = ctx.gameplayDataAPI->GetTowerAttachments();
+    if (slotIndex < 0 || slotIndex >= static_cast<int>(attachments.size())) {
+        return;
+    }
+
+    const auto& masters = ctx.gameplayDataAPI->GetAllTowerAttachmentMasters();
+    const auto& slot = attachments[slotIndex];
+    if (slot.id.empty()) {
+        return;
+    }
+    auto it = masters.find(slot.id);
+    if (it == masters.end()) {
+        return;
+    }
+
+    if (slot.level <= 1) {
+        return;
+    }
+    attachments[slotIndex].level = 1;
+    ctx.gameplayDataAPI->SetTowerAttachments(attachments);
+    ctx.gameplayDataAPI->Save();
 }
 
 void EnhancementOverlay::Shutdown() {

@@ -2,6 +2,7 @@
   "bgmVolume": 1.0,
   "isFullscreen": false,
   "masterVolume": 1.0,
+  "resolution": "FHD",
   "seVolume": 1.0,
   "showFPS": false
 }

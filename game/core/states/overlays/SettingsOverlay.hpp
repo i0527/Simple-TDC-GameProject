@@ -16,7 +16,9 @@ struct SettingsData {
     float bgmVolume = 1.0f;
     float seVolume = 1.0f;
     bool isFullscreen = false;
+    int selectedMonitor = 0;  // フルスクリーン時のモニター選択（0=プライマリ）
     bool showFPS = false;
+    std::string resolution = "FHD";  // 解像度: "FHD", "HD", "SD"（次回起動時に有効）
 };
 
 /// @brief 設定オーバ�Eレイ
@@ -63,7 +65,11 @@ private:
     bool titleButtonHovered_ = false;
     bool quitButtonHovered_ = false;
     bool fullscreenButtonHovered_ = false;
+    bool monitorPrevButtonHovered_ = false;
+    bool monitorNextButtonHovered_ = false;
     bool fpsCheckboxHovered_ = false;
+    bool resolutionPrevButtonHovered_ = false;
+    bool resolutionNextButtonHovered_ = false;
     mutable bool requestQuit_ = false;
     
     // プライベ�EトメソチE��

@@ -1,5 +1,6 @@
 #include "Tile.hpp"
 #include "../UIEvent.hpp"
+#include "../ImGuiSoundHelpers.hpp"
 #include "../../../utils/Log.h"
 #include <imgui.h>
 #include <algorithm>
@@ -87,6 +88,7 @@ void Tile::Render() {
         }
 
         // タイルを描画
+        BaseSystemAPI* systemAPI = baseSystemAPI_;
         for (size_t i = 0; i < tiles_.size(); ++i) {
             const auto& tile = tiles_[i];
             int row = static_cast<int>(i) / cols_;
@@ -137,7 +139,12 @@ void Tile::Render() {
             // クリック判定用のInvisibleButton
             ImGui::SetCursorPos(ImVec2(x - windowPos.x, y - windowPos.y));
             std::string buttonId = "##tile_" + std::to_string(i);
-            if (ImGui::InvisibleButton(buttonId.c_str(), ImVec2(actualTileWidth, actualTileHeight))) {
+            if (ImGuiSound::InvisibleButton(
+                    systemAPI,
+                    buttonId.c_str(),
+                    ImVec2(actualTileWidth, actualTileHeight),
+                    ImGuiButtonFlags_None,
+                    ImGuiSoundType::Tap)) {
                 if (isEnabled && static_cast<int>(i) != selectedIndex_) {
                     int oldIndex = selectedIndex_;
                     selectedIndex_ = static_cast<int>(i);

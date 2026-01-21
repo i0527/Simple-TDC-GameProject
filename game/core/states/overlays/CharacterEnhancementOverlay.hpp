@@ -13,10 +13,10 @@
 namespace game {
 namespace core {
 
-/// @brief ユニット強化オーバ�Eレイ
+/// @brief ユニット強化オーバEレイ
 ///
-/// ユニット強化�Eパッシブ付与�E持ち物裁E��を管琁E��るオーバ�Eレイ、E
-/// 3刁E��レイアウト（ユニット情報・スチE�Eタス・操作）で実裁E��E
+/// ユニット強化Eパッシブ付与E持ち物裁Eを管琁EるオーバEレイ、E
+/// 3刁Eレイアウト（ユニット情報・スチEEタス・操作）で実裁EE
 class CharacterEnhancementOverlay : public IOverlay {
 public:
     CharacterEnhancementOverlay();
@@ -35,8 +35,8 @@ public:
 private:
     // ========== パネル構造佁E==========
     
-    /// @brief 左パネル: ユニット情報�E�幁E�E画面サイズから動的計算！E
-    /// コンチE��チE��域�E�E=90�E�E90�E��Eに配置されめE
+    /// @brief 左パネル: ユニット情報EE画面サイズから動的計算！E
+    /// コンチEチE域EE=90EE90EEに配置されめE
     struct UnitInfoPanel {
         float x = 5.0f, y = 95.0f;
         float width = 437.0f, height = 880.0f;
@@ -51,8 +51,8 @@ private:
         const entities::Character* selected_character = nullptr;
     };
     
-    /// @brief 中央パネル: スチE�Eタス表示�E�幁E�E画面サイズから動的計算！E
-    /// コンチE��チE��域�E�E=90�E�E90�E��Eに配置されめE
+    /// @brief 中央パネル: スチEEタス表示EE画面サイズから動的計算！E
+    /// コンチEチE域EE=90EE90EEに配置されめE
     struct StatusPanel {
         float x = 452.0f, y = 95.0f;
         float width = 568.0f, height = 880.0f;
@@ -68,7 +68,7 @@ private:
         StatValue speed;
         StatValue range;
         
-        // 追加表示�E�編成相当！E
+        // 追加表示EE編成相当！E
         int level = 1;
         int cost = 0;
         entities::AttackType attack_type = entities::AttackType::Single;
@@ -83,49 +83,49 @@ private:
         int font_size = 24;
     };
     
-    /// @brief 右パネル: 操作（幁E�E画面サイズから動的計算！E
-    /// コンチE��チE��域�E�E=90�E�E90�E��Eに配置されめE
+    /// @brief 右パネル: 操作（画面サイズから動的計算！E
+    /// コンチEチE域EE=90EE90EEに配置されめE
     struct OperationPanel {
         float x = 1030.0f, y = 95.0f;
         float width = 875.0f, height = 880.0f;
         
-        // タブ�Eり替ぁE
+        // タブEり替ぁE
         enum class TabType {
             Enhancement,  // パッシブスキル
-            Equipment     // 裁E��
+            Equipment     // 裁E
         };
         TabType active_tab = TabType::Enhancement;
     
         
-        // パッシブスロチE�� (3つ、横並び)
+        // パッシブスロチE (3つ、横並び)
         struct PassiveSlot {
             int slot_id;  // 0-2
             const entities::PassiveSkill* assigned_passive;  // nullptr = empty
-            Vector2 position;  // パネル冁E�E相対座樁E
-            float width = 280.0f;  // 操作パネル幁E��ら動皁E��箁E
+            Vector2 position;  // パネル冁EE相対座樁E
+            float width = 280.0f;  // 操作パネル画面から動的に計算
             float height = 180.0f;
             bool is_hovered = false;
             int level = 1;  // パッシブレベル (1-3)
         };
         PassiveSlot passive_slots[3];
         
-        // パッシブ�EチE�EアチE�Eメニュー
+        // パッシブEチEアチEEメニュー
         bool show_passive_popup = false;
-        int popup_slot_id = -1;  // どのスロチE��のポップアチE�EぁE
+        int popup_slot_id = -1;  // どのスロチEのポップアチEEぁE
         Vector2 popup_position;
         
         // 利用可能なパッシブ一覧
         std::vector<const entities::PassiveSkill*> available_passives;
         
-        // パッシブ一覧スクロール�E�下部パネル用�E�E
+        // パッシブ一覧スクロールEE下部パネル用EE
         int passive_scroll_offset = 0;
         
-        // アイチE��スロチE���E�裁E��タブ用�E�E
+        // アイチEスロチEEE裁Eタブ用EE
         struct ItemSlot {
             int slot_id;
             const entities::Equipment* assigned_item;
-            Vector2 position;  // パネル冁E�E相対座樁E
-            float width = 280.0f;  // 操作パネル幁E��ら動皁E��箁E
+            Vector2 position;  // パネル冁EE相対座樁E
+            float width = 280.0f;  // 操作パネル画面から動的に計算
             float height = 180.0f;
             bool is_hovered = false;
         };
@@ -133,7 +133,7 @@ private:
         std::vector<const entities::Equipment*> available_items;
         int item_scroll_offset = 0;
 
-        // ソーチEI�E�裁E��タブ！E
+        // ソーチEIEE裁Eタブ！E
         enum class ItemSortKey {
             Name,
             OwnedCount,
@@ -142,20 +142,20 @@ private:
             Hp
         };
         ItemSortKey item_sort_key = ItemSortKey::Name;
-        bool item_sort_ascending = true;  // 初期: 名前は昁E��E
+        bool item_sort_ascending = true;  // 初期: 名前は昇順
 
-        // 裁E��D&D用
-        std::string dragging_item_id; // ドラチE��中のアイチE��ID
-        Vector2 drag_start_mouse_pos; // ドラチE��開始時のマウス座樁E
-        bool is_dragging_item = false; // アイチE��をドラチE��中ぁE
-        int selected_item_slot_id = -1; // 選択中のアイチE��スロチE��ID
+        // 裁ED&D用
+        std::string dragging_item_id; // ドラチE中のアイチEID
+        Vector2 drag_start_mouse_pos; // ドラチE開始時のマウス座樁E
+        bool is_dragging_item = false; // アイチEをドラチE中ぁE
+        int selected_item_slot_id = -1; // 選択中のアイチEスロチEID
 
-        // アイチE��ポップアチE�Eメニュー
+        // アイチEポップアチEEメニュー
         bool show_item_popup = false;
-        int popup_item_slot_id = -1; // どのスロチE��のポップアチE�EぁE
+        int popup_item_slot_id = -1; // どのスロチEのポップアチEEぁE
     };
     
-    /// @brief ポップアチE�Eメニュー頁E��
+    /// @brief ポップアチEEメニュー頁E
     struct PopupMenuItem {
         std::string label;
         Color color;
@@ -165,7 +165,7 @@ private:
     
     // ========== メンバ変数 ==========
     BaseSystemAPI* systemAPI_;
-    SharedContext* sharedContext_ = nullptr;  // Render冁E��も参照したぁE��があるため保持�E�所有権なし！E
+    SharedContext* sharedContext_ = nullptr;  // Render冁EEも参照したぁE報があるため保持EE所有権なし！E
     bool isInitialized_;
     mutable bool requestClose_;
     mutable bool hasTransitionRequest_;
@@ -178,11 +178,11 @@ private:
     
     // 状態管琁E
     bool has_unsaved_changes_;
-    PlayerDataManager::CharacterState saved_character_state_{};    // 直近セーブ状態（差刁E��算�E基準！E
-    PlayerDataManager::CharacterState editing_character_state_{};  // 現在の編雁E��態！Evなど�E�E
+    PlayerDataManager::CharacterState saved_character_state_{};    // 直近セーブ状態（差刁E算E基準！E
+    PlayerDataManager::CharacterState editing_character_state_{};  // 現在の編雁E態！EvなどEE
     std::string editing_character_id_;
 
-    // 裁E��ドラチE��&ドロチE�E状慁E
+    // 裁ED&D状態
     bool item_drag_started_ = false;
     bool is_item_dragging_ = false;
     int dragging_item_index_ = -1;
@@ -190,14 +190,27 @@ private:
     Vec2 item_drag_start_pos_{};
     Vec2 item_drag_pos_{};
     
-    // ランダム生�E器�E�ガチャ用�E�E
+    // ランダム生E器Eガチャ用EE
     std::mt19937 rng_;
     
-    // ========== プライベ�EトメソチE�� ==========
+    // ソート関連
+    enum class SortKey {
+        Name,
+        Rarity,
+        Cost,
+        Level,
+        Owned
+    };
+    SortKey currentSortKey_ = SortKey::Owned;
+    bool sortAscending_ = false;
+    bool showOwnedOnly_ = false;  // 保持（所持）のみ表示するか
     
-    // 初期化�EクリーンアチE�E
+    // ========== プライベEトメソチE ==========
+    
+    // 初期化EクリーンアチEE
     void InitializePanels();
     void LoadCharacterList(SharedContext& ctx);
+    void SortCharacterList(SharedContext& ctx);
     void SelectCharacter(SharedContext& ctx, const entities::Character* character);
     void UpdateStatusPanel(SharedContext& ctx);
     PlayerDataManager::CharacterState BuildCurrentEditingState() const;
@@ -206,8 +219,9 @@ private:
     void FilterAvailablePassives(SharedContext& ctx);
     void FilterAvailableItems(SharedContext& ctx);
     
-    // 描画メソチE��
+    // 描画メソチE
     void RenderUnitInfoPanel();
+    void RenderSortUI();
     void RenderStatusPanel(SharedContext& ctx);
     void RenderOperationPanel(SharedContext& ctx);
     void RenderUnitListButton();
@@ -218,19 +232,19 @@ private:
     void RenderEnhancementTab(SharedContext& ctx);
     void RenderEquipmentTab(SharedContext& ctx);
     
-    // パ�EチE��画
+    // パEチE画
     void RenderPassiveSlot(SharedContext& ctx, const OperationPanel::PassiveSlot& slot);
     void RenderItemSlot(const OperationPanel::ItemSlot& slot);
     void RenderTabButton(float x, float y, float width, float height, const char* label, bool is_active);
     
-    // イベント�E琁E
+    // イベントE琁E
     void OnUnitListItemClick(SharedContext& ctx, int index);
     void OnTabClick(OperationPanel::TabType tab);
     void OnPassiveSlotClick(int slot_id);
     void OnPassivePopupOption(SharedContext& ctx, int option);  // 0=ランダム付丁E強匁E 1=ランダム変更, 2=削除, 3=キャンセル
     void OnItemSlotClick(int slot_id);
     void OnItemListClick(SharedContext& ctx, int index);
-    void OnItemPopupOption(SharedContext& ctx, int option);  // 0=こ�EスロチE��に裁E��, 1=外す, 2=キャンセル
+    void OnItemPopupOption(SharedContext& ctx, int option);  // 0=こEスロチEに裁E, 1=外す, 2=キャンセル
 
     // レベル操佁E
     void OnLevelUpClick(SharedContext& ctx);
@@ -244,22 +258,22 @@ private:
     bool ResetAllPassives(SharedContext& ctx);
     bool RerollAllPassives(SharedContext& ctx);
 
-    // 裁E��一括操佁E
+    // 裁E一括操佁E
     void RemoveAllEquipment(SharedContext& ctx);
     
-    // 裁E��D&D操佁E
+    // 裁ED&D操佁E
     void OnDragStartItem(SharedContext& ctx, int item_index);
     void OnDragUpdateItem();
     void OnDragEndItem(SharedContext& ctx);
     
-    // マウス入力�E琁E
+    // マウス入力E琁E
     void ProcessMouseInput(SharedContext& ctx);
     void UpdateHoverStates(Vec2 mouse_pos);
     
-    // キーボ�Eド�E力�E琁E
+    // キーボEドE力E琁E
     void ProcessKeyboardInput(SharedContext& ctx);
     
-    // ユーチE��リチE��
+    // ユーチEEリチE
     const entities::Character* GetSelectedCharacter() const;
     int GetPassiveSlotAtPosition(Vector2 position) const;
     int GetItemSlotAtPosition(Vector2 position) const;

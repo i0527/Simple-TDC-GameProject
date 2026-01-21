@@ -80,12 +80,42 @@ void BattleResultOverlay::Render(SharedContext& ctx) {
     systemAPI_->Render().DrawTextDefault(title, titleX, titleY, titleSize,
                                          titleColor);
 
-    // 説昁E
+    // 説明
     const char* desc = isVictory_ ? "敵のタワーを破壊しました。"
                                   : "自軍のタワーが破壊されました。";
-    systemAPI_->Render().DrawTextDefault(desc, windowX + 80.0f, titleY + 90.0f,
+    float descY = titleY + 90.0f;
+    systemAPI_->Render().DrawTextDefault(desc, windowX + 80.0f, descY,
                                          24.0f,
                                          ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+
+    // 報酬報告（勝利時のみ）
+    if (isVictory_ && ctx.gameplayDataAPI) {
+        const auto& report = ctx.gameplayDataAPI->GetLastStageClearReport();
+        float reportY = descY + 50.0f;
+        
+        // 新規キャラクター報告
+        if (!report.newCharacters.empty()) {
+            std::string charText = "新規キャラ: ";
+            for (size_t i = 0; i < report.newCharacters.size(); ++i) {
+                if (i > 0) {
+                    charText += ", ";
+                }
+                charText += report.newCharacters[i];
+            }
+            systemAPI_->Render().DrawTextDefault(charText, windowX + 80.0f, reportY,
+                                                 22.0f,
+                                                 ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+            reportY += 35.0f;
+        }
+        
+        // チケット報告
+        if (report.ticketsRewarded > 0) {
+            std::string ticketText = "チケット: +" + std::to_string(report.ticketsRewarded);
+            systemAPI_->Render().DrawTextDefault(ticketText, windowX + 80.0f, reportY,
+                                                 22.0f,
+                                                 ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+        }
+    }
 
     // ボタン
     const float btnW = 260.0f;

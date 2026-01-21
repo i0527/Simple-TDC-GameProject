@@ -150,6 +150,7 @@ bool ItemPassiveLoader::LoadFromJSON(
                 eq.id = eq_json.at("id").get<std::string>();
                 eq.name = eq_json.at("name").get<std::string>();
                 eq.description = eq_json.value("description", "");
+                eq.icon_path = eq_json.value("icon_path", "");
                 eq.attack_bonus = eq_json.value("attack_bonus", 0.0f);
                 eq.defense_bonus = eq_json.value("defense_bonus", 0.0f);
                 eq.hp_bonus = eq_json.value("hp_bonus", 0.0f);
@@ -209,6 +210,7 @@ bool ItemPassiveLoader::SaveToJSON(
             eq_json["id"] = eq.id;
             eq_json["name"] = eq.name;
             eq_json["description"] = eq.description;
+            eq_json["icon_path"] = eq.icon_path;
             eq_json["attack_bonus"] = eq.attack_bonus;
             eq_json["defense_bonus"] = eq.defense_bonus;
             eq_json["hp_bonus"] = eq.hp_bonus;

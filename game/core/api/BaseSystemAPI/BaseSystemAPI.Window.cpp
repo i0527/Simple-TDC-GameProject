@@ -28,6 +28,25 @@ void WindowSystemAPI::SetFullscreen(bool fullscreen) {
   }
 }
 
+void WindowSystemAPI::SetFullscreen(bool fullscreen, int monitor) {
+  if (fullscreen) {
+    // フルスクリーンにする前にモニターを設定
+    ::SetWindowMonitor(monitor);
+    bool current = ::IsWindowFullscreen();
+    if (!current) {
+      ::ToggleFullscreen();
+    }
+    LOG_DEBUG("WindowSystemAPI: Fullscreen set to true on monitor {}", monitor);
+  } else {
+    // ウィンドウモードに戻す
+    bool current = ::IsWindowFullscreen();
+    if (current) {
+      ::ToggleFullscreen();
+    }
+    LOG_DEBUG("WindowSystemAPI: Fullscreen set to false");
+  }
+}
+
 bool WindowSystemAPI::IsFPSDisplayEnabled() const {
   return owner_->fpsDisplayEnabled_;
 }
@@ -35,6 +54,18 @@ bool WindowSystemAPI::IsFPSDisplayEnabled() const {
 void WindowSystemAPI::SetFPSDisplayEnabled(bool enabled) {
   owner_->fpsDisplayEnabled_ = enabled;
   LOG_DEBUG("WindowSystemAPI: FPS display set to {}", enabled);
+}
+
+int WindowSystemAPI::GetMonitorCount() const {
+  return ::GetMonitorCount();
+}
+
+int WindowSystemAPI::GetCurrentMonitor() const {
+  return ::GetCurrentMonitor();
+}
+
+const char* WindowSystemAPI::GetMonitorName(int monitor) const {
+  return ::GetMonitorName(monitor);
 }
 
 } // namespace core

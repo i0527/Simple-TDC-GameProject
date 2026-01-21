@@ -182,10 +182,14 @@ void BattleHUDRenderer::RenderBottomBar(const SharedContext& ctx,
                                ToCoreColor(OverlayColors::BORDER_DEFAULT));
 
     // ゴールド表示�E�左�E�E
+    // ゴールド表示（右上に大きく表示）
     std::ostringstream goldText;
     goldText << "Gold: " << gold << " / " << goldMax;
-    sysAPI_->Render().DrawTextDefault(goldText.str(), 30,
-                                      static_cast<int>(y0 + 16), 28.0f,
+    Vec2 goldTextSize = sysAPI_->Render().MeasureTextDefaultCore(goldText.str(), 48.0f, 1.0f);
+    float goldX = SCREEN_W - goldTextSize.x - 30.0f;  // 右端から30px余白
+    float goldY = y0 + (BOTTOM_H - goldTextSize.y) * 0.5f;  // 垂直中央
+    sysAPI_->Render().DrawTextDefault(goldText.str(), static_cast<int>(goldX),
+                                      static_cast<int>(goldY), 48.0f,  // 28.0f → 48.0f（大きく）
                                       ToCoreColor(OverlayColors::TEXT_GOLD));
 
     // 10枠の中忁E�E置
@@ -223,9 +227,14 @@ void BattleHUDRenderer::RenderBottomBar(const SharedContext& ctx,
         std::string displayName = hasUnit ? unitId : "Empty";
         std::string iconPath;
 
+        bool is_unlocked = true;
         if (hasUnit && ctx.gameplayDataAPI) {
             auto ch = ctx.gameplayDataAPI->GetCharacterTemplate(unitId);
             if (ch) {
+                // 未所持チェック
+                const auto st = ctx.gameplayDataAPI->GetCharacterState(unitId);
+                is_unlocked = st.unlocked;
+                
                 displayName = ch->name;
                 costGold = ch->cost;
                 enabled = true;
@@ -287,18 +296,24 @@ void BattleHUDRenderer::RenderBottomBar(const SharedContext& ctx,
                                              slotRect.width, slotRect.height,
                                              borderW, border);
 
-        // 表示
-        sysAPI_->Render().DrawTextDefault(
-            displayName, static_cast<int>(slotRect.x + 10),
-            static_cast<int>(slotRect.y + 8), 20.0f,
-            ToCoreColor(OverlayColors::TEXT_PRIMARY));
-        if (hasUnit) {
+        // 表示（未所持の場合は名前とコストを非表示）
+        if (hasUnit && is_unlocked) {
+            sysAPI_->Render().DrawTextDefault(
+                displayName, static_cast<int>(slotRect.x + 10),
+                static_cast<int>(slotRect.y + 8), 32.0f,  // 20.0f → 32.0f（大きく）
+                ToCoreColor(OverlayColors::TEXT_PRIMARY));
             std::ostringstream cs;
             cs << "Cost " << costGold;
             sysAPI_->Render().DrawTextDefault(
                 cs.str(), static_cast<int>(slotRect.x + 10),
-                static_cast<int>(slotRect.y + 34), 20.0f,
+                static_cast<int>(slotRect.y + 40), 28.0f,  // 20.0f → 28.0f、位置も調整
                 ToCoreColor(OverlayColors::TEXT_ACCENT));
+        } else if (hasUnit && !is_unlocked) {
+            // 未所持の場合はロックアイコンのみ表示
+            sysAPI_->Render().DrawTextDefault(
+                "🔒", static_cast<int>(slotRect.x + slotRect.width - 25),
+                static_cast<int>(slotRect.y + 8), 32.0f,  // 20.0f → 32.0f（大きく）
+                ToCoreColor(OverlayColors::TEXT_MUTED));
         }
 
         UnitSlotButton slotBtn;

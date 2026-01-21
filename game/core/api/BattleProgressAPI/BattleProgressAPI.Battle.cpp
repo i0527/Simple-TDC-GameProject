@@ -60,9 +60,15 @@ void BattleProgressAPI::HandleHUDAction(const ui::BattleHUDAction& action) {
         }
         gold_ -= character->cost;
         gold_ = std::max(0, gold_);
+        
+        // 統計情報を更新
+        spawnedUnitCount_++;
+        totalGoldSpent_ += character->cost;
+        
         constexpr float DEFAULT_SPAWN_COOLDOWN = 2.0f;
         unitCooldownUntil_[action.unitId] = battleTime_ + DEFAULT_SPAWN_COOLDOWN;
-        LOG_INFO("HUD: SpawnUnit: {} (gold now {})", action.unitId, gold_);
+        LOG_INFO("HUD: SpawnUnit: {} (gold now {}, units spawned: {}, total gold spent: {})", 
+                 action.unitId, gold_, spawnedUnitCount_, totalGoldSpent_);
 
         // 暫定: 即座に味方ユニットを生成（移動/戦闘は後続TODO）
         const float y = lane_.y - static_cast<float>(character->move_sprite.frame_height);
@@ -131,12 +137,13 @@ void BattleProgressAPI::UpdateBattle(float deltaTime) {
     }
 
     // ===== お財布（最大値）が時間で増える =====
-    if (goldMaxGrowthPerSecond_ > 0.0f && goldMaxCurrent_ < static_cast<float>(goldMaxCap_)) {
-        goldMaxCurrent_ += goldMaxGrowthPerSecond_ * deltaTime;
-        if (goldMaxCurrent_ > static_cast<float>(goldMaxCap_)) {
-            goldMaxCurrent_ = static_cast<float>(goldMaxCap_);
-        }
-    }
+    // 上限が上がらないように無効化
+    // if (goldMaxGrowthPerSecond_ > 0.0f && goldMaxCurrent_ < static_cast<float>(goldMaxCap_)) {
+    //     goldMaxCurrent_ += goldMaxGrowthPerSecond_ * deltaTime;
+    //     if (goldMaxCurrent_ > static_cast<float>(goldMaxCap_)) {
+    //         goldMaxCurrent_ = static_cast<float>(goldMaxCap_);
+    //     }
+    // }
 
     const int curMaxGold = std::max(0, static_cast<int>(goldMaxCurrent_));
     if (gold_ > curMaxGold) {
@@ -453,7 +460,9 @@ void BattleProgressAPI::CheckBattleEnd() {
         isPaused_ = true;
         LOG_INFO("Battle finished: Victory");
         if (gameplayDataAPI_ && sharedContext_ && !sharedContext_->currentStageId.empty()) {
-            gameplayDataAPI_->MarkStageCleared(sharedContext_->currentStageId);
+            // 戦闘統計情報を取得して渡す
+            BattleStats stats = GetBattleStats();
+            gameplayDataAPI_->MarkStageCleared(sharedContext_->currentStageId, 3, &stats);
         }
         if (sceneOverlayAPI_) {
             sceneOverlayAPI_->PushOverlay(OverlayState::BattleVictory);

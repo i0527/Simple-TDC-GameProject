@@ -6,6 +6,7 @@
 
 // プロジェクト内
 #include "../../ecs/entities/StageLoader.hpp"
+#include "../../api/BattleProgressAPI.hpp"
 #include "../../../utils/Log.h"
 
 namespace game {
@@ -125,27 +126,145 @@ void GameplayDataAPI::SetStageState(
     playerDataManager_->SetStageState(stageId, state);
 }
 
-void GameplayDataAPI::MarkStageCleared(const std::string& stageId, int starsEarned) {
+void GameplayDataAPI::MarkStageCleared(const std::string& stageId, int starsEarned,
+                                      const BattleProgressAPI::BattleStats* battleStats) {
     if (!playerDataManager_ || !stageManager_) {
         return;
     }
+    
     auto st = playerDataManager_->GetStageState(stageId);
+    const bool isFirstClear = !st.isCleared;
     st.isCleared = true;
     st.isLocked = false;
     st.starsEarned = std::max(st.starsEarned, std::max(0, starsEarned));
     playerDataManager_->SetStageState(stageId, st);
 
     auto stage = stageManager_->GetStageDataById(stageId);
-    if (stage) {
-        for (const auto& unlockId : stage->unlockOnClear) {
-            if (!stageManager_->HasStage(unlockId)) {
-                continue;
+    if (!stage) {
+        playerDataManager_->Save();
+        return;
+    }
+
+    // 報酬レポートをリセット
+    lastClearReport_ = StageClearReport();
+
+    // ステージ報酬（ゴールド）
+    int rewardGold = stage->rewardGold;
+    playerDataManager_->AddGold(rewardGold);
+    LOG_INFO("Stage {} cleared: base reward {} gold", stageId, rewardGold);
+
+    // チケット報酬（毎回クリアで付与）
+    int rewardTickets = stage->rewardTickets;
+    if (rewardTickets > 0) {
+        playerDataManager_->AddTickets(rewardTickets);
+        lastClearReport_.ticketsRewarded = rewardTickets;
+        LOG_INFO("Stage {} cleared: reward {} tickets", stageId, rewardTickets);
+    }
+
+    // 初回クリア報酬（キャラクター） - 既に所持しているキャラクターは除外
+    if (isFirstClear && !stage->rewardMonsters.empty()) {
+        for (const auto& rewardMonster : stage->rewardMonsters) {
+            const auto& charState = playerDataManager_->GetCharacterState(rewardMonster.monsterId);
+            if (!charState.unlocked) {
+                // 未所持のキャラクターのみ付与
+                auto newCharState = charState;
+                newCharState.unlocked = true;
+                newCharState.level = rewardMonster.level;
+                playerDataManager_->SetCharacterState(rewardMonster.monsterId, newCharState);
+                // レポートに新規キャラを追加
+                lastClearReport_.newCharacters.push_back(rewardMonster.monsterId);
+                LOG_INFO("First clear reward: unlocked character {} (level {})", 
+                        rewardMonster.monsterId, rewardMonster.level);
+            } else {
+                LOG_INFO("First clear reward: character {} already owned, skipping", 
+                        rewardMonster.monsterId);
             }
-            auto unlockState = playerDataManager_->GetStageState(unlockId);
-            unlockState.isLocked = false;
-            playerDataManager_->SetStageState(unlockId, unlockState);
         }
     }
+
+    // クエスト条件チェックと報酬付与
+    if (battleStats && !stage->bonusConditions.empty()) {
+        for (const auto& condition : stage->bonusConditions) {
+            // conditionTypeが空の場合は従来のボーナス条件（時間のみ）として処理
+            if (condition.conditionType.empty()) {
+                // 旧形式の条件（descriptionから推測）はスキップ
+                continue;
+            }
+
+            bool conditionMet = false;
+            int actualValue = 0;
+
+            // 条件チェック
+            if (condition.conditionType == "tower_hp_percent") {
+                // 城のHPがX%以上
+                if (battleStats->playerTowerMaxHp > 0) {
+                    actualValue = (battleStats->playerTowerHp * 100) / battleStats->playerTowerMaxHp;
+                }
+                if (condition.conditionOperator == "gte") {
+                    conditionMet = (actualValue >= condition.conditionValue);
+                } else if (condition.conditionOperator == "lte") {
+                    conditionMet = (actualValue <= condition.conditionValue);
+                } else if (condition.conditionOperator == "eq") {
+                    conditionMet = (actualValue == condition.conditionValue);
+                }
+            } else if (condition.conditionType == "unit_count") {
+                // 召喚したユニット数がX以下
+                actualValue = battleStats->spawnedUnitCount;
+                if (condition.conditionOperator == "lte") {
+                    conditionMet = (actualValue <= condition.conditionValue);
+                } else if (condition.conditionOperator == "gte") {
+                    conditionMet = (actualValue >= condition.conditionValue);
+                } else if (condition.conditionOperator == "eq") {
+                    conditionMet = (actualValue == condition.conditionValue);
+                }
+            } else if (condition.conditionType == "gold_spent") {
+                // 使用したゴールドがX以下
+                actualValue = battleStats->totalGoldSpent;
+                if (condition.conditionOperator == "lte") {
+                    conditionMet = (actualValue <= condition.conditionValue);
+                } else if (condition.conditionOperator == "gte") {
+                    conditionMet = (actualValue >= condition.conditionValue);
+                } else if (condition.conditionOperator == "eq") {
+                    conditionMet = (actualValue == condition.conditionValue);
+                }
+            } else if (condition.conditionType == "clear_time") {
+                // クリア時間がX秒以内
+                actualValue = static_cast<int>(battleStats->clearTime);
+                if (condition.conditionOperator == "lte") {
+                    conditionMet = (actualValue <= condition.conditionValue);
+                } else if (condition.conditionOperator == "gte") {
+                    conditionMet = (actualValue >= condition.conditionValue);
+                }
+            }
+
+            // 条件達成時は報酬を付与
+            if (conditionMet) {
+                if (condition.rewardType == "gold") {
+                    playerDataManager_->AddGold(condition.rewardValue);
+                    LOG_INFO("Quest completed: {} (actual: {}) -> {} gold", 
+                            condition.description, actualValue, condition.rewardValue);
+                } else if (condition.rewardType == "item") {
+                    // アイテム報酬の処理（将来実装）
+                    LOG_INFO("Quest completed: {} (actual: {}) -> item reward (not implemented)", 
+                            condition.description, actualValue);
+                }
+            } else {
+                LOG_DEBUG("Quest not met: {} (required: {}, actual: {})", 
+                         condition.description, condition.conditionValue, actualValue);
+            }
+        }
+    }
+
+    // ステージ解放処理
+    for (const auto& unlockId : stage->unlockOnClear) {
+        if (!stageManager_->HasStage(unlockId)) {
+            continue;
+        }
+        auto unlockState = playerDataManager_->GetStageState(unlockId);
+        unlockState.isLocked = false;
+        playerDataManager_->SetStageState(unlockId, unlockState);
+    }
+    
     playerDataManager_->Save();
 }
 
@@ -188,6 +307,10 @@ std::string GameplayDataAPI::GetPreferredNextStageId(
         return "";
     }
     return nextId;
+}
+
+const StageClearReport& GameplayDataAPI::GetLastStageClearReport() const {
+    return lastClearReport_;
 }
 
 } // namespace core

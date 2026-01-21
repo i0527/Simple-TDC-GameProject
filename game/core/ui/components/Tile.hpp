@@ -7,6 +7,7 @@
 
 namespace game {
 namespace core {
+class BaseSystemAPI;
 namespace ui {
 
 /// @brief タイルデータ構造体
@@ -92,6 +93,9 @@ public:
     /// @param callback タイルが選択されたときに呼び出されるコールバック関数
     void SetOnTileSelected(std::function<void(const TileData&)> callback);
 
+    /// @brief オーディオ用システムAPIを設定
+    void SetBaseSystemAPI(::game::core::BaseSystemAPI* systemAPI) { baseSystemAPI_ = systemAPI; }
+
 private:
     Rect bounds_;
     Margin margin_;
@@ -107,6 +111,7 @@ private:
     float tileHeight_;
     int selectedIndex_;
     std::function<void(const TileData&)> onTileSelected_;
+    ::game::core::BaseSystemAPI* baseSystemAPI_ = nullptr;
 };
 
 } // namespace ui

@@ -1,12 +1,15 @@
 #include "GameSystem.hpp"
 #include "../../utils/Log.h"
-#include <rlImGui.h>
 #include "../ui/UiAssetKeys.hpp"
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <rlImGui.h>
 
 namespace game {
 namespace core {
 GameSystem::GameSystem()
-    : systemAPI_(nullptr), audioAPI_(nullptr), ecsAPI_(std::make_unique<ECSystemAPI>()),
+    : systemAPI_(nullptr), audioAPI_(nullptr),
+      ecsAPI_(std::make_unique<ECSystemAPI>()),
       inputAPI_(std::make_unique<InputSystemAPI>()),
       uiAPI_(std::make_unique<UISystemAPI>()),
       sceneOverlayAPI_(std::make_unique<SceneOverlayControlAPI>()),
@@ -79,6 +82,27 @@ int GameSystem::Run() {
     // 入力状態�E更新
     inputAPI_->UpdateInput();
 
+    // フルスクリーントグル（Alt+Enter）
+    if (inputAPI_->IsKeyDown(KEY_LEFT_ALT) ||
+        inputAPI_->IsKeyDown(KEY_RIGHT_ALT)) {
+      if (inputAPI_->IsKeyPressed(KEY_ENTER)) {
+        systemAPI_->Window().ToggleFullscreen();
+        LOG_INFO("Fullscreen toggled via Alt+Enter");
+      }
+    }
+
+    // 解像度切り替え（F3: FHD ⇔ HD）
+    if (inputAPI_->IsKeyPressed(KEY_F3)) {
+      Resolution current = systemAPI_->Render().GetCurrentResolution();
+      Resolution next =
+          (current == Resolution::FHD) ? Resolution::HD : Resolution::FHD;
+      if (systemAPI_->Render().SetResolution(next)) {
+        LOG_INFO("Resolution toggled via F3: {} -> {}",
+                 current == Resolution::FHD ? "FHD" : "HD",
+                 next == Resolution::FHD ? "FHD" : "HD");
+      }
+    }
+
     // オーチE��オ更新
     if (audioAPI_) {
       audioAPI_->Update(deltaTime);
@@ -109,15 +133,15 @@ int GameSystem::Run() {
     }
 
     systemAPI_->Render().EndRender();
-    
+
     // 画面描画�E�EenderTexture + ImGUI�E�E
     // EndFrame()冁E��BeginDrawing()が呼ばれ、RenderTexture描画の後に
     // 自動的にImGUI描画フレームが開始�E終亁E��れる
     // HomeScreenのオーバレイをImGuiフレーム冁E��描画するためのコールバック
     systemAPI_->Render().EndFrame([this]() {
-        sceneOverlayAPI_->RenderImGui(currentState_);
-        // タイトル画面のオーバ�Eレイ�E�EicenseOverlay、SettingsOverlay�E��E
-        // Raylibの描画APIを使用するため、ImGuiフレームは不要E
+      sceneOverlayAPI_->RenderImGui(currentState_);
+      // タイトル画面のオーバ�Eレイ�E�EicenseOverlay、SettingsOverlay�E��E
+      // Raylibの描画APIを使用するため、ImGuiフレームは不要E
     });
   }
 
@@ -136,7 +160,8 @@ void GameSystem::transitionTo(GameState newState) {
       LOG_INFO("Reinitializing Game state (retry)");
       sceneOverlayAPI_->CleanupState(currentState_);
       if (!sceneOverlayAPI_->InitializeState(newState)) {
-        LOG_ERROR("Failed to reinitialize state: {}", static_cast<int>(newState));
+        LOG_ERROR("Failed to reinitialize state: {}",
+                  static_cast<int>(newState));
         requestShutdown_ = true;
       }
       if (sharedContext_.battleProgressAPI) {
@@ -191,12 +216,42 @@ void GameSystem::Shutdown() {
 bool GameSystem::InitializeBaseSystem() {
   // BaseSystemAPIの作�Eと初期化（ログシスチE��も�E動的に初期化される�E�E
   systemAPI_ = std::make_unique<BaseSystemAPI>();
-  if (!systemAPI_->Initialize(Resolution::FHD)) {
+
+  // 解像度設定を読み込む（設定ファイルから）
+  Resolution initialResolution = Resolution::FHD; // デフォルトはFHD
+
+  try {
+    std::ifstream file("data/settings.json");
+    if (file.is_open()) {
+      nlohmann::json data;
+      file >> data;
+      std::string resolutionStr = data.value("resolution", "FHD");
+      if (resolutionStr == "HD") {
+        initialResolution = Resolution::HD;
+      } else if (resolutionStr == "SD") {
+        initialResolution = Resolution::SD;
+      } else {
+        initialResolution = Resolution::FHD;
+      }
+      LOG_INFO("Resolution loaded from settings: {}", resolutionStr);
+    } else {
+      LOG_INFO("Settings file not found, using default resolution FHD");
+    }
+  } catch (const std::exception &e) {
+    LOG_WARN("Failed to load resolution from settings: {}. Using default FHD.",
+             e.what());
+    initialResolution = Resolution::FHD;
+  }
+
+  if (!systemAPI_->Initialize(initialResolution)) {
     LOG_ERROR("Failed to initialize BaseSystemAPI!");
     return false;
   }
   LOG_INFO("=== tower of defense - Game Initialization ===");
-  LOG_INFO("BaseSystemAPI initialized with resolution FHD");
+  LOG_INFO("BaseSystemAPI initialized with resolution {}",
+           initialResolution == Resolution::FHD  ? "FHD"
+           : initialResolution == Resolution::HD ? "HD"
+                                                 : "SD");
   return true;
 }
 
@@ -237,7 +292,7 @@ void GameSystem::SetupSharedContext() {
   sharedContext_.inputAPI = inputAPI_.get();
   sharedContext_.uiAPI = uiAPI_.get();
   sharedContext_.gameplayDataAPI = gameplayDataAPI_.get();
-  sharedContext_.currentStageId = "";  // 初期状態では空
+  sharedContext_.currentStageId = ""; // 初期状態では空
 }
 
 bool GameSystem::InitializeDebugUI() {
@@ -252,7 +307,8 @@ bool GameSystem::InitializeDebugUI() {
 
 bool GameSystem::InitializeSetup() {
   setupAPI_ = std::make_unique<SetupAPI>();
-  if (!setupAPI_->Initialize(systemAPI_.get(), gameplayDataAPI_.get(), ecsAPI_.get(), &sharedContext_)) {
+  if (!setupAPI_->Initialize(systemAPI_.get(), gameplayDataAPI_.get(),
+                             ecsAPI_.get(), &sharedContext_)) {
     LOG_ERROR("Failed to initialize SetupAPI!");
     return false;
   }
@@ -262,7 +318,8 @@ bool GameSystem::InitializeSetup() {
 
 bool GameSystem::InitializeBattleSetup() {
   battleSetupAPI_ = std::make_unique<BattleSetupAPI>();
-  if (!battleSetupAPI_->Initialize(gameplayDataAPI_.get(), setupAPI_.get(), &sharedContext_)) {
+  if (!battleSetupAPI_->Initialize(gameplayDataAPI_.get(), setupAPI_.get(),
+                                   &sharedContext_)) {
     LOG_ERROR("Failed to initialize BattleSetupAPI!");
     return false;
   }
@@ -271,7 +328,8 @@ bool GameSystem::InitializeBattleSetup() {
 }
 
 bool GameSystem::InitializeSceneOverlay() {
-  if (!sceneOverlayAPI_->Initialize(systemAPI_.get(), uiAPI_.get(), &sharedContext_)) {
+  if (!sceneOverlayAPI_->Initialize(systemAPI_.get(), uiAPI_.get(),
+                                    &sharedContext_)) {
     LOG_ERROR("Failed to initialize SceneOverlayControlAPI!");
     return false;
   }
@@ -405,7 +463,7 @@ void GameSystem::ShutdownBaseSystem() {
 }
 
 void GameSystem::RequestTransition(GameState newState) {
-    transitionTo(newState);
+  transitionTo(newState);
 }
 } // namespace core
 } // namespace game

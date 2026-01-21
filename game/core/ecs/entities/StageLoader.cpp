@@ -178,6 +178,7 @@ bool StageLoader::LoadFromJSON(
 
             stage.isBoss = stage_json.value("isBoss", false);
             stage.rewardGold = stage_json.value("rewardGold", 100);
+            stage.rewardTickets = stage_json.value("rewardTickets", 0);
             stage.waveCount = stage_json.value("waveCount", 5);
             stage.recommendedLevel = stage_json.value("recommendedLevel", 1);
             stage.previewImageId = stage_json.value("previewImageId", "");
@@ -190,6 +191,109 @@ bool StageLoader::LoadFromJSON(
                     }
                 }
             }
+            
+            // 拡張フィールドのパース（オプショナル）
+            try {
+                // ボーナス条件
+                stage.bonusConditions.clear();
+                if (stage_json.contains("bonusConditions") &&
+                    stage_json["bonusConditions"].is_array()) {
+                    for (const auto& bc : stage_json["bonusConditions"]) {
+                        BonusCondition bonus;
+                        if (bc.contains("description") && bc["description"].is_string()) {
+                            bonus.description = bc["description"].get<std::string>();
+                        }
+                        if (bc.contains("conditionType") && bc["conditionType"].is_string()) {
+                            bonus.conditionType = bc["conditionType"].get<std::string>();
+                        }
+                        if (bc.contains("conditionValue") && bc["conditionValue"].is_number()) {
+                            bonus.conditionValue = bc["conditionValue"].get<int>();
+                        }
+                        if (bc.contains("conditionOperator") && bc["conditionOperator"].is_string()) {
+                            bonus.conditionOperator = bc["conditionOperator"].get<std::string>();
+                        }
+                        if (bc.contains("rewardType") && bc["rewardType"].is_string()) {
+                            bonus.rewardType = bc["rewardType"].get<std::string>();
+                        }
+                        if (bc.contains("rewardValue") && bc["rewardValue"].is_number()) {
+                            bonus.rewardValue = bc["rewardValue"].get<int>();
+                        }
+                        stage.bonusConditions.push_back(bonus);
+                    }
+                }
+                
+                // 獲得モンスター
+                stage.rewardMonsters.clear();
+                if (stage_json.contains("rewardMonsters") &&
+                    stage_json["rewardMonsters"].is_array()) {
+                    for (const auto& rm : stage_json["rewardMonsters"]) {
+                        RewardMonster reward;
+                        if (rm.contains("monsterId") && rm["monsterId"].is_string()) {
+                            reward.monsterId = rm["monsterId"].get<std::string>();
+                        }
+                        if (rm.contains("level") && rm["level"].is_number()) {
+                            reward.level = rm["level"].get<int>();
+                        }
+                        stage.rewardMonsters.push_back(reward);
+                    }
+                }
+                
+                // 出現モンスター詳細
+                stage.enemySpawns.clear();
+                if (stage_json.contains("enemySpawns") &&
+                    stage_json["enemySpawns"].is_array()) {
+                    for (const auto& es : stage_json["enemySpawns"]) {
+                        EnemySpawn spawn;
+                        if (es.contains("monsterId") && es["monsterId"].is_string()) {
+                            spawn.monsterId = es["monsterId"].get<std::string>();
+                        }
+                        if (es.contains("minLevel") && es["minLevel"].is_number()) {
+                            spawn.minLevel = es["minLevel"].get<int>();
+                        }
+                        if (es.contains("maxLevel") && es["maxLevel"].is_number()) {
+                            spawn.maxLevel = es["maxLevel"].get<int>();
+                        }
+                        if (es.contains("count") && es["count"].is_number()) {
+                            spawn.count = es["count"].get<int>();
+                        }
+                        if (es.contains("spawnPattern") && es["spawnPattern"].is_string()) {
+                            spawn.spawnPattern = es["spawnPattern"].get<std::string>();
+                        }
+                        stage.enemySpawns.push_back(spawn);
+                    }
+                }
+                
+                // ボス戦フェーズ情報
+                stage.bossPhases.clear();
+                if (stage_json.contains("bossPhases") &&
+                    stage_json["bossPhases"].is_array()) {
+                    for (const auto& bp : stage_json["bossPhases"]) {
+                        BossPhase phase;
+                        if (bp.contains("hpPercentMin") && bp["hpPercentMin"].is_number()) {
+                            phase.hpPercentMin = bp["hpPercentMin"].get<int>();
+                        }
+                        if (bp.contains("hpPercentMax") && bp["hpPercentMax"].is_number()) {
+                            phase.hpPercentMax = bp["hpPercentMax"].get<int>();
+                        }
+                        if (bp.contains("description") && bp["description"].is_string()) {
+                            phase.description = bp["description"].get<std::string>();
+                        }
+                        if (bp.contains("actions") && bp["actions"].is_array()) {
+                            for (const auto& action : bp["actions"]) {
+                                if (action.is_string()) {
+                                    phase.actions.push_back(action.get<std::string>());
+                                }
+                            }
+                        }
+                        stage.bossPhases.push_back(phase);
+                    }
+                }
+            } catch (const std::exception& e) {
+                LOG_WARN("StageLoader: Failed to parse extended fields for stage {}: {}", 
+                         stage.id, e.what());
+                // デフォルト値を使用（既に初期化済み）
+            }
+            
             stage.data = stage_json;
 
             outStages[stage.id] = stage;
@@ -240,6 +344,7 @@ bool StageLoader::SaveToJSON(
             stageJson["isBoss"] = stage.isBoss;
             stageJson["isLocked"] = stage.isLocked;
             stageJson["rewardGold"] = stage.rewardGold;
+            stageJson["rewardTickets"] = stage.rewardTickets;
             stageJson["waveCount"] = stage.waveCount;
             stageJson["recommendedLevel"] = stage.recommendedLevel;
             stageJson["previewImageId"] = stage.previewImageId;
@@ -290,6 +395,7 @@ void StageLoader::LoadDefault(
         stage.isLocked = (i > 1); // Stage 1以外�EロチE��
         stage.isBoss = (i == 4);
         stage.rewardGold = 100 * i;
+        stage.rewardTickets = 0;
         stage.waveCount = 5;
         stage.recommendedLevel = 10 + (i - 1) * 5;
         stage.previewImageId = "";
@@ -321,6 +427,7 @@ void StageLoader::LoadDefault(
         stage.isLocked = true;
         stage.isBoss = (i == 8);
         stage.rewardGold = 150 * (i - 4);
+        stage.rewardTickets = 0;
         stage.waveCount = 5;
         stage.recommendedLevel = 25 + (i - 5) * 5;
         stage.previewImageId = "";
@@ -352,6 +459,7 @@ void StageLoader::LoadDefault(
         stage.isLocked = true;
         stage.isBoss = (i == 12);
         stage.rewardGold = 200 * (i - 8);
+        stage.rewardTickets = 0;
         stage.waveCount = 5;
         stage.recommendedLevel = 40 + (i - 9) * 5;
         stage.previewImageId = "";

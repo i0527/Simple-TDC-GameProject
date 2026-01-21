@@ -441,15 +441,53 @@ void PlayerDataManager::EnsureDefaultsFromMasters(const entities::CharacterManag
                                                   const entities::ItemPassiveManager& itemPassiveManager) {
     // characters: 追加/欠損の補完（unlocked はマスターの default_unlocked を初期値に）
     const auto& masters = characterManager.GetAllMasters();
+    std::vector<std::string> defaultUnlockedIds;
     for (const auto& [id, ch] : masters) {
         auto it = data_.characters.find(id);
         if (it == data_.characters.end()) {
+            // 新規キャラクター: default_unlockedを初期値として使用
             CharacterState st;
             st.unlocked = ch.default_unlocked;
             st.level = ClampLevel(ch.default_level);
             data_.characters[id] = st;
         } else {
+            // 既存キャラクター: default_unlocked=falseの場合はunlockedをfalseにリセット
+            // 初期の3体以外でロックが外れているものを修正
+            if (!ch.default_unlocked && it->second.unlocked) {
+                it->second.unlocked = false;
+                LOG_INFO("Reset unlocked state for character {} (default_unlocked=false)", id);
+            }
             it->second.level = ClampLevel(it->second.level);
+        }
+        // デフォルトで解放されているキャラクターのIDを収集
+        if (ch.default_unlocked) {
+            defaultUnlockedIds.push_back(id);
+        }
+    }
+
+    // 初期編成が空の場合、またはdefault_unlocked=trueのキャラクターが編成に含まれていない場合、
+    // 初期編成をdefault_unlocked=trueの最初の3体に設定
+    if (data_.formation.slots.empty() && defaultUnlockedIds.size() >= 3) {
+        // 最初の3体をスロット0, 1, 2に配置
+        for (int i = 0; i < 3 && i < static_cast<int>(defaultUnlockedIds.size()); ++i) {
+            data_.formation.slots.push_back({i, defaultUnlockedIds[i]});
+        }
+        LOG_INFO("Initial formation set to first 3 default unlocked characters");
+    } else if (!data_.formation.slots.empty()) {
+        // 既存の編成をチェックし、default_unlocked=falseのキャラクターが含まれている場合は初期編成をリセット
+        bool needsReset = false;
+        for (const auto& slot : data_.formation.slots) {
+            if (std::find(defaultUnlockedIds.begin(), defaultUnlockedIds.end(), slot.second) == defaultUnlockedIds.end()) {
+                needsReset = true;
+                break;
+            }
+        }
+        if (needsReset && defaultUnlockedIds.size() >= 3) {
+            data_.formation.Clear();
+            for (int i = 0; i < 3 && i < static_cast<int>(defaultUnlockedIds.size()); ++i) {
+                data_.formation.slots.push_back({i, defaultUnlockedIds[i]});
+            }
+            LOG_INFO("Formation reset to first 3 default unlocked characters");
         }
     }
 

@@ -121,6 +121,13 @@ void GachaOverlay::RefreshPoolList() {
     }
     poolList_->ClearItems();
 
+    int totalWeight = 0;
+    int maxWeight = 1;
+    for (const auto& entry : pool_) {
+        totalWeight += std::max(1, entry.weight);
+        maxWeight = std::max(maxWeight, entry.weight);
+    }
+
     std::vector<GachaEntry> sorted = pool_;
     std::sort(sorted.begin(), sorted.end(),
               [](const GachaEntry& a, const GachaEntry& b) {
@@ -132,10 +139,27 @@ void GachaOverlay::RefreshPoolList() {
         if (!entry.equipment) {
             continue;
         }
+        const float percent = totalWeight > 0
+                                  ? static_cast<float>(entry.weight) * 100.0f /
+                                        static_cast<float>(totalWeight)
+                                  : 0.0f;
+        const float ratio = maxWeight > 0
+                                ? static_cast<float>(entry.weight) /
+                                      static_cast<float>(maxWeight)
+                                : 0.0f;
+        const int barCells = 10;
+        const int filledCells =
+            std::clamp(static_cast<int>(std::round(ratio * barCells)),
+                       0, barCells);
+        const std::string bar =
+            "[" + std::string(filledCells, '#') +
+            std::string(barCells - filledCells, '-') + "]";
+
         ui::ListItem item;
         item.id = entry.equipmentId;
         item.label = entry.equipment->name;
-        item.value = RarityToString(entry.rarity);
+        item.value = RarityToString(entry.rarity) + " " + FormatPercent(percent) +
+                     "% " + bar;
         poolList_->AddItem(item);
     }
 }

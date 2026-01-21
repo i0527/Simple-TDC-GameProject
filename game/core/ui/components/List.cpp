@@ -2,6 +2,7 @@
 #include "../UIEvent.hpp"
 #include "../../api/UISystemAPI.hpp"
 #include "../UiAssetKeys.hpp"
+#include "../ImGuiSoundHelpers.hpp"
 #include "../../../utils/Log.h"
 #include <imgui.h>
 #include <algorithm>
@@ -74,7 +75,7 @@ void List::Render() {
         ImVec2 windowPos = ImGui::GetWindowPos();
         ImVec2 windowSize = ImGui::GetWindowSize();
 
-        if (uiAPI_) {
+        if (useTextures_ && uiAPI_) {
             Texture2D* bgTexture = uiAPI_->GetTexturePtr(UiAssetKeys::FantasyPanelLight);
             if (bgTexture && bgTexture->id != 0) {
                 ImTextureID texId = static_cast<ImTextureID>(static_cast<uintptr_t>(bgTexture->id));
@@ -87,6 +88,17 @@ void List::Render() {
                 drawList->AddImage(borderId, windowPos,
                                    ImVec2(windowPos.x + windowSize.x, windowPos.y + windowSize.y));
             }
+        } else {
+            const ImU32 bgColor = IM_COL32(28, 30, 34, 220);
+            const ImU32 borderColor = IM_COL32(200, 200, 200, 40);
+            drawList->AddRectFilled(windowPos,
+                                    ImVec2(windowPos.x + windowSize.x,
+                                           windowPos.y + windowSize.y),
+                                    bgColor, 6.0f);
+            drawList->AddRect(windowPos,
+                              ImVec2(windowPos.x + windowSize.x,
+                                     windowPos.y + windowSize.y),
+                              borderColor, 6.0f, 0, 1.0f);
         }
 
         ImGui::BeginChild("##list_content", ImVec2(0, 0), false,
@@ -95,6 +107,7 @@ void List::Render() {
         ImDrawList* childDrawList = ImGui::GetWindowDrawList();
         float availableWidth = ImGui::GetContentRegionAvail().x;
 
+        BaseSystemAPI* systemAPI = uiAPI_ ? uiAPI_->SystemAPI() : nullptr;
         for (size_t i = 0; i < items_.size(); ++i) {
             const auto& item = items_[i];
             bool isSelected = (static_cast<int>(i) == selectedIndex_);
@@ -103,7 +116,12 @@ void List::Render() {
             ImVec2 itemPos = ImGui::GetCursorScreenPos();
             ImVec2 itemSize = ImVec2(availableWidth, itemHeight_);
             std::string buttonId = "##list_item_" + std::to_string(i);
-            bool clicked = ImGui::InvisibleButton(buttonId.c_str(), itemSize);
+            bool clicked = ImGuiSound::InvisibleButton(
+                systemAPI,
+                buttonId.c_str(),
+                itemSize,
+                ImGuiButtonFlags_None,
+                ImGuiSoundType::Tap);
             bool hovered = ImGui::IsItemHovered();
 
             const char* textureKey = UiAssetKeys::ButtonSecondaryNormal;
@@ -116,7 +134,7 @@ void List::Render() {
             }
 
             Color textColor = Color{230, 230, 230, 255};
-            if (uiAPI_) {
+            if (useTextures_ && uiAPI_) {
                 Texture2D* texture = uiAPI_->GetTexturePtr(textureKey);
                 if (texture && texture->id != 0) {
                     ImTextureID texId = static_cast<ImTextureID>(static_cast<uintptr_t>(texture->id));
@@ -124,6 +142,20 @@ void List::Render() {
                                             ImVec2(itemPos.x + itemSize.x, itemPos.y + itemSize.y));
                 }
                 textColor = uiAPI_->GetReadableTextColor(textureKey);
+            } else {
+                ImU32 itemBg = IM_COL32(46, 50, 58, 230);
+                if (!isEnabled) {
+                    itemBg = IM_COL32(38, 40, 46, 200);
+                } else if (isSelected) {
+                    itemBg = IM_COL32(70, 74, 84, 235);
+                } else if (hovered) {
+                    itemBg = IM_COL32(58, 62, 72, 235);
+                }
+                childDrawList->AddRectFilled(
+                    itemPos,
+                    ImVec2(itemPos.x + itemSize.x, itemPos.y + itemSize.y),
+                    itemBg, 4.0f);
+                textColor = Color{225, 225, 225, 255};
             }
 
             std::string label = item.label;
@@ -442,6 +474,10 @@ void List::SetOnSelectionChanged(std::function<void(const ListItem&)> callback) 
 
 size_t List::GetItemCount() const {
     return items_.size();
+}
+
+void List::SetUseTextures(bool useTextures) {
+    useTextures_ = useTextures;
 }
 
 } // namespace ui

@@ -61,6 +61,7 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
 
     tabDrawButton_ = std::make_shared<ui::Button>();
     tabDrawButton_->SetUISystemAPI(uiAPI_);
+    tabDrawButton_->SetBaseSystemAPI(systemAPI_);
     tabDrawButton_->SetId("gacha_tab_draw");
     tabDrawButton_->SetPosition(contentLeft_, tabRowY);
     tabDrawButton_->SetSize(TAB_BUTTON_W, TAB_BUTTON_H);
@@ -73,6 +74,7 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
 
     tabRatesButton_ = std::make_shared<ui::Button>();
     tabRatesButton_->SetUISystemAPI(uiAPI_);
+    tabRatesButton_->SetBaseSystemAPI(systemAPI_);
     tabRatesButton_->SetId("gacha_tab_rates");
     tabRatesButton_->SetPosition(
         contentLeft_ + (TAB_BUTTON_W + TAB_BUTTON_SPACING) * 1, tabRowY);
@@ -86,6 +88,7 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
 
     tabHistoryButton_ = std::make_shared<ui::Button>();
     tabHistoryButton_->SetUISystemAPI(uiAPI_);
+    tabHistoryButton_->SetBaseSystemAPI(systemAPI_);
     tabHistoryButton_->SetId("gacha_tab_history");
     tabHistoryButton_->SetPosition(
         contentLeft_ + (TAB_BUTTON_W + TAB_BUTTON_SPACING) * 2, tabRowY);
@@ -99,6 +102,7 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
 
     tabExchangeButton_ = std::make_shared<ui::Button>();
     tabExchangeButton_->SetUISystemAPI(uiAPI_);
+    tabExchangeButton_->SetBaseSystemAPI(systemAPI_);
     tabExchangeButton_->SetId("gacha_tab_exchange");
     tabExchangeButton_->SetPosition(
         contentLeft_ + (TAB_BUTTON_W + TAB_BUTTON_SPACING) * 3, tabRowY);
@@ -115,6 +119,7 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     buttonH_ = 60.0f;
     singleGachaButton_ = std::make_shared<ui::Button>();
     singleGachaButton_->SetUISystemAPI(uiAPI_);
+    singleGachaButton_->SetBaseSystemAPI(systemAPI_);
     singleGachaButton_->SetId("gacha_button_single");
     singleButtonX_ = contentWidth / 2.0f - 220.0f;
     singleButtonY_ = contentHeight - 120.0f;
@@ -126,6 +131,7 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
 
     tenGachaButton_ = std::make_shared<ui::Button>();
     tenGachaButton_->SetUISystemAPI(uiAPI_);
+    tenGachaButton_->SetBaseSystemAPI(systemAPI_);
     tenGachaButton_->SetId("gacha_button_ten");
     tenButtonX_ = contentWidth / 2.0f + 20.0f;
     tenButtonY_ = contentHeight - 120.0f;
@@ -135,22 +141,12 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     tenGachaButton_->Initialize();
     tenGachaButton_->SetOnClickCallback([this]() { pendingRollCount_ = 10; });
 
-    closeButton_ = std::make_shared<ui::Button>();
-    closeButton_->SetUISystemAPI(uiAPI_);
-    closeButton_->SetId("close_button");
-    closeButton_->SetPosition(contentWidth - 170.0f, tabRowY); // パネル内の相対座標
-    closeButton_->SetSize(150.0f, 40.0f);
-    closeButton_->SetLabel("閉じる");
-    closeButton_->Initialize();
-
-    closeButton_->SetOnClickCallback([this]() { requestClose_ = true; });
-
     panel_->AddChild(singleGachaButton_);
     panel_->AddChild(tenGachaButton_);
-    panel_->AddChild(closeButton_);
 
     skipRevealButton_ = std::make_shared<ui::Button>();
     skipRevealButton_->SetUISystemAPI(uiAPI_);
+    skipRevealButton_->SetBaseSystemAPI(systemAPI_);
     skipRevealButton_->SetId("gacha_skip_reveal");
     skipRevealButton_->SetPosition(panelW_ - 200.0f, panelH_ - 160.0f);
     skipRevealButton_->SetSize(160.0f, 46.0f);
@@ -170,6 +166,8 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     poolList_->SetPosition(contentLeft_, contentTop_);
     poolList_->SetSize(contentRight_ - contentLeft_, contentBottom_ - contentTop_);
     poolList_->SetItemsPerPage(HISTORY_DISPLAY_LIMIT);
+    poolList_->SetItemHeight(36.0f);
+    poolList_->SetUseTextures(false);
     poolList_->Initialize();
     panel_->AddChild(poolList_);
 
@@ -179,11 +177,14 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
     historyList_->SetPosition(contentLeft_, contentTop_);
     historyList_->SetSize(contentRight_ - contentLeft_, contentBottom_ - contentTop_);
     historyList_->SetItemsPerPage(HISTORY_DISPLAY_LIMIT);
+    historyList_->SetItemHeight(34.0f);
+    historyList_->SetUseTextures(false);
     historyList_->Initialize();
     panel_->AddChild(historyList_);
 
     exchangeTicketButton_ = std::make_shared<ui::Button>();
     exchangeTicketButton_->SetUISystemAPI(uiAPI_);
+    exchangeTicketButton_->SetBaseSystemAPI(systemAPI_);
     exchangeTicketButton_->SetId("gacha_exchange_ticket");
     exchangeTicketButton_->SetPosition(panelW_ / 2.0f - 220.0f, contentTop_ + 40.0f);
     exchangeTicketButton_->SetSize(200.0f, 56.0f);
@@ -206,6 +207,7 @@ bool GachaOverlay::Initialize(BaseSystemAPI* systemAPI, UISystemAPI* uiAPI) {
 
     exchangeTicketTenButton_ = std::make_shared<ui::Button>();
     exchangeTicketTenButton_->SetUISystemAPI(uiAPI_);
+    exchangeTicketTenButton_->SetBaseSystemAPI(systemAPI_);
     exchangeTicketTenButton_->SetId("gacha_exchange_ticket_ten");
     exchangeTicketTenButton_->SetPosition(panelW_ / 2.0f + 20.0f, contentTop_ + 40.0f);
     exchangeTicketTenButton_->SetSize(200.0f, 56.0f);
@@ -259,11 +261,6 @@ void GachaOverlay::Shutdown() {
     if (skipRevealButton_) {
         skipRevealButton_->Shutdown();
         skipRevealButton_.reset();
-    }
-
-    if (closeButton_) {
-        closeButton_->Shutdown();
-        closeButton_.reset();
     }
 
     if (tabDrawButton_) {

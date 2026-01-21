@@ -24,6 +24,7 @@
 #include "../ecs/defineComponents.hpp"
 #include "../ecs/entities/EntityCreationData.hpp"
 #include "../ui/OverlayColors.hpp"
+#include "../ui/ImGuiSoundHelpers.hpp"
 #include "../../utils/Log.h"
 
 namespace game {
@@ -415,11 +416,11 @@ void EditorScene::RenderImGui() {
         return;
     }
 
-    if (ImGui::Button("Reload All")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Reload All")) {
         LoadDataFromAPI();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Save All") && sharedContext_ && sharedContext_->gameplayDataAPI) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Save All") && sharedContext_ && sharedContext_->gameplayDataAPI) {
         lastCharacterSaveOk_ =
             sharedContext_->gameplayDataAPI->SaveCharacterMasters(characterEdits_);
         if (lastCharacterSaveOk_) {
@@ -782,12 +783,12 @@ void EditorScene::UpdateMoveSimulation(float deltaTime) {
 }
 
 void EditorScene::RenderCharacterTab() {
-    if (ImGui::Button("Reload##Characters")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Reload##Characters")) {
         LoadDataFromAPI();
     }
     ImGui::SameLine();
     if (sharedContext_ && sharedContext_->gameplayDataAPI) {
-        if (ImGui::Button("Save##Characters")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Save##Characters")) {
             lastCharacterSaveOk_ =
                 sharedContext_->gameplayDataAPI->SaveCharacterMasters(characterEdits_);
             if (lastCharacterSaveOk_) {
@@ -797,7 +798,7 @@ void EditorScene::RenderCharacterTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("New##Characters")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "New##Characters")) {
         entities::Character ch;
         ch.id = GenerateUniqueId("character_", characterEdits_);
         ch.name = "New Character";
@@ -830,7 +831,7 @@ void EditorScene::RenderCharacterTab() {
         ResetAttackPreview();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Duplicate##Characters")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Duplicate##Characters")) {
         auto* ch = GetSelectedCharacterMutable();
         if (ch) {
             entities::Character copy = *ch;
@@ -849,7 +850,7 @@ void EditorScene::RenderCharacterTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Delete##Characters")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Delete##Characters")) {
         if (selectedCharacterIndex_ >= 0 &&
             selectedCharacterIndex_ < static_cast<int>(characterIds_.size())) {
             const auto id = characterIds_[selectedCharacterIndex_];
@@ -893,7 +894,7 @@ void EditorScene::RenderCharacterTab() {
             label = "* " + label;
         }
         const bool selected = (i == selectedCharacterIndex_);
-        if (ImGui::Selectable(label.c_str(), selected)) {
+        if (ui::ImGuiSound::Selectable(systemAPI_, label.c_str(), selected)) {
             selectedCharacterIndex_ = i;
             ResetAttackPreview();
         }
@@ -948,7 +949,7 @@ void EditorScene::RenderCharacterTab() {
             if (attackTypeIndex < 0 || attackTypeIndex > 2) {
                 attackTypeIndex = 0;
             }
-            if (ImGui::Combo("AttackType", &attackTypeIndex, attackTypes, 3)) {
+            if (ui::ImGuiSound::Combo(systemAPI_, "AttackType", &attackTypeIndex, attackTypes, 3)) {
                 ch->attack_type = static_cast<entities::AttackType>(attackTypeIndex);
             }
 
@@ -957,7 +958,7 @@ void EditorScene::RenderCharacterTab() {
             if (effectIndex < 0 || effectIndex > 4) {
                 effectIndex = 0;
             }
-            if (ImGui::Combo("EffectType", &effectIndex, effectTypes, 5)) {
+            if (ui::ImGuiSound::Combo(systemAPI_, "EffectType", &effectIndex, effectTypes, 5)) {
                 ch->effect_type = static_cast<entities::EffectType>(effectIndex);
             }
         }
@@ -979,30 +980,30 @@ void EditorScene::RenderCharacterTab() {
         ImGui::SeparatorText("Codex");
         ImGui::InputInt("Cost", &ch->cost);
         ch->cost = std::max(0, ch->cost);
-        ImGui::Checkbox("DefaultUnlocked", &ch->default_unlocked);
+        ui::ImGuiSound::Checkbox(systemAPI_, "DefaultUnlocked", &ch->default_unlocked);
 
         ImGui::SeparatorText("Preview");
-        if (ImGui::Button(previewPaused_ ? "Play##Preview" : "Pause##Preview")) {
+        if (ui::ImGuiSound::Button(systemAPI_, previewPaused_ ? "Play##Preview" : "Pause##Preview")) {
             previewPaused_ = !previewPaused_;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Reset##Preview")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Reset##Preview")) {
             ResetAttackPreview();
         }
         ImGui::SameLine();
         bool useMove = previewUseMoveSprite_;
-        if (ImGui::Checkbox("use_move_anim", &useMove)) {
+        if (ui::ImGuiSound::Checkbox(systemAPI_, "use_move_anim", &useMove)) {
             previewUseMoveSprite_ = useMove;
             ResetAttackPreview();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Step -1")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Step -1")) {
             const auto& sprite = previewUseMoveSprite_ ? ch->move_sprite : ch->attack_sprite;
             const float frameDuration = std::max(0.01f, sprite.frame_duration);
             SetPreviewTime(previewTime_ - frameDuration);
         }
         ImGui::SameLine();
-        if (ImGui::Button("Step +1")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Step +1")) {
             const auto& sprite = previewUseMoveSprite_ ? ch->move_sprite : ch->attack_sprite;
             const float frameDuration = std::max(0.01f, sprite.frame_duration);
             SetPreviewTime(previewTime_ + frameDuration);
@@ -1012,7 +1013,7 @@ void EditorScene::RenderCharacterTab() {
         ImGui::SliderFloat("scrub", &previewTime_, 0.0f, previewDuration, "%.3f");
         SetPreviewTime(previewTime_);
 
-        ImGui::Checkbox("loop", &previewLoopEnabled_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "loop", &previewLoopEnabled_);
         ImGui::SameLine();
         ImGui::InputFloat("loop_start", &previewLoopStart_, 0.01f, 0.05f, "%.3f");
         ImGui::SameLine();
@@ -1021,11 +1022,11 @@ void EditorScene::RenderCharacterTab() {
         previewLoopEnd_ = std::min(std::max(0.0f, previewLoopEnd_), previewDuration);
 
         ImGui::SeparatorText("Visuals");
-        ImGui::Checkbox("time_bar", &showTimeBar_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "time_bar", &showTimeBar_);
         ImGui::SameLine();
-        ImGui::Checkbox("hit_marker", &showHitMarker_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "hit_marker", &showHitMarker_);
         ImGui::SameLine();
-        ImGui::Checkbox("range_overlay", &showRangeOverlay_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "range_overlay", &showRangeOverlay_);
 
         const auto& sprite = previewUseMoveSprite_ ? ch->move_sprite : ch->attack_sprite;
         const float frameDuration = std::max(0.01f, sprite.frame_duration);
@@ -1038,22 +1039,22 @@ void EditorScene::RenderCharacterTab() {
         ImGui::Text("time: %.3f / %.3f", previewTime_, previewDuration);
 
         ImGui::SeparatorText("Move Simulation");
-        ImGui::Checkbox("move_sim_enabled", &moveSimEnabled_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "move_sim_enabled", &moveSimEnabled_);
         ImGui::SameLine();
-        if (ImGui::Button("Reset##MoveSim")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Reset##MoveSim")) {
             moveSimTime_ = 0.0f;
         }
         ImGui::SliderFloat("move_sim_speed", &moveSimSpeed_, 0.1f, 3.0f, "%.2f");
         ImGui::InputFloat("move_start_offset", &moveSimStartOffset_, 5.0f, 20.0f, "%.1f");
         ImGui::InputFloat("move_target_offset", &moveSimTargetOffset_, 5.0f, 20.0f, "%.1f");
-        ImGui::Checkbox("move_loop", &moveSimLoop_);
-        ImGui::Checkbox("move_show_path", &moveSimShowPath_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "move_loop", &moveSimLoop_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "move_show_path", &moveSimShowPath_);
         ImGui::SameLine();
-        ImGui::Checkbox("move_show_stop", &moveSimShowStop_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "move_show_stop", &moveSimShowStop_);
         ImGui::SameLine();
-        ImGui::Checkbox("move_show_distance", &moveSimShowDistance_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "move_show_distance", &moveSimShowDistance_);
         ImGui::SameLine();
-        ImGui::Checkbox("move_show_hitbox", &moveSimShowHitbox_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "move_show_hitbox", &moveSimShowHitbox_);
     } else {
         ImGui::TextDisabled("No character selected");
     }
@@ -1061,12 +1062,12 @@ void EditorScene::RenderCharacterTab() {
 }
 
 void EditorScene::RenderEquipmentTab() {
-    if (ImGui::Button("Reload##Equipment")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Reload##Equipment")) {
         LoadDataFromAPI();
     }
     ImGui::SameLine();
     if (sharedContext_ && sharedContext_->gameplayDataAPI) {
-        if (ImGui::Button("Save##Equipment")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Save##Equipment")) {
             lastItemSaveOk_ = sharedContext_->gameplayDataAPI->SaveItemPassiveMasters(
                 passiveEdits_, equipmentEdits_);
             if (lastItemSaveOk_) {
@@ -1077,7 +1078,7 @@ void EditorScene::RenderEquipmentTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("New##Equipment")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "New##Equipment")) {
         entities::Equipment eq;
         eq.id = GenerateUniqueId("equipment_", equipmentEdits_);
         eq.name = "New Equipment";
@@ -1096,7 +1097,7 @@ void EditorScene::RenderEquipmentTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Duplicate##Equipment")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Duplicate##Equipment")) {
         if (selectedEquipmentIndex_ >= 0 &&
             selectedEquipmentIndex_ < static_cast<int>(equipmentIds_.size())) {
             const auto& id = equipmentIds_[selectedEquipmentIndex_];
@@ -1118,7 +1119,7 @@ void EditorScene::RenderEquipmentTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Delete##Equipment")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Delete##Equipment")) {
         if (selectedEquipmentIndex_ >= 0 &&
             selectedEquipmentIndex_ < static_cast<int>(equipmentIds_.size())) {
             const auto id = equipmentIds_[selectedEquipmentIndex_];
@@ -1160,7 +1161,7 @@ void EditorScene::RenderEquipmentTab() {
             label = "* " + label;
         }
         const bool selected = (i == selectedEquipmentIndex_);
-        if (ImGui::Selectable(label.c_str(), selected)) {
+        if (ui::ImGuiSound::Selectable(systemAPI_, label.c_str(), selected)) {
             selectedEquipmentIndex_ = i;
         }
     }
@@ -1188,12 +1189,12 @@ void EditorScene::RenderEquipmentTab() {
 }
 
 void EditorScene::RenderPassiveTab() {
-    if (ImGui::Button("Reload##Passives")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Reload##Passives")) {
         LoadDataFromAPI();
     }
     ImGui::SameLine();
     if (sharedContext_ && sharedContext_->gameplayDataAPI) {
-        if (ImGui::Button("Save##Passives")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Save##Passives")) {
             lastItemSaveOk_ = sharedContext_->gameplayDataAPI->SaveItemPassiveMasters(
                 passiveEdits_, equipmentEdits_);
             if (lastItemSaveOk_) {
@@ -1204,7 +1205,7 @@ void EditorScene::RenderPassiveTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("New##Passives")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "New##Passives")) {
         entities::PassiveSkill ps;
         ps.id = GenerateUniqueId("passive_", passiveEdits_);
         ps.name = "New Passive";
@@ -1224,7 +1225,7 @@ void EditorScene::RenderPassiveTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Duplicate##Passives")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Duplicate##Passives")) {
         if (selectedPassiveIndex_ >= 0 &&
             selectedPassiveIndex_ < static_cast<int>(passiveIds_.size())) {
             const auto& id = passiveIds_[selectedPassiveIndex_];
@@ -1246,7 +1247,7 @@ void EditorScene::RenderPassiveTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Delete##Passives")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Delete##Passives")) {
         if (selectedPassiveIndex_ >= 0 &&
             selectedPassiveIndex_ < static_cast<int>(passiveIds_.size())) {
             const auto id = passiveIds_[selectedPassiveIndex_];
@@ -1288,7 +1289,7 @@ void EditorScene::RenderPassiveTab() {
             label = "* " + label;
         }
         const bool selected = (i == selectedPassiveIndex_);
-        if (ImGui::Selectable(label.c_str(), selected)) {
+        if (ui::ImGuiSound::Selectable(systemAPI_, label.c_str(), selected)) {
             selectedPassiveIndex_ = i;
         }
     }
@@ -1311,7 +1312,7 @@ void EditorScene::RenderPassiveTab() {
 
             const char* effectTypes[] = {"Percentage", "Flat"};
             int effectIndex = (ps.effect_type == entities::PassiveEffectType::Flat) ? 1 : 0;
-            if (ImGui::Combo("effect_type", &effectIndex, effectTypes, 2)) {
+            if (ui::ImGuiSound::Combo(systemAPI_, "effect_type", &effectIndex, effectTypes, 2)) {
                 ps.effect_type = (effectIndex == 1) ? entities::PassiveEffectType::Flat
                                                     : entities::PassiveEffectType::Percentage;
             }
@@ -1332,7 +1333,7 @@ void EditorScene::RenderPassiveTab() {
             case entities::PassiveTargetStat::ExpGain: targetIndex = 9; break;
             default: targetIndex = 0; break;
             }
-            if (ImGui::Combo("target_stat", &targetIndex, targetStats, 10)) {
+            if (ui::ImGuiSound::Combo(systemAPI_, "target_stat", &targetIndex, targetStats, 10)) {
                 switch (targetIndex) {
                 case 0: ps.target_stat = entities::PassiveTargetStat::Attack; break;
                 case 1: ps.target_stat = entities::PassiveTargetStat::Defense; break;
@@ -1355,12 +1356,12 @@ void EditorScene::RenderPassiveTab() {
 }
 
 void EditorScene::RenderStageTab() {
-    if (ImGui::Button("Reload##Stages")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Reload##Stages")) {
         LoadDataFromAPI();
     }
     ImGui::SameLine();
     if (sharedContext_ && sharedContext_->gameplayDataAPI) {
-        if (ImGui::Button("Save##Stages")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Save##Stages")) {
             lastStageSaveOk_ =
                 sharedContext_->gameplayDataAPI->SaveStageMasters(stageEdits_);
             if (lastStageSaveOk_) {
@@ -1370,7 +1371,7 @@ void EditorScene::RenderStageTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("New##Stages")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "New##Stages")) {
         entities::StageData stage;
         stage.id = GenerateUniqueId("stage_", stageEdits_);
         stage.stageName = "New Stage";
@@ -1399,7 +1400,7 @@ void EditorScene::RenderStageTab() {
         stageUnlockText_.clear();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Duplicate##Stages")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Duplicate##Stages")) {
         if (selectedStageIndex_ >= 0 &&
             selectedStageIndex_ < static_cast<int>(stageIds_.size())) {
             const auto& id = stageIds_[selectedStageIndex_];
@@ -1431,7 +1432,7 @@ void EditorScene::RenderStageTab() {
         }
     }
     ImGui::SameLine();
-    if (ImGui::Button("Delete##Stages")) {
+    if (ui::ImGuiSound::Button(systemAPI_, "Delete##Stages")) {
         if (selectedStageIndex_ >= 0 &&
             selectedStageIndex_ < static_cast<int>(stageIds_.size())) {
             const auto id = stageIds_[selectedStageIndex_];
@@ -1477,7 +1478,7 @@ void EditorScene::RenderStageTab() {
             label = "* " + label;
         }
         const bool selected = (i == selectedStageIndex_);
-        if (ImGui::Selectable(label.c_str(), selected)) {
+        if (ui::ImGuiSound::Selectable(systemAPI_, label.c_str(), selected)) {
             selectedStageIndex_ = i;
             stageJsonText_ = it->second.data.dump(2);
             stageJsonError_.clear();
@@ -1510,8 +1511,8 @@ void EditorScene::RenderStageTab() {
             InputTextStdString("StageName", &stage.stageName);
             ImGui::InputInt("Difficulty", &stage.difficulty);
             stage.difficulty = std::max(1, stage.difficulty);
-            ImGui::Checkbox("IsBoss", &stage.isBoss);
-            ImGui::Checkbox("IsLocked", &stage.isLocked);
+            ui::ImGuiSound::Checkbox(systemAPI_, "IsBoss", &stage.isBoss);
+            ui::ImGuiSound::Checkbox(systemAPI_, "IsLocked", &stage.isLocked);
             ImGui::InputInt("RewardGold", &stage.rewardGold);
             stage.rewardGold = std::max(0, stage.rewardGold);
             ImGui::InputInt("WaveCount", &stage.waveCount);
@@ -1524,7 +1525,7 @@ void EditorScene::RenderStageTab() {
             }
 
             ImGui::SeparatorText("Stage JSON");
-            if (ImGui::Button("Apply JSON")) {
+            if (ui::ImGuiSound::Button(systemAPI_, "Apply JSON")) {
                 try {
                     stage.data = nlohmann::json::parse(stageJsonText_);
                     stageJsonError_.clear();
@@ -1535,7 +1536,7 @@ void EditorScene::RenderStageTab() {
                 }
             }
             ImGui::SameLine();
-            if (ImGui::Button("Refresh JSON")) {
+            if (ui::ImGuiSound::Button(systemAPI_, "Refresh JSON")) {
                 stageJsonText_ = stage.data.dump(2);
                 stageJsonError_.clear();
             }
@@ -1560,23 +1561,23 @@ void EditorScene::RenderBattleDebugTab() {
         if (ImGui::SliderFloat("GameSpeed", &speed, 0.1f, 3.0f, "%.2f")) {
             battle->SetGameSpeed(speed);
         }
-        if (ImGui::Checkbox("Paused", &paused)) {
+        if (ui::ImGuiSound::Checkbox(systemAPI_, "Paused", &paused)) {
             battle->SetPaused(paused);
         }
         ImGui::SameLine();
-        if (ImGui::Button("Step 1/60")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "Step 1/60")) {
             battle->Update(1.0f / 60.0f);
         }
 
         ImGui::Separator();
-        if (ImGui::Checkbox("AttackLogEnabled", &attackLogEnabled_)) {
+        if (ui::ImGuiSound::Checkbox(systemAPI_, "AttackLogEnabled", &attackLogEnabled_)) {
             battle->SetAttackLogEnabled(attackLogEnabled_);
         }
         ImGui::SameLine();
-        if (ImGui::Button("ClearLog")) {
+        if (ui::ImGuiSound::Button(systemAPI_, "ClearLog")) {
             battle->ClearAttackLog();
         }
-        ImGui::Checkbox("ShowAttackLog", &showAttackLog_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "ShowAttackLog", &showAttackLog_);
         if (showAttackLog_) {
             ImGui::BeginChild("AttackLog", ImVec2(0, 160), true);
             for (const auto& entry : battle->GetAttackLog()) {
@@ -1590,7 +1591,7 @@ void EditorScene::RenderBattleDebugTab() {
             ImGui::EndChild();
         }
 
-        ImGui::Checkbox("ShowStatusOverlay", &showStatusOverlay_);
+        ui::ImGuiSound::Checkbox(systemAPI_, "ShowStatusOverlay", &showStatusOverlay_);
         if (showStatusOverlay_ && sharedContext_->ecsAPI) {
             auto view = sharedContext_->ecsAPI->View<ecs::components::Position,
                                                     ecs::components::Health,
@@ -1628,20 +1629,20 @@ void EditorScene::RenderBattleDebugTab() {
             if (ImGui::BeginCombo("CharacterId", preview)) {
                 for (int i = 0; i < static_cast<int>(characterIds_.size()); ++i) {
                     const bool selected = (i == spawnCharacterIndex_);
-                    if (ImGui::Selectable(characterIds_[i].c_str(), selected)) {
+                    if (ui::ImGuiSound::Selectable(systemAPI_, characterIds_[i].c_str(), selected)) {
                         spawnCharacterIndex_ = i;
                     }
                 }
                 ImGui::EndCombo();
             }
 
-            ImGui::Checkbox("SpawnAsEnemy", &spawnAsEnemy_);
+            ui::ImGuiSound::Checkbox(systemAPI_, "SpawnAsEnemy", &spawnAsEnemy_);
             ImGui::InputFloat("SpawnX", &spawnX_, 10.0f, 50.0f, "%.1f");
             ImGui::InputFloat("SpawnY", &spawnY_, 10.0f, 50.0f, "%.1f");
             ImGui::InputInt("SpawnLevel", &spawnLevel_);
             spawnLevel_ = std::max(1, spawnLevel_);
 
-            if (ImGui::Button("Spawn##Debug")) {
+            if (ui::ImGuiSound::Button(systemAPI_, "Spawn##Debug")) {
                 if (sharedContext_->setupAPI && sharedContext_->ecsAPI &&
                     sharedContext_->gameplayDataAPI) {
                     const auto& charId = characterIds_[spawnCharacterIndex_];

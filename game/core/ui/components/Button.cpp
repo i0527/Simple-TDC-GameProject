@@ -1,6 +1,8 @@
 #include "Button.hpp"
 #include "../UIEvent.hpp"
+#include "../../api/BaseSystemAPI.hpp"
 #include "../../api/UISystemAPI.hpp"
+#include "../ImGuiSoundHelpers.hpp"
 #include "../UiAssetKeys.hpp"
 #include "../../../utils/Log.h"
 #include <imgui.h>
@@ -74,8 +76,12 @@ void Button::Render() {
         ImVec2 windowSize = ImGui::GetWindowSize();
 
         ImGui::SetCursorPos(ImVec2(0.0f, 0.0f));
-        bool clicked = ImGui::InvisibleButton(("##btn_hit_" + id_).c_str(),
-                                              ImVec2(bounds_.width, bounds_.height));
+        bool clicked = ImGuiSound::InvisibleButton(
+            baseSystemAPI_,
+            ("##btn_hit_" + id_).c_str(),
+            ImVec2(bounds_.width, bounds_.height),
+            ImGuiButtonFlags_None,
+            ImGuiSoundType::Click);
         bool hovered = ImGui::IsItemHovered();
         isHovered_ = hovered;
 
@@ -181,6 +187,7 @@ UIEventResult Button::HandleEvent(const UIEvent& ev) {
             result.handled = true;
             result.componentId = id_;
             result.actionId = actionId_;
+            PlayClickSound();
             if (onClickCallback_) {
                 onClickCallback_();
             }
@@ -228,6 +235,7 @@ bool Button::OnMouseClick(float x, float y) {
     Rect bounds = GetBounds();
     if (x >= bounds.x && x <= bounds.x + bounds.width &&
         y >= bounds.y && y <= bounds.y + bounds.height) {
+        PlayClickSound();
         if (onClickCallback_) {
             onClickCallback_();
         }
@@ -258,12 +266,21 @@ bool Button::OnKey(int key) {
     }
 
     if (key == 32 || key == 257) { // Space or Enter
+        PlayClickSound();
         if (onClickCallback_) {
             onClickCallback_();
         }
         return true;
     }
     return false;
+}
+
+void Button::PlayClickSound() {
+    if (!baseSystemAPI_) {
+        return;
+    }
+
+    baseSystemAPI_->Audio().PlaySound("click-a");
 }
 
 void Button::AddChild(std::shared_ptr<IUIComponent> child) {

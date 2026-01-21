@@ -16,8 +16,14 @@ public:
   bool IsFullscreen() const;
   void ToggleFullscreen();
   void SetFullscreen(bool fullscreen);
+  void SetFullscreen(bool fullscreen, int monitor);
   bool IsFPSDisplayEnabled() const;
   void SetFPSDisplayEnabled(bool enabled);
+  
+  // モニター関連
+  int GetMonitorCount() const;
+  int GetCurrentMonitor() const;
+  const char* GetMonitorName(int monitor) const;
 
 private:
   BaseSystemAPI* owner_;

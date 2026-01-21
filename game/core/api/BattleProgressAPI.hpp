@@ -82,6 +82,16 @@ public:
     void SetAttackLogEnabled(bool enabled) { attackLogEnabled_ = enabled; }
     bool IsAttackLogEnabled() const { return attackLogEnabled_; }
 
+    // ========== 戦闘統計情報 ==========
+    struct BattleStats {
+        int playerTowerHp = 0;
+        int playerTowerMaxHp = 1000;
+        int spawnedUnitCount = 0;
+        int totalGoldSpent = 0;
+        float clearTime = 0.0f;
+    };
+    BattleStats GetBattleStats() const;
+
     // ========== 状態操作 ==========
     void SetGameSpeed(float speed);
     void SetPaused(bool paused);
@@ -124,6 +134,10 @@ private:
     bool isInitialized_;
     bool attackLogEnabled_ = true;
     std::vector<AttackLogEntry> attackLog_;
+
+    // 戦闘統計情報
+    int spawnedUnitCount_ = 0;
+    int totalGoldSpent_ = 0;
 };
 
 } // namespace core

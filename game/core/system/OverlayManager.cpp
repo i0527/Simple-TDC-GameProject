@@ -108,12 +108,6 @@ void OverlayManager::Render(SharedContext& ctx) {
 
     // P1: 背景半透�Eをここで一括描画
     // 背景シーンを見せたまま、�Eオーバ�Eレイを重ねる想宁E
-    ctx.systemAPI->Render().DrawRectangle(
-        0, 0,
-        ctx.systemAPI->Render().GetInternalWidth(),
-        ctx.systemAPI->Render().GetInternalHeight(),
-        Color{0, 0, 0, 100}
-    );
 
     // 下から頁E��描画�E�奥 ↁE手前�E�E
     for (auto& overlay : stack_) {

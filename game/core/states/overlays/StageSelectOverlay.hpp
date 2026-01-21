@@ -12,7 +12,7 @@ namespace core {
 
 class InputSystemAPI;
 
-// StageDataはStageManager.hppで定義されてぁE��ため、entities名前空間から使用
+// StageDataはStageManager.hppで定義されてぁE��ため、entities名前空間から使用
 using StageData = entities::StageData;
 
 /// @brief カードレイアウト情報
@@ -25,10 +25,10 @@ struct CardLayout {
     float height;
 };
 
-/// @brief スチE�Eジ選択オーバ�Eレイ
+/// @brief スチE�Eジ選択オーバ�Eレイ
 ///
-/// スチE�Eジ選択画面を表示するオーバ�Eレイ、E
-/// カード�EースのUIでスチE�Eジ一覧を表示します、E
+/// スチE�Eジ選択画面を表示するオーバ�Eレイ、E
+/// カード�EースのUIでスチE�Eジ一覧を表示します、E
 class StageSelectOverlay : public IOverlay {
 public:
     StageSelectOverlay();
@@ -51,7 +51,7 @@ private:
     mutable bool hasTransitionRequest_;
     mutable GameState requestedNextState_;
 
-    // スチE�EジチE�Eタ
+    // スチE�EジチE�Eタ
     std::vector<StageData> stages_;
     
     // UI状慁E
@@ -66,19 +66,29 @@ private:
     std::map<int, float> cardAlphas_;
     float panelFadeAlpha_;
     
+    // 詳細ウィンドウ
+    bool showDetailWindow_;
+    float detailWindowAlpha_;
+    
     // レイアウチE
     std::vector<CardLayout> cardLayouts_;
     
-    // 冁E��メソチE��
+    // 冁E��メソチE��
     void LoadStageData(SharedContext& ctx);
     void CalculateCardLayouts();
     void RenderCards();
     void RenderDetailPanel(SharedContext& ctx);
+    void RenderDetailWindow(SharedContext& ctx);
     void UpdateAnimations(float deltaTime);
     void HandleCardSelection(int stageNumber, SharedContext& ctx);
     void HandleMouseInput(SharedContext& ctx);
     void HandleKeyboardInput(SharedContext& ctx);
     void HandleScrollInput(InputSystemAPI* inputAPI);
+    
+    // ========== ヘルパー関数 ==========
+    
+    /// @brief ステージIDから背景画像パスを生成
+    std::string GetStageBackgroundPath(const std::string& stageId) const;
 };
 
 } // namespace core
