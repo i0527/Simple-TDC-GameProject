@@ -161,6 +161,29 @@ bool PlayerDataManager::LoadOrCreate(const std::string& filePath,
                     }
                 }
             }
+            if (inv.contains("tower_attachments") && inv["tower_attachments"].is_object()) {
+                for (auto it = inv["tower_attachments"].begin(); it != inv["tower_attachments"].end(); ++it) {
+                    if (it.value().is_number_integer()) {
+                        data_.ownedTowerAttachments[it.key()] = ClampNonNegative(it.value().get<int>());
+                    }
+                }
+            }
+        }
+
+        // 所持アタッチメントが無い旧セーブ: 装着スロットに設定されていれば所持として付与
+        if (data_.ownedTowerAttachments.empty()) {
+            for (const auto& slot : data_.towerAttachments) {
+                if (!slot.id.empty()) {
+                    data_.ownedTowerAttachments[slot.id] = std::max(data_.ownedTowerAttachments[slot.id], 1);
+                }
+            }
+            // 所持がまだ空なら初期付与（R 3種でタワー強化可能に）
+            if (data_.ownedTowerAttachments.empty()) {
+                data_.ownedTowerAttachments["tower_core_hp"] = 1;
+                data_.ownedTowerAttachments["tower_wallet_gear"] = 1;
+                data_.ownedTowerAttachments["tower_cost_capacitor"] = 1;
+                needsMigrationSave = true;
+            }
         }
 
         // stages
@@ -334,6 +357,10 @@ bool PlayerDataManager::Save() const {
         for (const auto& [id, count] : data_.ownedPassives) {
             inv["passives"][id] = ClampNonNegative(count);
         }
+        inv["tower_attachments"] = json::object();
+        for (const auto& [id, count] : data_.ownedTowerAttachments) {
+            inv["tower_attachments"][id] = ClampNonNegative(count);
+        }
         root["inventory"] = inv;
 
         // gacha history
@@ -426,6 +453,16 @@ void PlayerDataManager::SetOwnedEquipmentCount(const std::string& equipmentId, i
 
 void PlayerDataManager::SetOwnedPassiveCount(const std::string& passiveId, int count) {
     data_.ownedPassives[passiveId] = ClampNonNegative(count);
+}
+
+int PlayerDataManager::GetOwnedTowerAttachmentCount(const std::string& attachmentId) const {
+    auto it = data_.ownedTowerAttachments.find(attachmentId);
+    if (it == data_.ownedTowerAttachments.end()) return 0;
+    return it->second;
+}
+
+void PlayerDataManager::SetOwnedTowerAttachmentCount(const std::string& attachmentId, int count) {
+    data_.ownedTowerAttachments[attachmentId] = ClampNonNegative(count);
 }
 
 void PlayerDataManager::AddGachaHistoryEntry(const PlayerSaveData::GachaHistoryEntry& entry) {

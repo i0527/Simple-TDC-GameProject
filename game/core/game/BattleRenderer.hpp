@@ -31,8 +31,11 @@ private:
                       const ecs::components::Animation* anim,
                       const ecs::components::Team* team);
 
+    /// ???????????? or ??????????1??????????????
     static Rectangle MakeSourceRect(const ecs::components::Sprite& sprite,
                                     const ecs::components::Animation* anim,
+                                    int sheetWidth,
+                                    int sheetHeight,
                                     bool flipHorizontally);
 };
 

@@ -82,13 +82,15 @@ void GameScene::RenderHUD() {
         (sharedContext_ && sharedContext_->sceneOverlayAPI && sharedContext_->sceneOverlayAPI->HasActiveOverlay());
     const bool pausedNow = battleProgressAPI_->IsPaused() || overlayActive;
 
+    const bool isInfiniteStage = battleProgressAPI_->IsInfiniteStage();
     battleHud_->Render(ctx,
                        playerTower.currentHp, playerTower.maxHp,
                        enemyTower.currentHp, enemyTower.maxHp,
                        battleProgressAPI_->GetGold(), curMaxGold,
                        battleProgressAPI_->GetGameSpeed(), pausedNow,
                        battleProgressAPI_->GetBattleTime(),
-                       battleProgressAPI_->GetUnitCooldownUntil());
+                       battleProgressAPI_->GetUnitCooldownUntil(),
+                       isInfiniteStage);
 }
 
 void GameScene::Shutdown() {
@@ -126,7 +128,7 @@ void GameScene::ProcessInput() {
 
     // HUDクリチE���E�左クリチE���E�E
     if (inputAPI_ && inputAPI_->IsLeftClickPressed() && battleHud_ && battleProgressAPI_) {
-        auto mousePos = inputAPI_->GetMousePosition();
+        auto mousePos = inputAPI_->GetMousePositionInternal();
         SharedContext dummyCtx;
         const SharedContext& ctx = sharedContext_ ? *sharedContext_ : dummyCtx;
         auto action = battleHud_->HandleClick(
@@ -311,6 +313,12 @@ void GameScene::HandleHUDAction(const ::game::core::ui::BattleHUDAction& action)
     case BattleHUDActionType::SpawnUnit:
         if (battleProgressAPI_) {
             battleProgressAPI_->HandleHUDAction(action);
+        }
+        return;
+    case BattleHUDActionType::GiveUp:
+        if (battleProgressAPI_ && battleProgressAPI_->IsInfiniteStage()) {
+            battleProgressAPI_->RequestGiveUp();
+            LOG_INFO("Give up requested");
         }
         return;
     }

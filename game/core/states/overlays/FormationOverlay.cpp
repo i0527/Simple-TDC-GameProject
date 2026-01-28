@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <sstream>
 #include <string>
 
 namespace game {
@@ -129,7 +130,6 @@ void FormationOverlay::Render(SharedContext &ctx) {
                            900.0f, 15);
 
   // タイトルバ�E�E�最初に描画して確実に上に表示�E�E
-  RenderTitleBar();
 
   // 区刁E��緁E
   RenderDividers();
@@ -319,17 +319,10 @@ void FormationOverlay::SortAvailableCharacters(const GameplayDataAPI* gameplayDa
 
 // ========== 描画メソチE�� ==========
 
-void FormationOverlay::RenderTitleBar() {
   // タイトルバ�E背景�E�タブバーの下に配置�E�E
-  systemAPI_->Render().DrawRectangle(100.0f, 90.0f, 1720.0f, 60.0f,
-                            ui::OverlayColors::HEADER_BG);
 
   // タイトル
-  systemAPI_->Render().DrawTextDefault("編成画面", 120.0f, 105.0f, 40.0f,
-                              ui::OverlayColors::TEXT_PRIMARY);
 
-  // ソートUIはユニット一覧のヘッダへ移動（RenderCharacterList内で描画）
-}
 
   void FormationOverlay::RenderSortUI() {
   using namespace ui;
@@ -400,8 +393,12 @@ void FormationOverlay::RenderTitleBar() {
   systemAPI_->Render().DrawRectangleLines(
       toggle_x, sort_btn_y, toggle_w, btn_h, 2.0f,
       OverlayColors::BORDER_DEFAULT);
+  // テキストを中央揃えに変更
+  const char* toggle_text = asc ? "↑昇順" : "↓降順";
+  Vector2 toggle_text_size = systemAPI_->Render().MeasureTextDefault(toggle_text, 24.0f);
   systemAPI_->Render().DrawTextDefault(
-      asc ? "↑昇順" : "↓降順", toggle_x + 12.0f, sort_btn_y + 10.0f, 24.0f,
+      toggle_text, toggle_x + (toggle_w - toggle_text_size.x) / 2.0f,
+      sort_btn_y + (btn_h - toggle_text_size.y) / 2.0f, 24.0f,
       OverlayColors::TEXT_SECONDARY);
 
 }
@@ -448,8 +445,8 @@ void FormationOverlay::RenderSlot(const SquadSlot &slot) {
                         static_cast<float>(texture->height)};
           Rectangle dst{slot.position.x, slot.position.y, slot.width,
                         slot.height};
-          // 未選択時�E��Eバ�EされてぁE��ぁE���E��E不透�E度を上げめE
-          Color tint{255, 255, 255, slot.is_hovered ? 70 : 120};
+          // 未選択時に編成に含まれているいる場合は不透明度を上げる
+          Color tint{255, 255, 255, static_cast<unsigned char>(slot.is_hovered ? 70 : 120)};
           systemAPI_->Render().DrawTexturePro(*texture, src, dst, {0.0f, 0.0f},
                                               0.0f, tint);
         }
@@ -644,13 +641,18 @@ void FormationOverlay::RenderCharacterCard(const entities::Character *character,
     systemAPI_->Render().DrawTextDefault(character->name, pos.x + 5.0f,
                                          pos.y + 5.0f, 28.0f, text_color);
 
+    // レア度を右下に表示（★マーク）
     std::string rarity_stars = "";
     for (int i = 0; i < character->rarity; ++i)
       rarity_stars += "★";
-    systemAPI_->Render().DrawTextDefault(rarity_stars, pos.x + 5.0f,
-                                         pos.y + 30.0f, 28.0f,
-                                         OverlayColors::TEXT_GOLD);
+    Vector2 rarity_size = systemAPI_->Render().MeasureTextDefault(rarity_stars, 28.0f);
+    systemAPI_->Render().DrawTextDefault(
+        rarity_stars, 
+        pos.x + m_characterList.CARD_WIDTH - rarity_size.x - 5.0f,
+        pos.y + m_characterList.CARD_HEIGHT - 30.0f, 28.0f,
+        OverlayColors::TEXT_GOLD);
 
+    // コストは左下に表示（変更なし）
     systemAPI_->Render().DrawTextDefault(
         "C " + std::to_string(character->cost), pos.x + 5.0f,
         pos.y + m_characterList.CARD_HEIGHT - 30.0f, 28.0f,
@@ -961,7 +963,7 @@ void FormationOverlay::OnDragStart(int source_slot,
   dragging_character_ = character;
   dragging_source_slot_ = source_slot;
   is_dragging_ = true;
-  drag_position_ = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
+  drag_position_ = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
                                 : Vec2{0.0f, 0.0f};
   selected_character_ = character;
 }
@@ -1002,7 +1004,7 @@ void FormationOverlay::OnButtonClicked(const std::string &button_name, SharedCon
 // ========== マウス入力�E琁E==========
 
 void FormationOverlay::ProcessMouseInput(SharedContext &ctx) {
-  auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
+  auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
                                 : Vec2{0.0f, 0.0f};
   UpdateHoverStates(mouse_pos, ctx);
 
@@ -1164,9 +1166,14 @@ void FormationOverlay::ProcessScrollInput(float wheel_delta) {
        m_characterList.visible_columns - 1) /
       m_characterList.visible_columns;
   int max_scroll = std::max(0, total_rows - m_characterList.visible_rows);
+  // スクロールオフセットを更新（最上行（0）までスクロール可能）
   m_characterList.scroll_offset =
       std::max(0, std::min(max_scroll, m_characterList.scroll_offset -
                                            static_cast<int>(wheel_delta)));
+  // 最上行まで確実にスクロールできるように、total_rows <= visible_rows の場合は0にリセット
+  if (total_rows <= m_characterList.visible_rows) {
+    m_characterList.scroll_offset = 0;
+  }
 }
 
 bool FormationOverlay::IsCharacterInSquad(

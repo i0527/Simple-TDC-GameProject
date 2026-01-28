@@ -103,8 +103,8 @@ void CharacterEnhancementOverlay::Update(SharedContext &ctx, float deltaTime) {
   ProcessKeyboardInput(ctx);
 
   // ホバー状態更新
-  auto mouse_pos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+  auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                : Vec2{0.0f, 0.0f};
   UpdateHoverStates(mouse_pos);
 }
 
@@ -201,7 +201,7 @@ void CharacterEnhancementOverlay::InitializePanels() {
   operation_panel_.y = CONTENT_START_Y + MARGIN;
   operation_panel_.width = operation_width;
   operation_panel_.height = available_height;
-  operation_panel_.active_tab = OperationPanel::TabType::Enhancement;
+  operation_panel_.active_tab = OperationPanel::TabType::BaseEnhancement;
   operation_panel_.show_passive_popup = false;
   operation_panel_.popup_slot_id = -1;
   operation_panel_.item_scroll_offset = 0;
@@ -417,14 +417,33 @@ void CharacterEnhancementOverlay::UpdateStatusPanel(SharedContext &ctx) {
     status_panel_.defense.base = character->defense;
     status_panel_.speed.base = static_cast<int>(character->move_speed);
     status_panel_.range.base = static_cast<int>(character->attack_size.x);
+    // 元の状態も同じ値
+    status_panel_.original_hp.total = character->hp;
+    status_panel_.original_attack.total = character->attack;
+    status_panel_.original_defense.total = character->defense;
+    status_panel_.original_speed.total = static_cast<int>(character->move_speed);
+    status_panel_.original_range.total = static_cast<int>(character->attack_size.x);
+    status_panel_.original_level = 1;
     return;
   }
 
-  const auto editingState = BuildCurrentEditingState();
   const auto *itemPassiveManager = ctx.gameplayDataAPI->GetItemPassiveManager();
   if (!itemPassiveManager) {
     return;
   }
+
+  // 元の状態（saved_character_state_）からステータスを計算
+  const auto originalCalc = entities::CharacterStatCalculator::Calculate(
+      *character, saved_character_state_, *itemPassiveManager);
+  status_panel_.original_hp.total = originalCalc.hp.final;
+  status_panel_.original_attack.total = originalCalc.attack.final;
+  status_panel_.original_defense.total = originalCalc.defense.final;
+  status_panel_.original_speed.total = static_cast<int>(std::round(originalCalc.moveSpeed.final));
+  status_panel_.original_range.total = static_cast<int>(std::round(originalCalc.range.final));
+  status_panel_.original_level = std::max(1, saved_character_state_.level);
+
+  // 現在の編集中の状態からステータスを計算
+  const auto editingState = BuildCurrentEditingState();
   const auto calc = entities::CharacterStatCalculator::Calculate(
       *character, editingState, *itemPassiveManager);
 
@@ -443,7 +462,7 @@ void CharacterEnhancementOverlay::UpdateStatusPanel(SharedContext &ctx) {
       static_cast<int>(std::round(calc.range.final - calc.range.base));
 
   status_panel_.attack_span = calc.attackSpan.final;
-  status_panel_.level = std::max(1, std::min(10, editingState.level));
+  status_panel_.level = std::max(1, std::min(50, editingState.level));
 }
 
 PlayerDataManager::CharacterState
@@ -677,11 +696,6 @@ void CharacterEnhancementOverlay::RenderUnitInfoPanel() {
       unit_info_panel_.x, unit_info_panel_.y, unit_info_panel_.width,
       unit_info_panel_.height, 2.0f, OverlayColors::BORDER_GOLD);
 
-  // タイトル
-  systemAPI_->Render().DrawTextDefault(
-      "ユニット選択", unit_info_panel_.x + 10.0f, unit_info_panel_.y + 10.0f,
-      24.0f, OverlayColors::TEXT_GOLD);
-
   // ユニット一覧�E�スクロール可能、�E高さ使用�E�E
   const float sort_y = unit_info_panel_.y + 40.0f;
   const float sort_bar_h = 32.0f;
@@ -870,7 +884,9 @@ void CharacterEnhancementOverlay::RenderStatusPanel(SharedContext &ctx) {
   }
 
   auto renderStatLine = [&](const std::string &label,
-                            const StatusPanel::StatValue &stat, int index) {
+                            const StatusPanel::StatValue &stat,
+                            const StatusPanel::OriginalStatValue &original_stat,
+                            int index) {
     float line_y = start_y + index * status_panel_.line_height;
 
     // ラベル
@@ -884,22 +900,31 @@ void CharacterEnhancementOverlay::RenderStatusPanel(SharedContext &ctx) {
     Vector2 total_size = systemAPI_->Render().MeasureTextDefault(
         total_str, (float)status_panel_.font_size);
 
-    systemAPI_->Render().DrawTextDefault(total_str, x + width - total_size.x,
+    // 元の値からの変化量を計算
+    int change = total - original_stat.total;
+    
+    // 現在値を表示
+    float current_x = x + width - total_size.x;
+    systemAPI_->Render().DrawTextDefault(total_str, current_x,
                                          line_y, (float)status_panel_.font_size,
                                          ui::OverlayColors::TEXT_PRIMARY);
 
     // 強化�E裁E��冁E�� (+-)
-    if (stat.bonus != 0) {
-      std::string bonus_str =
-          (stat.bonus > 0 ? "+" : "") + std::to_string(stat.bonus);
-      Color bonus_color = stat.bonus > 0 ? OverlayColors::TEXT_SUCCESS
-                                         : OverlayColors::TEXT_ERROR;
-      Vector2 bonus_size = systemAPI_->Render().MeasureTextDefault(
-          bonus_str, (float)status_panel_.font_size * 0.8f);
+    // 変化量を表示（変化がある場合のみ）
+    if (change != 0) {
+      std::string change_str = "(元: " + std::to_string(original_stat.total) + ", ";
+      if (change > 0) {
+        change_str += "+";
+      }
+      change_str += std::to_string(change) + ")";
+      Color change_color = change > 0 ? OverlayColors::TEXT_SUCCESS
+                                      : OverlayColors::TEXT_ERROR;
+      Vector2 change_size = systemAPI_->Render().MeasureTextDefault(
+          change_str, (float)status_panel_.font_size * 0.75f);
 
-      systemAPI_->Render().DrawTextDefault(
-          bonus_str, x + width - total_size.x - bonus_size.x - 10.0f,
-          line_y + 2.0f, (float)status_panel_.font_size * 0.8f, bonus_color);
+      systemAPI_->Render().DrawTextDefault(change_str, current_x - change_size.x - 10.0f,
+          line_y + (float)status_panel_.font_size * 0.3f,
+          (float)status_panel_.font_size * 0.75f, change_color);
     }
   };
 
@@ -929,11 +954,11 @@ void CharacterEnhancementOverlay::RenderStatusPanel(SharedContext &ctx) {
   }
   renderKV("Rarity", rarityStr.empty() ? "★" : rarityStr, row++);
 
-  renderStatLine("HP (体力)", status_panel_.hp, row++);
-  renderStatLine("ATK (攻撃)", status_panel_.attack, row++);
-  renderStatLine("DEF (防御)", status_panel_.defense, row++);
-  renderStatLine("SPD (速度)", status_panel_.speed, row++);
-  renderStatLine("RNG (射程)", status_panel_.range, row++);
+  renderStatLine("HP (体力)", status_panel_.hp, status_panel_.original_hp, row++);
+  renderStatLine("ATK (攻撃)", status_panel_.attack, status_panel_.original_attack, row++);
+  renderStatLine("DEF (防御)", status_panel_.defense, status_panel_.original_defense, row++);
+  renderStatLine("SPD (速度)", status_panel_.speed, status_panel_.original_speed, row++);
+  renderStatLine("RNG (射程)", status_panel_.range, status_panel_.original_range, row++);
   const float frequency = (status_panel_.attack_span > 0.0f)
                               ? (1.0f / status_panel_.attack_span)
                               : 0.0f;
@@ -975,8 +1000,8 @@ void CharacterEnhancementOverlay::RenderStatusPanel(SharedContext &ctx) {
                              (button_h * 3.0f + row_gap * 2.0f + 16.0f);
   const float button_y_mid = button_y_top + button_h + row_gap;
   const float button_y_bottom = button_y_mid + button_h + row_gap;
-  auto mouse =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+  auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                            : Vec2{0.0f, 0.0f};
 
   Rectangle downRect{bx, button_y_top, button_w, button_h};
   Rectangle upRect{bx + button_w + 10.0f, button_y_top, button_w, button_h};
@@ -1011,15 +1036,15 @@ void CharacterEnhancementOverlay::RenderStatusPanel(SharedContext &ctx) {
   }
   const int curLevel = std::max(1, status_panel_.level);
   const bool canDown = (curLevel > 1);
-  const bool canUpBase = (curLevel < 10);
-  const int upCost = 200 * curLevel;
+  const bool canUpBase = (curLevel < 50);
+  const int upCost = 100 * curLevel;
   const bool canUp = canUpBase && (ownedGold >= upCost);
 
   int possibleLevels = 0;
   int tempLevel = curLevel;
   int tempGold = ownedGold;
-  while (tempLevel < 10 && tempGold >= 200 * tempLevel) {
-    tempGold -= 200 * tempLevel;
+  while (tempLevel < 50 && tempGold >= 100 * tempLevel) {
+    tempGold -= 100 * tempLevel;
     tempLevel++;
     possibleLevels++;
   }
@@ -1072,8 +1097,6 @@ void CharacterEnhancementOverlay::RenderStatusPanel(SharedContext &ctx) {
   systemAPI_->Render().DrawTextDefault("一括ダウン", downMaxRect.x + 18.0f,
                                        downMaxRect.y + 10.0f, 18.0f,
                                        downBatchText);
-  systemAPI_->Render().DrawTextDefault("一括アップ", upMaxRect.x + 18.0f,
-                                       upMaxRect.y + 10.0f, 18.0f, upBatchText);
 }
 
 void CharacterEnhancementOverlay::RenderOperationPanel(SharedContext &ctx) {
@@ -1095,25 +1118,25 @@ void CharacterEnhancementOverlay::RenderOperationPanel(SharedContext &ctx) {
   const float tab_y = operation_panel_.y + 10.0f;
 
   RenderTabButton(
-      operation_panel_.x, tab_y, tab_width, tab_height, "パッシブスキル",
-      operation_panel_.active_tab == OperationPanel::TabType::Enhancement);
+      operation_panel_.x, tab_y, tab_width, tab_height, "基礎強化",
+      operation_panel_.active_tab == OperationPanel::TabType::BaseEnhancement);
   RenderTabButton(
-      operation_panel_.x + tab_width, tab_y, tab_width, tab_height, "装備",
-      operation_panel_.active_tab == OperationPanel::TabType::Equipment);
+      operation_panel_.x + tab_width, tab_y, tab_width, tab_height, "スロット",
+      operation_panel_.active_tab == OperationPanel::TabType::Slot);
 
   // 所持Goldの表示はホ�Eムヘッダに一本化する（このオーバ�Eレイ冁E��は表示しなぁE��E
 
   // タブ�E容
-  if (operation_panel_.active_tab == OperationPanel::TabType::Enhancement) {
-    RenderEnhancementTab(ctx);
+  if (operation_panel_.active_tab == OperationPanel::TabType::BaseEnhancement) {
+    RenderBaseEnhancementTab(ctx);
   } else {
-    RenderEquipmentTab(ctx);
+    RenderSlotTab(ctx);
   }
 
   // 決宁E取消�Eタンは廁E���E�即時セーブ！E
 }
 
-void CharacterEnhancementOverlay::RenderEnhancementTab(SharedContext &ctx) {
+void CharacterEnhancementOverlay::RenderBaseEnhancementTab(SharedContext &ctx) {
   using namespace ui;
 
   // パッシブスロチE��3つを描画
@@ -1131,8 +1154,8 @@ void CharacterEnhancementOverlay::RenderEnhancementTab(SharedContext &ctx) {
   Rectangle resetRect{bx, buttons_y, buttons_w, buttons_h};
   Rectangle rerollRect{bx + buttons_w + 10.0f, buttons_y, buttons_w, buttons_h};
 
-  auto mouse_pos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+  auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                : Vec2{0.0f, 0.0f};
   const bool hoverReset = (mouse_pos.x >= resetRect.x &&
                            mouse_pos.x < resetRect.x + resetRect.width &&
                            mouse_pos.y >= resetRect.y &&
@@ -1243,7 +1266,7 @@ void CharacterEnhancementOverlay::RenderEnhancementTab(SharedContext &ctx) {
                                        OverlayColors::TEXT_SECONDARY);
 
   // 一覧�E�オフセチE��はヘッダーの1行�E�E�E
-  const float content_y0 = list_y + 30.0f;
+  const float content_y0 = list_y + 40.0f;
   const float content_h = list_h - 36.0f;
 
   for (int i = 0;
@@ -1290,7 +1313,7 @@ void CharacterEnhancementOverlay::RenderEnhancementTab(SharedContext &ctx) {
   }
 }
 
-void CharacterEnhancementOverlay::RenderEquipmentTab(SharedContext &ctx) {
+void CharacterEnhancementOverlay::RenderSlotTab(SharedContext &ctx) {
   using namespace ui;
 
   // アイチE��スロチE��3つを描画
@@ -1566,8 +1589,8 @@ void CharacterEnhancementOverlay::RenderEquipmentTab(SharedContext &ctx) {
   const float btn_y = operation_panel_.y + operation_panel_.height - footer_h;
   Rectangle removeAllRect{operation_panel_.x + 20.0f, btn_y + 8.0f,
                           operation_panel_.width - 40.0f, 44.0f};
-  auto mouse_pos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+  auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                : Vec2{0.0f, 0.0f};
   const bool hover = (mouse_pos.x >= removeAllRect.x &&
                       mouse_pos.x < removeAllRect.x + removeAllRect.width &&
                       mouse_pos.y >= removeAllRect.y &&
@@ -1609,8 +1632,8 @@ void CharacterEnhancementOverlay::RenderPassivePopup(SharedContext &ctx) {
   // 選択肢
   const float option_height = 50.0f;
   const float option_y_start = popup_y + 70.0f;
-  auto mouse_pos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+  auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                : Vec2{0.0f, 0.0f};
 
   const auto &slot =
       operation_panel_.passive_slots[operation_panel_.popup_slot_id];
@@ -1686,8 +1709,8 @@ void CharacterEnhancementOverlay::RenderItemPopup(SharedContext &ctx) {
 
   const float option_height = 50.0f;
   const float option_y_start = popup_y + 70.0f;
-  auto mouse_pos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+  auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                : Vec2{0.0f, 0.0f};
 
   std::vector<PopupMenuItem> options;
   options.push_back(
@@ -1775,8 +1798,8 @@ void CharacterEnhancementOverlay::RenderPassiveSlot(
   const float btn_padding = 10.0f;
   const float btn_gap = 6.0f;
   const float btn_y = abs_y + slot.height - btn_h - 10.0f;
-  auto mouse_pos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+  auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                : Vec2{0.0f, 0.0f};
   const int ownedGold =
       (ctx.gameplayDataAPI ? ctx.gameplayDataAPI->GetGold() : 0);
 
@@ -1956,8 +1979,8 @@ void CharacterEnhancementOverlay::RenderTabButton(float x, float y, float width,
 
 void CharacterEnhancementOverlay::ProcessMouseInput(SharedContext &ctx) {
   if (ctx.inputAPI && ctx.inputAPI->IsLeftClickPressed()) {
-    auto mouse_pos =
-        ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+    auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                  : Vec2{0.0f, 0.0f};
 
     // ソートUIクリック処理
     const float sort_x = unit_info_panel_.x + 10.0f;
@@ -2032,11 +2055,11 @@ void CharacterEnhancementOverlay::ProcessMouseInput(SharedContext &ctx) {
     if (mouse_pos.y >= tab_y && mouse_pos.y < tab_y + tab_height) {
       if (mouse_pos.x >= operation_panel_.x &&
           mouse_pos.x < operation_panel_.x + tab_width) {
-        OnTabClick(OperationPanel::TabType::Enhancement);
+        OnTabClick(OperationPanel::TabType::BaseEnhancement);
         return;
       } else if (mouse_pos.x >= operation_panel_.x + tab_width &&
                  mouse_pos.x < operation_panel_.x + operation_panel_.width) {
-        OnTabClick(OperationPanel::TabType::Equipment);
+        OnTabClick(OperationPanel::TabType::Slot);
         return;
       }
     }
@@ -2102,7 +2125,7 @@ void CharacterEnhancementOverlay::ProcessMouseInput(SharedContext &ctx) {
     }
 
     // パッシブスロチE��クリチE���E�強化タブ時�E�E
-    if (operation_panel_.active_tab == OperationPanel::TabType::Enhancement) {
+    if (operation_panel_.active_tab == OperationPanel::TabType::BaseEnhancement) {
       auto commitPassiveChange = [&](bool changed) {
         if (!changed) {
           return;
@@ -2201,7 +2224,7 @@ void CharacterEnhancementOverlay::ProcessMouseInput(SharedContext &ctx) {
     }
 
     // アイチE��スロチE��クリチE���E�裁E��タブ時�E�E
-    if (operation_panel_.active_tab == OperationPanel::TabType::Equipment) {
+    if (operation_panel_.active_tab == OperationPanel::TabType::Slot) {
       for (int i = 0; i < 3; ++i) {
         const auto &slot = operation_panel_.item_slots[i];
         const float slot_abs_x = operation_panel_.x + slot.position.x;
@@ -2370,9 +2393,9 @@ void CharacterEnhancementOverlay::ProcessMouseInput(SharedContext &ctx) {
   }
 
   // ドラチE��更新
-  if (operation_panel_.active_tab == OperationPanel::TabType::Equipment) {
-    auto mouse_pos =
-        ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+  if (operation_panel_.active_tab == OperationPanel::TabType::Slot) {
+    auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                  : Vec2{0.0f, 0.0f};
     if (item_drag_started_ && dragging_item_) {
       // ドラチE��開始判宁E
       if (!is_item_dragging_ && ctx.inputAPI &&
@@ -2424,8 +2447,8 @@ void CharacterEnhancementOverlay::ProcessMouseInput(SharedContext &ctx) {
   // スクロール処琁E
   float wheel = ctx.inputAPI ? ctx.inputAPI->GetMouseWheelMove() : 0.0f;
   if (wheel != 0.0f) {
-    auto mouse_pos =
-        ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+    auto mouse_pos = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
+                                  : Vec2{0.0f, 0.0f};
 
     // ユニット一覧スクロール
     const float list_top = unit_info_panel_.y + 40.0f + 32.0f + 10.0f;
@@ -2441,7 +2464,7 @@ void CharacterEnhancementOverlay::ProcessMouseInput(SharedContext &ctx) {
     }
 
     // アイチE��一覧スクロール�E�裁E��タブ時�E�E
-    if (operation_panel_.active_tab == OperationPanel::TabType::Equipment) {
+    if (operation_panel_.active_tab == OperationPanel::TabType::Slot) {
       const float sort_bar_y_relative =
           operation_panel_.passive_slots[0].position.y +
           operation_panel_.passive_slots[0].height + 30.0f;
@@ -2470,7 +2493,7 @@ void CharacterEnhancementOverlay::ProcessMouseInput(SharedContext &ctx) {
     }
 
     // パッシブ一覧スクロール�E�パチE��ブスキルタブ時�E�E
-    if (operation_panel_.active_tab == OperationPanel::TabType::Enhancement) {
+    if (operation_panel_.active_tab == OperationPanel::TabType::BaseEnhancement) {
       const float buttons_y = operation_panel_.y +
                               operation_panel_.passive_slots[0].position.y +
                               operation_panel_.passive_slots[0].height + 18.0f;
@@ -2542,14 +2565,14 @@ void CharacterEnhancementOverlay::OnUnitListItemClick(SharedContext &ctx,
 
 void CharacterEnhancementOverlay::OnTabClick(OperationPanel::TabType tab) {
   operation_panel_.active_tab = tab;
-  if (tab != OperationPanel::TabType::Equipment) {
+  if (tab != OperationPanel::TabType::Slot) {
     operation_panel_.show_item_popup = false;
     operation_panel_.popup_item_slot_id = -1;
     operation_panel_.selected_item_slot_id = -1;
   }
   LOG_INFO("CharacterEnhancementOverlay: Tab switched to {}",
-           tab == OperationPanel::TabType::Enhancement ? "Enhancement"
-                                                       : "Equipment");
+           tab == OperationPanel::TabType::BaseEnhancement ? "BaseEnhancement"
+                                                           : "Slot");
 }
 
 void CharacterEnhancementOverlay::OnPassiveSlotClick(int slot_id) {
@@ -2701,13 +2724,13 @@ void CharacterEnhancementOverlay::OnLevelUpClick(SharedContext &ctx) {
   }
 
   const int curLevel = std::max(1, editing_character_state_.level);
-  const int nextLevel = std::min(10, curLevel + 1);
+  const int nextLevel = std::min(50, curLevel + 1);
   if (nextLevel == curLevel) {
     return;
   }
 
   // cost = 100 * 現在Lv�E�Ev1ↁE=100, Lv2ↁE=200...�E�E
-  const int costGold = 200 * curLevel;
+  const int costGold = 100 * curLevel;
   const int ownedGold = ctx.gameplayDataAPI->GetGold();
   if (ownedGold < costGold) {
     LOG_INFO("CharacterEnhancementOverlay: LevelUp blocked (not enough gold): "
@@ -2753,10 +2776,10 @@ void CharacterEnhancementOverlay::OnLevelUpBatchClick(SharedContext &ctx,
   int totalCost = 0;
 
   for (int i = 0; i < levels; ++i) {
-    if (targetLevel >= 10) {
+    if (targetLevel >= 50) {
       break;
     }
-    const int cost = 200 * targetLevel;
+    const int cost = 100 * targetLevel;
     if (remainingGold < cost) {
       break;
     }
@@ -2783,7 +2806,7 @@ void CharacterEnhancementOverlay::OnLevelUpBatchClick(SharedContext &ctx,
 }
 
 void CharacterEnhancementOverlay::OnLevelUpMaxClick(SharedContext &ctx) {
-  OnLevelUpBatchClick(ctx, 10);
+  OnLevelUpBatchClick(ctx, 50);
 }
 
 void CharacterEnhancementOverlay::OnLevelDownClick(SharedContext &ctx) {
@@ -2807,7 +2830,7 @@ void CharacterEnhancementOverlay::OnLevelDownClick(SharedContext &ctx) {
 
   // Lvダウン時�E「そのLvに上がる�Eに忁E��だったGold」�E80%を返却
   // 侁E Lv3ↁE は Lv2ↁE の cost=200 の80% => 160
-  const int levelUpCostForThisLevel = 200 * nextLevel;
+  const int levelUpCostForThisLevel = 100 * nextLevel;
   const int refundGold = static_cast<int>(
       std::round(static_cast<float>(levelUpCostForThisLevel) * 0.8f));
 
@@ -2849,7 +2872,7 @@ void CharacterEnhancementOverlay::OnLevelDownBatchClick(SharedContext &ctx,
 
   int refundGold = 0;
   for (int lvl = curLevel; lvl > targetLevel; --lvl) {
-    const int levelUpCostForThisLevel = 200 * (lvl - 1);
+    const int levelUpCostForThisLevel = 100 * (lvl - 1);
     refundGold += static_cast<int>(
         std::round(static_cast<float>(levelUpCostForThisLevel) * 0.8f));
   }
@@ -2868,7 +2891,7 @@ void CharacterEnhancementOverlay::OnLevelDownBatchClick(SharedContext &ctx,
 }
 
 void CharacterEnhancementOverlay::OnLevelDownMaxClick(SharedContext &ctx) {
-  OnLevelDownBatchClick(ctx, 10);
+  OnLevelDownBatchClick(ctx, 50);
 }
 
 bool CharacterEnhancementOverlay::ResetAllPassives(SharedContext &ctx) {

@@ -1,5 +1,9 @@
 #include "../GameplayDataAPI.hpp"
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#endif
+
 namespace game {
 namespace core {
 
@@ -11,7 +15,13 @@ bool GameplayDataAPI::Save() const {
     if (!playerDataManager_) {
         return false;
     }
-    return playerDataManager_->Save();
+    const bool ok = playerDataManager_->Save();
+#if defined(__EMSCRIPTEN__)
+    if (ok) {
+        EM_ASM(Module.syncSaveToPersistent && Module.syncSaveToPersistent(););
+    }
+#endif
+    return ok;
 }
 
 void GameplayDataAPI::ApplyToSharedContext(SharedContext& ctx) const {
@@ -70,6 +80,20 @@ void GameplayDataAPI::SetOwnedPassiveCount(const std::string& passiveId, int cou
         return;
     }
     playerDataManager_->SetOwnedPassiveCount(passiveId, count);
+}
+
+int GameplayDataAPI::GetOwnedTowerAttachmentCount(const std::string& attachmentId) const {
+    if (!playerDataManager_) {
+        return 0;
+    }
+    return playerDataManager_->GetOwnedTowerAttachmentCount(attachmentId);
+}
+
+void GameplayDataAPI::SetOwnedTowerAttachmentCount(const std::string& attachmentId, int count) {
+    if (!playerDataManager_) {
+        return;
+    }
+    playerDataManager_->SetOwnedTowerAttachmentCount(attachmentId, count);
 }
 
 int GameplayDataAPI::GetGold() const {

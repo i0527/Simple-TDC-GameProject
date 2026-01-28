@@ -42,18 +42,9 @@ void SettingsOverlay::Render(SharedContext& ctx) {
 
     ColorRGBA panelTextColor = ToCoreColor(ui::OverlayColors::TEXT_PRIMARY);
 
-    // タイトル
-    const char* titleText = "設定";
-    float titleFontSize = 36.0f;
-    Vec2 titleSize =
-        systemAPI_->Render().MeasureTextDefaultCore(titleText, titleFontSize, 1.0f);
-    float titleX = windowX + (windowWidth - titleSize.x) / 2.0f;
-    float titleY = windowY + 20.0f;
-    systemAPI_->Render().DrawTextDefault(titleText, titleX, titleY,
-                                         titleFontSize, panelTextColor);
-
+    // タイトルはヘッダーに表示されるため削除
     // 音量設定セクション（左側）
-    float sectionY = titleY + titleSize.y + 40.0f;
+    float sectionY = windowY + 20.0f;
     float sectionWidth = (windowWidth - 60.0f) / 2.0f;
     float sectionHeight = windowHeight - (sectionY - windowY) - 120.0f;
     RenderVolumeSection(windowX + 20.0f, sectionY, sectionWidth, sectionHeight);
@@ -66,21 +57,15 @@ void SettingsOverlay::Render(SharedContext& ctx) {
     float buttonWidth = 150.0f;
     float buttonHeight = 40.0f;
     float buttonSpacing = 20.0f;
-    const int buttonCount = 5;
+    const int buttonCount = 4;
     float totalButtonWidth =
         buttonWidth * static_cast<float>(buttonCount) +
         buttonSpacing * static_cast<float>(buttonCount - 1);
 
-    // 操作ボタンの配置
-    float applyButtonX = windowX + (windowWidth - totalButtonWidth) / 2.0f;
-    float resetButtonX = applyButtonX + buttonWidth + buttonSpacing;
+    float resetButtonX = windowX + (windowWidth - totalButtonWidth) / 2.0f;
     float titleButtonX = resetButtonX + buttonWidth + buttonSpacing;
     float quitButtonX = titleButtonX + buttonWidth + buttonSpacing;
     float closeButtonX = quitButtonX + buttonWidth + buttonSpacing;
-
-    // 適用ボタン
-    RenderButton(ctx, applyButtonX, buttonY, buttonWidth, buttonHeight, "適用",
-                 applyButtonHovered_);
 
     // リセットボタン
     RenderButton(ctx, resetButtonX, buttonY, buttonWidth, buttonHeight, "リセット",
@@ -142,113 +127,54 @@ void SettingsOverlay::RenderDisplaySection(SharedContext& ctx, float x, float y,
     systemAPI_->Render().DrawTextDefault(sectionTitle, titleX, y, fontSize,
                                          ui::OverlayColors::TEXT_PRIMARY);
 
-    // フルスクリーンボタン
-    const char* fullscreenText = currentSettings_.isFullscreen ? "フルスクリーン: ON" : "フルスクリーン: OFF";
-    RenderButton(ctx, x, startY, width - 20.0f, buttonHeight, fullscreenText,
-                 fullscreenButtonHovered_);
+    // 解像度選択（FHD / HD）
+    float resolutionY = startY;
+    systemAPI_->Render().DrawTextDefault("解像度:", x, resolutionY + (buttonHeight - 22.0f) / 2.0f,
+                                         22.0f, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+    float resolutionButtonWidth = (width - 20.0f - 120.0f) / 2.0f;
+    float resolutionButtonX = x + 120.0f;
+    ColorRGBA selectedColor = ToCoreColor(ui::OverlayColors::BUTTON_PRIMARY_ACTIVE);
 
-    // モニター選択（フルスクリーン時のみ表示）
-    if (currentSettings_.isFullscreen && systemAPI_) {
-        int monitorCount = systemAPI_->Window().GetMonitorCount();
-        if (monitorCount > 1) {
-            float monitorY = startY + buttonSpacing;
-            float monitorButtonWidth = 40.0f;
-            float monitorTextWidth = width - 20.0f - monitorButtonWidth * 2.0f - 20.0f;
-            
-            // 前のモニターボタン
-            RenderButton(ctx, x, monitorY, monitorButtonWidth, buttonHeight, "<",
-                         monitorPrevButtonHovered_);
-            
-            // モニター情報表示
-            float monitorTextX = x + monitorButtonWidth + 10.0f;
-            int monitor = currentSettings_.selectedMonitor;
-            if (monitor < 0 || monitor >= monitorCount) {
-                monitor = 0;
-            }
-            const char* monitorName = systemAPI_->Window().GetMonitorName(monitor);
-            char monitorText[256];
-            snprintf(monitorText, sizeof(monitorText), "モニター %d/%d: %s", 
-                     monitor + 1, monitorCount, monitorName);
-            float labelFontSize = 22.0f;
-            systemAPI_->Render().DrawTextDefault(
-                monitorText, monitorTextX, monitorY + (buttonHeight - labelFontSize) / 2.0f,
-                labelFontSize, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
-            
-            // 次のモニターボタン
-            float monitorNextX = monitorTextX + monitorTextWidth + 10.0f;
-            RenderButton(ctx, monitorNextX, monitorY, monitorButtonWidth, buttonHeight, ">",
-                         monitorNextButtonHovered_);
-            
-            // FPS表示チェックボックスの位置を調整
-            RenderCheckbox(ctx, x, monitorY + buttonSpacing, 30.0f, "FPS表示", &currentSettings_.showFPS,
-                           fpsCheckboxHovered_);
-        } else {
-            // モニターが1つしかない場合は通常通りFPS表示チェックボックスを表示
-            RenderCheckbox(ctx, x, startY + buttonSpacing, 30.0f, "FPS表示", &currentSettings_.showFPS,
-                           fpsCheckboxHovered_);
-        }
-    } else {
-        // ウィンドウモード時はFPS表示チェックボックスと解像度選択
-        float fpsCheckboxY = startY + buttonSpacing;
-        RenderCheckbox(ctx, x, fpsCheckboxY, 30.0f, "FPS表示", &currentSettings_.showFPS,
-                       fpsCheckboxHovered_);
-        
-        // 解像度選択（次回起動時に有効）
-        float resolutionY = fpsCheckboxY + buttonSpacing;
-        float resolutionButtonWidth = 40.0f;
-        float resolutionTextWidth = width - 20.0f - resolutionButtonWidth * 2.0f - 20.0f;
-        
-        // 前の解像度ボタン
-        RenderButton(ctx, x, resolutionY, resolutionButtonWidth, buttonHeight, "<",
-                     resolutionPrevButtonHovered_);
-        
-        // 解像度情報表示
-        float resolutionTextX = x + resolutionButtonWidth + 10.0f;
-        const char* resolutionName = currentSettings_.resolution.c_str();
-        char resolutionText[256];
-        snprintf(resolutionText, sizeof(resolutionText), "解像度: %s (次回起動時に有効)", resolutionName);
-        float labelFontSize = 20.0f;
-        systemAPI_->Render().DrawTextDefault(
-            resolutionText, resolutionTextX, resolutionY + (buttonHeight - labelFontSize) / 2.0f,
-            labelFontSize, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
-        
-        // 次の解像度ボタン
-        float resolutionNextX = resolutionTextX + resolutionTextWidth + 10.0f;
-        RenderButton(ctx, resolutionNextX, resolutionY, resolutionButtonWidth, buttonHeight, ">",
-                     resolutionNextButtonHovered_);
+    RenderButton(ctx, resolutionButtonX, resolutionY, resolutionButtonWidth, buttonHeight,
+                 "FHD (1920x1080)", resolutionFHDButtonHovered_);
+    if (currentSettings_.resolution == Resolution::FHD) {
+        systemAPI_->Render().DrawRectangleLines(resolutionButtonX, resolutionY,
+                                                resolutionButtonWidth, buttonHeight, 2.0f, selectedColor);
+    }
+
+    RenderButton(ctx, resolutionButtonX + resolutionButtonWidth + 5.0f, resolutionY,
+                 resolutionButtonWidth, buttonHeight, "HD (1280x720)", resolutionHDButtonHovered_);
+    if (currentSettings_.resolution == Resolution::HD) {
+        systemAPI_->Render().DrawRectangleLines(resolutionButtonX + resolutionButtonWidth + 5.0f, resolutionY,
+                                                resolutionButtonWidth, buttonHeight, 2.0f, selectedColor);
     }
     
-    // フルスクリーン時も解像度選択を表示（FPS表示の下）
-    if (currentSettings_.isFullscreen && systemAPI_) {
-        float resolutionY;
-        if (systemAPI_->Window().GetMonitorCount() > 1) {
-            resolutionY = startY + buttonSpacing * 2;
-        } else {
-            resolutionY = startY + buttonSpacing;
-        }
-        
-        float resolutionButtonWidth = 40.0f;
-        float resolutionTextWidth = width - 20.0f - resolutionButtonWidth * 2.0f - 20.0f;
-        
-        // 前の解像度ボタン
-        RenderButton(ctx, x, resolutionY, resolutionButtonWidth, buttonHeight, "<",
-                     resolutionPrevButtonHovered_);
-        
-        // 解像度情報表示
-        float resolutionTextX = x + resolutionButtonWidth + 10.0f;
-        const char* resolutionName = currentSettings_.resolution.c_str();
-        char resolutionText[256];
-        snprintf(resolutionText, sizeof(resolutionText), "解像度: %s (次回起動時に有効)", resolutionName);
-        float labelFontSize = 20.0f;
-        systemAPI_->Render().DrawTextDefault(
-            resolutionText, resolutionTextX, resolutionY + (buttonHeight - labelFontSize) / 2.0f,
-            labelFontSize, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
-        
-        // 次の解像度ボタン
-        float resolutionNextX = resolutionTextX + resolutionTextWidth + 10.0f;
-        RenderButton(ctx, resolutionNextX, resolutionY, resolutionButtonWidth, buttonHeight, ">",
-                     resolutionNextButtonHovered_);
+    // ウィンドウモード選択（ウィンドウ / フルスクリーン）
+    float windowModeY = startY + buttonSpacing;
+    systemAPI_->Render().DrawTextDefault("ウィンドウモード:", x, windowModeY + (buttonHeight - 22.0f) / 2.0f,
+                                         22.0f, ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+    float windowModeButtonWidth = (width - 20.0f - 180.0f) / 2.0f;
+    float windowModeButtonX = x + 180.0f;
+
+    RenderButton(ctx, windowModeButtonX, windowModeY, windowModeButtonWidth, buttonHeight,
+                 "ウィンドウ", windowModeWindowedButtonHovered_);
+    if (currentSettings_.windowMode == WindowMode::Windowed) {
+        systemAPI_->Render().DrawRectangleLines(windowModeButtonX, windowModeY,
+                                                windowModeButtonWidth, buttonHeight, 2.0f, selectedColor);
     }
+
+    RenderButton(ctx, windowModeButtonX + windowModeButtonWidth + 5.0f, windowModeY,
+                 windowModeButtonWidth, buttonHeight, "フルスクリーン", windowModeFullscreenButtonHovered_);
+    if (currentSettings_.windowMode == WindowMode::Fullscreen) {
+        systemAPI_->Render().DrawRectangleLines(windowModeButtonX + windowModeButtonWidth + 5.0f, windowModeY,
+                                                windowModeButtonWidth, buttonHeight, 2.0f, selectedColor);
+    }
+
+    float fpsCheckboxY = windowModeY + buttonSpacing;
+    RenderCheckbox(ctx, x, fpsCheckboxY, 30.0f, "FPS表示", &currentSettings_.showFPS, fpsCheckboxHovered_);
+
+    float cursorCheckboxY = fpsCheckboxY + buttonSpacing;
+    RenderCheckbox(ctx, x, cursorCheckboxY, 30.0f, "カーソル表示", &currentSettings_.showCursor, cursorCheckboxHovered_);
 }
 
 void SettingsOverlay::RenderSlider(float x, float y, float width, float height, const char* label,
@@ -307,9 +233,8 @@ void SettingsOverlay::RenderSlider(float x, float y, float width, float height, 
 }
 
 void SettingsOverlay::RenderButton(SharedContext& ctx, float x, float y, float width, float height,
-                                   const char* label, bool& isHovered, bool isEnabled) {
-    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
-                              : Vec2{0.0f, 0.0f};
+                                    const char* label, bool& isHovered, bool isEnabled) {
+    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal() : Vec2{0.0f, 0.0f};
     bool mouseInButton = isEnabled && IsPointInRect(x, y, width, height, mouse);
     isHovered = mouseInButton;
 
@@ -338,8 +263,7 @@ void SettingsOverlay::RenderButton(SharedContext& ctx, float x, float y, float w
 
 void SettingsOverlay::RenderCheckbox(SharedContext& ctx, float x, float y, float size,
                                      const char* label, bool* value, bool& isHovered) {
-    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
-                              : Vec2{0.0f, 0.0f};
+    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal() : Vec2{0.0f, 0.0f};
     float labelFontSize = 22.0f;
     float labelX = x + size + 10.0f;
     float labelY = y + (size - labelFontSize) / 2.0f;

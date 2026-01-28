@@ -15,6 +15,7 @@ class BaseSystemAPI;
 class UISystemAPI;
 class OverlayManager;
 class IScene;
+class IOverlay;
 struct SharedContext;
 
 /// @brief Scene/Overlay制御の更新結果
@@ -48,6 +49,7 @@ public:
     void PopAllOverlays();
     bool HasActiveOverlay() const;
     bool IsOverlayActive(OverlayState state) const;
+    IOverlay* GetTopOverlay() const;
 
 private:
     static constexpr size_t kSceneCount = static_cast<size_t>(GameState::Count);

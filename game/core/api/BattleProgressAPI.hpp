@@ -95,6 +95,15 @@ public:
     // ========== 状態操作 ==========
     void SetGameSpeed(float speed);
     void SetPaused(bool paused);
+    
+    // ========== 無限ステージ関連 ==========
+    bool IsInfiniteStage() const { return isInfinite_; }
+    void RequestGiveUp() { giveUpRequested_ = true; }
+    bool HasGiveUpRequest() const { return giveUpRequested_; }
+    float GetSurvivalTime() const { return survivalTime_; }
+    int CalculateInfiniteReward(float survivalTime, int difficultyLevel) const;
+    int GetCurrentWaveNumber() const { return currentWaveNumber_; }
+    float GetEnemyStatMultiplier() const { return enemyStatMultiplier_; }
 
 private:
     void UpdateBattle(float deltaTime);
@@ -138,6 +147,19 @@ private:
     // 戦闘統計情報
     int spawnedUnitCount_ = 0;
     int totalGoldSpent_ = 0;
+    
+    // 無限ステージ関連
+    bool isInfinite_ = false;
+    bool giveUpRequested_ = false;
+    float survivalTime_ = 0.0f;
+    int difficultyLevel_ = 0;
+    float waveTimer_ = 0.0f;
+    int currentWaveNumber_ = 1;
+    float enemyStatMultiplier_ = 1.0f;
+    float enemySpawnRateMultiplier_ = 1.0f;
+    float lastDifficultyUpdateTime_ = 0.0f;
+    
+    void UpdateInfiniteDifficulty(float deltaTime);
 };
 
 } // namespace core

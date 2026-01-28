@@ -1,10 +1,7 @@
 #pragma once
 
 #include "IOverlay.hpp"
-#include "../../ui/components/Card.hpp"
-#include "../../ui/components/Button.hpp"
-#include "../../ui/components/List.hpp"
-#include "../../ui/components/Panel.hpp"
+#include "../../ui/OverlayColors.hpp"
 #include <memory>
 #include <random>
 #include <vector>
@@ -14,6 +11,7 @@ namespace core {
 
 namespace entities {
 struct Equipment;
+struct TowerAttachment;
 } // namespace entities
 
 class GameplayDataAPI;
@@ -41,7 +39,7 @@ public:
     void Shutdown() override;
 
     OverlayState GetState() const override { return OverlayState::Gacha; }
-    bool IsImGuiOverlay() const override { return true; }
+    bool IsImGuiOverlay() const override { return false; }
     bool RequestClose() const override;
     bool RequestTransition(GameState& nextState) const override;
 
@@ -54,14 +52,16 @@ private:
     };
 
     struct GachaEntry {
-        std::string equipmentId;
+        std::string equipmentId;  // 装備時は装備ID、アタッチメント時はアタッチメントID
         const entities::Equipment* equipment = nullptr;
+        const entities::TowerAttachment* attachment = nullptr;
         GachaRarity rarity = GachaRarity::R;
         int weight = 1;
     };
 
     struct GachaResult {
         const entities::Equipment* equipment = nullptr;
+        const entities::TowerAttachment* attachment = nullptr;
         GachaRarity rarity = GachaRarity::R;
         int countAfter = 0;
     };
@@ -73,20 +73,53 @@ private:
     mutable bool hasTransitionRequest_;
     mutable GameState requestedNextState_;
 
-    // UIコンポーネント
-    std::shared_ptr<ui::Panel> panel_;
-    std::vector<std::shared_ptr<ui::Card>> resultCards_;
-    std::shared_ptr<ui::Button> singleGachaButton_;
-    std::shared_ptr<ui::Button> tenGachaButton_;
-    std::shared_ptr<ui::Button> skipRevealButton_;
-    std::shared_ptr<ui::Button> tabDrawButton_;
-    std::shared_ptr<ui::Button> tabRatesButton_;
-    std::shared_ptr<ui::Button> tabHistoryButton_;
-    std::shared_ptr<ui::Button> tabExchangeButton_;
-    std::shared_ptr<ui::List> poolList_;
-    std::shared_ptr<ui::List> historyList_;
-    std::shared_ptr<ui::Button> exchangeTicketButton_;
-    std::shared_ptr<ui::Button> exchangeTicketTenButton_;
+    // カードの位置とレアリティ情報
+    struct CardInfo {
+        float x = 0.0f;
+        float y = 0.0f;
+        float width = 0.0f;
+        float height = 0.0f;
+        GachaRarity rarity = GachaRarity::R;
+        float revealTime = 0.0f; // カードが表示された時刻
+        float animationProgress = 0.0f; // アニメーション進行度 (0.0-1.0)
+        const entities::Equipment* equipment = nullptr;
+        const entities::TowerAttachment* attachment = nullptr;
+        int countAfter = 0;
+        std::string title; // メッセージカード用
+        std::string message; // メッセージカード用
+        bool isMessageCard = false; // メッセージカードかどうか
+    };
+    std::vector<CardInfo> resultCardInfos_;
+    float cardAnimationTimer_ = 0.0f;
+    
+    // 履歴アイテムのレアリティ情報
+    struct HistoryItemInfo {
+        std::string itemId;
+        std::string label;
+        std::string value;
+        GachaRarity rarity = GachaRarity::R;
+    };
+    std::vector<HistoryItemInfo> historyItemInfos_;
+    
+    // 提供割合リストのアイテム情報
+    struct PoolItemInfo {
+        std::string equipmentId;
+        std::string name;
+        std::string rarity;
+        float percent = 0.0f;
+        std::string bar;
+    };
+    std::vector<PoolItemInfo> poolItemInfos_;
+    
+    // マウス入力状態
+    Vec2 mousePos_ = {0.0f, 0.0f};
+    bool mouseClicked_ = false;
+    int hoveredTabIndex_ = -1;
+    bool hoveredSingleButton_ = false;
+    bool hoveredTenButton_ = false;
+    bool hoveredSkipButton_ = false;
+    bool hoveredExchange1Button_ = false;
+    bool hoveredExchange10Button_ = false;
 
     // ガチャ処理（クリック→Updateで実行）
     std::mt19937 rng_;
@@ -125,6 +158,12 @@ private:
     float contentTop_ = 0.0f;
     float contentRight_ = 0.0f;
     float contentBottom_ = 0.0f;
+    
+    // スクロール関連（タブ別に保持）
+    float scrollYDraw_ = 0.0f;
+    float scrollYRates_ = 0.0f;
+    float scrollYHistory_ = 0.0f;
+    bool hasAutoScrolled_ = false; // アニメーション完了後の自動スクロール実行済みフラグ
 
     void ClearResultCards();
     void ShowMessageCard(float contentWidth, float contentHeight, const std::string& title, const std::string& message);

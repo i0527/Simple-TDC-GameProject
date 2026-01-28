@@ -42,7 +42,8 @@ void BattleHUDRenderer::Render(const SharedContext& ctx,
                                float gameSpeed,
                                bool isPaused,
                                float currentTime,
-                               const std::unordered_map<std::string, float>& cooldownUntil) {
+                               const std::unordered_map<std::string, float>& cooldownUntil,
+                               bool isInfiniteStage) {
     (void)gold;
     (void)goldMax;
     (void)currentTime;
@@ -50,7 +51,7 @@ void BattleHUDRenderer::Render(const SharedContext& ctx,
     topButtons_.clear();
     unitSlotButtons_.clear();
 
-    RenderTopBar(playerTowerHp, playerTowerMaxHp, enemyTowerHp, enemyTowerMaxHp, gameSpeed, isPaused);
+    RenderTopBar(playerTowerHp, playerTowerMaxHp, enemyTowerHp, enemyTowerMaxHp, gameSpeed, isPaused, isInfiniteStage);
     RenderBottomBar(ctx, gold, goldMax, currentTime, cooldownUntil);
 }
 
@@ -97,7 +98,8 @@ BattleHUDAction BattleHUDRenderer::HandleClick(const SharedContext& ctx,
 
 void BattleHUDRenderer::RenderTopBar(int playerHp, int playerMaxHp,
                                     int enemyHp, int enemyMaxHp,
-                                    float gameSpeed, bool isPaused) {
+                                    float gameSpeed, bool isPaused,
+                                    bool isInfiniteStage) {
     (void)playerHp;
     (void)playerMaxHp;
     (void)enemyHp;
@@ -162,6 +164,29 @@ void BattleHUDRenderer::RenderTopBar(int playerHp, int playerMaxHp,
     drawSpeedBtn(speedBaseX + (speedW + speedGap) * 1, 2.0f);
     drawSpeedBtn(speedBaseX + (speedW + speedGap) * 2, 4.0f);
     drawSpeedBtn(speedBaseX + (speedW + speedGap) * 3, 6.0f);
+    
+    // ギブアップボタン（無限ステージの場合のみ表示）
+    if (isInfiniteStage) {
+        const float giveUpX = SCREEN_W - 250.0f;
+        const float giveUpY = 20.0f;
+        const float giveUpW = 200.0f;
+        const float giveUpH = 50.0f;
+        Rect giveUpRect{ giveUpX, giveUpY, giveUpW, giveUpH };
+        sysAPI_->Render().DrawRectangleRec(giveUpRect,
+                                           ToCoreColor(OverlayColors::DANGER_RED));
+        sysAPI_->Render().DrawRectangleLines(giveUpRect.x, giveUpRect.y,
+                                             giveUpRect.width, giveUpRect.height, 3.0f,
+                                             ToCoreColor(OverlayColors::BORDER_DEFAULT));
+        sysAPI_->Render().DrawTextDefault(
+            "ギブアップ", static_cast<int>(giveUpRect.x + 50),
+            static_cast<int>(giveUpRect.y + 14), 22.0f,
+            ToCoreColor(OverlayColors::TEXT_PRIMARY));
+        
+        RectButton giveUpBtn;
+        giveUpBtn.rect = giveUpRect;
+        giveUpBtn.action.type = BattleHUDActionType::GiveUp;
+        topButtons_.push_back(giveUpBtn);
+    }
 }
 
 void BattleHUDRenderer::RenderBottomBar(const SharedContext& ctx,

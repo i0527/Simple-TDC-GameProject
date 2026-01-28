@@ -18,6 +18,7 @@ namespace core {
 
 void BaseSystemAPI::SetLogPath(const std::string &directory,
                                const std::string &filename) {
+#if !defined(EMSCRIPTEN) && !defined(__EMSCRIPTEN__)
   if (logInitialized_) {
     std::cerr << "BaseSystemAPI::SetLogPath: Cannot change log path after "
                  "initialization"
@@ -32,6 +33,10 @@ void BaseSystemAPI::SetLogPath(const std::string &directory,
   }
   logDirectory_ = directory;
   logFileName_ = filename;
+#else
+  (void)directory;
+  (void)filename;
+#endif
 }
 
 void BaseSystemAPI::SetLogLevel(LogLevel level) {
@@ -109,6 +114,7 @@ void BaseSystemAPI::InitializeLogSystem() {
     throw;
   }
 #else
+  // Emscriptenビルド: ログシステムは無効化（パフォーマンス最適化）
   logInitialized_ = true;
 #endif
 }

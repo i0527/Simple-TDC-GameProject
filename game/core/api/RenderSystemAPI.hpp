@@ -48,6 +48,7 @@ public:
   Vector2 ScalePosition(float internalX, float internalY) const;
   float ScaleSize(float internalSize) const;
   float GetScaleFactor() const;
+  Vec2 ScreenToInternal(Vec2 screenPos) const;
 
   void DrawTextRaylib(const std::string& text, float x, float y, float fontSize,
                       Color color);

@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "Z:/kaken/external/local_cache/spdlog-build",
+		"source" : "external/local_cache/spdlog-src"
+	}
+}

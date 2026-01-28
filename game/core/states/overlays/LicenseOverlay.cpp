@@ -90,7 +90,7 @@ void LicenseOverlay::Update(SharedContext& ctx, float deltaTime) {
     // マウスホイールでスクロール
     float wheelMove = inputAPI ? inputAPI->GetMouseWheelMove() : 0.0f;
     if (wheelMove != 0.0f) {
-        auto mouse = inputAPI ? inputAPI->GetMousePosition()
+        auto mouse = inputAPI ? inputAPI->GetMousePositionInternal()
                                : Vec2{0.0f, 0.0f};
         // ウィンドウ冁E��マウスがある場合�Eみスクロール
         if (mouse.x >= windowX && mouse.x <= windowX + windowWidth &&
@@ -122,7 +122,7 @@ void LicenseOverlay::Update(SharedContext& ctx, float deltaTime) {
     
     // マウスクリチE��で閉じる�EタンをチェチE��
     if (inputAPI && inputAPI->IsLeftClickPressed()) {
-        auto mouse = inputAPI->GetMousePosition();
+        auto mouse = inputAPI->GetMousePositionInternal();
         
         const float buttonWidth = 150.0f;
         const float buttonHeight = 40.0f;
@@ -193,7 +193,7 @@ void LicenseOverlay::Render(SharedContext& ctx) {
     float buttonX = windowX + windowWidth - buttonWidth - 40.0f;
     float buttonY = windowY + windowHeight - buttonHeight - 30.0f;
     
-    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
+    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
                               : Vec2{0.0f, 0.0f};
     bool isButtonHovered = (mouse.x >= buttonX && mouse.x <= buttonX + buttonWidth &&
                             mouse.y >= buttonY && mouse.y <= buttonY + buttonHeight);
@@ -629,7 +629,7 @@ void LicenseOverlay::HandleScrollbarInteraction(InputSystemAPI* inputAPI, float 
     float thumbHeight = scrollbarHeight * scrollRatio;
     float thumbY = scrollbarY + (scrollY_ / totalContentHeight_) * scrollbarHeight;
     
-    auto mouse = inputAPI->GetMousePosition();
+    auto mouse = inputAPI->GetMousePositionInternal();
     bool mouseOverScrollbar = (mouse.x >= scrollbarX && mouse.x <= scrollbarX + scrollbarWidth &&
                                mouse.y >= scrollbarY && mouse.y <= scrollbarY + scrollbarHeight);
     bool mouseOverThumb = (mouse.x >= scrollbarX && mouse.x <= scrollbarX + scrollbarWidth &&

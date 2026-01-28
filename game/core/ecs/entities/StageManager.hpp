@@ -84,13 +84,23 @@ struct StageData {
     std::vector<EnemySpawn> enemySpawns;          // 出現モンスター詳細
     std::vector<BossPhase> bossPhases;            // ボス戦フェーズ情報
     
+    // 新機能フィールド
+    bool isInfinite = false;                      // 無限ステージかどうか
+    bool isCustom = false;                        // カスタムステージかどうか
+    bool isTutorial = false;                      // チュートリアルステージかどうか
+    int difficultyLevel = 0;                      // 無限ステージの難易度レベル（0=易、1=難）
+    bool allowGiveUp = false;                     // ギブアップ可能かどうか
+    bool rewardCharacterOnEveryClear = false;    // 毎回クリア時にキャラクター報酬を付与するか
+    
     // デフォルトコンストラクタ
     StageData()
         : id(""), stageNumber(0), chapter(0), chapterName(""), stageName(""),
           difficulty(1), starsEarned(0), isCleared(false), isLocked(true),
           isBoss(false), rewardGold(0), rewardTickets(0), waveCount(0), recommendedLevel(1),
           previewImageId(""), unlockOnClear(),
-          bonusConditions(), rewardMonsters(), enemySpawns(), bossPhases() {}
+          bonusConditions(), rewardMonsters(), enemySpawns(), bossPhases(),
+          isInfinite(false), isCustom(false), isTutorial(false), difficultyLevel(0),
+          allowGiveUp(false), rewardCharacterOnEveryClear(false) {}
 };
 
 // ステージマスターデータ管理

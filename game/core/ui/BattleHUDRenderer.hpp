@@ -1,11 +1,11 @@
 #pragma once
 
-// 讓呎ｺ悶Λ繧､繝悶Λ繝ｪ
+// ???????
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-// 繝励Ο繧ｸ繧ｧ繧ｯ繝亥・
+// ???????E
 #include "../config/RenderPrimitives.hpp"
 #include "../api/BaseSystemAPI.hpp"
 #include "../config/SharedContext.hpp"
@@ -18,16 +18,17 @@ enum class BattleHUDActionType {
     None,
     TogglePause,
     SetSpeed,
-    SpawnUnit
+    SpawnUnit,
+    GiveUp
 };
 
 struct BattleHUDAction {
     BattleHUDActionType type = BattleHUDActionType::None;
-    float speed = 1.0f;            // SetSpeed逕ｨ
-    std::string unitId;            // SpawnUnit逕ｨ
+    float speed = 1.0f;            // SetSpeed?
+    std::string unitId;            // SpawnUnit?
 };
 
-/// @brief 逕ｻ蜒丞ｯ・○縺ｮ繧ｷ繝ｳ繝励ΝHUD・井ｸ企Κ謫堺ｽ懶ｼ倶ｸ矩Κ10譫繝ｦ繝九ャ繝医ヰ繝ｼ・・
+/// @brief ???E???????HUD?E????????10????????E?E
 class BattleHUDRenderer {
 public:
     explicit BattleHUDRenderer(BaseSystemAPI* sysAPI);
@@ -41,9 +42,10 @@ public:
                 float gameSpeed,
                 bool isPaused,
                 float currentTime,
-                const std::unordered_map<std::string, float>& cooldownUntil);
+                const std::unordered_map<std::string, float>& cooldownUntil,
+                bool isInfiniteStage = false);
 
-    /// @brief 繝槭え繧ｹ繧ｯ繝ｪ繝・け繧辿UD縺ｨ縺励※隗｣驥医＠縲√い繧ｯ繧ｷ繝ｧ繝ｳ繧定ｿ斐☆
+    /// @brief ??????E???HUD???????????????
     BattleHUDAction HandleClick(const SharedContext& ctx,
                                 Vec2 mousePos,
                                 int gold,
@@ -70,7 +72,8 @@ private:
 
     void RenderTopBar(int playerHp, int playerMaxHp,
                       int enemyHp, int enemyMaxHp,
-                      float gameSpeed, bool isPaused);
+                      float gameSpeed, bool isPaused,
+                      bool isInfiniteStage = false);
 
     void RenderBottomBar(const SharedContext& ctx,
                          int gold,

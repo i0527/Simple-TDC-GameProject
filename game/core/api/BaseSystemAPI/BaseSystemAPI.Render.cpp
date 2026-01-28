@@ -97,11 +97,36 @@ void RenderSystemAPI::EndFrame(ImGuiRenderCallback imGuiCallback) {
   BeginDrawing();
   ClearBackground(BLACK);
 
+  const float internalAspect =
+      static_cast<float>(BaseSystemAPI::INTERNAL_WIDTH) /
+      static_cast<float>(BaseSystemAPI::INTERNAL_HEIGHT);
+  const float screenAspect =
+      static_cast<float>(owner_->screenWidth_) /
+      static_cast<float>(owner_->screenHeight_);
+
+  float destX, destY, destWidth, destHeight;
+  if (screenAspect > internalAspect) {
+    const float scale =
+        static_cast<float>(owner_->screenHeight_) /
+        static_cast<float>(BaseSystemAPI::INTERNAL_HEIGHT);
+    destWidth = static_cast<float>(BaseSystemAPI::INTERNAL_WIDTH) * scale;
+    destHeight = static_cast<float>(owner_->screenHeight_);
+    destX = (owner_->screenWidth_ - destWidth) * 0.5f;
+    destY = 0.0f;
+  } else {
+    const float scale =
+        static_cast<float>(owner_->screenWidth_) /
+        static_cast<float>(BaseSystemAPI::INTERNAL_WIDTH);
+    destWidth = static_cast<float>(owner_->screenWidth_);
+    destHeight = static_cast<float>(BaseSystemAPI::INTERNAL_HEIGHT) * scale;
+    destX = 0.0f;
+    destY = (owner_->screenHeight_ - destHeight) * 0.5f;
+  }
+
   DrawTexturePro(owner_->mainRenderTexture_.texture,
                  {0, 0, static_cast<float>(BaseSystemAPI::INTERNAL_WIDTH),
                   -static_cast<float>(BaseSystemAPI::INTERNAL_HEIGHT)},
-                 {0, 0, static_cast<float>(owner_->screenWidth_),
-                  static_cast<float>(owner_->screenHeight_)},
+                 {destX, destY, destWidth, destHeight},
                  {0, 0}, 0.0f, WHITE);
 
   if (owner_->imGuiInitialized_) {
@@ -131,6 +156,44 @@ Vector2 RenderSystemAPI::ScalePosition(float internalX, float internalY) const {
 
 float RenderSystemAPI::ScaleSize(float internalSize) const {
   return internalSize * GetScaleFactor();
+}
+
+Vec2 RenderSystemAPI::ScreenToInternal(Vec2 screenPos) const {
+  const float internalAspect =
+      static_cast<float>(BaseSystemAPI::INTERNAL_WIDTH) /
+      static_cast<float>(BaseSystemAPI::INTERNAL_HEIGHT);
+  const float screenAspect =
+      static_cast<float>(owner_->screenWidth_) /
+      static_cast<float>(owner_->screenHeight_);
+
+  float destX, destY, destWidth, destHeight;
+  if (screenAspect > internalAspect) {
+    const float scale =
+        static_cast<float>(owner_->screenHeight_) /
+        static_cast<float>(BaseSystemAPI::INTERNAL_HEIGHT);
+    destWidth = static_cast<float>(BaseSystemAPI::INTERNAL_WIDTH) * scale;
+    destHeight = static_cast<float>(owner_->screenHeight_);
+    destX = (owner_->screenWidth_ - destWidth) * 0.5f;
+    destY = 0.0f;
+  } else {
+    const float scale =
+        static_cast<float>(owner_->screenWidth_) /
+        static_cast<float>(BaseSystemAPI::INTERNAL_WIDTH);
+    destWidth = static_cast<float>(owner_->screenWidth_);
+    destHeight = static_cast<float>(BaseSystemAPI::INTERNAL_HEIGHT) * scale;
+    destX = 0.0f;
+    destY = (owner_->screenHeight_ - destHeight) * 0.5f;
+  }
+
+  if (screenPos.x < destX || screenPos.x > destX + destWidth ||
+      screenPos.y < destY || screenPos.y > destY + destHeight) {
+    return {-1.0f, -1.0f};
+  }
+
+  const float relativeX = (screenPos.x - destX) / destWidth;
+  const float relativeY = (screenPos.y - destY) / destHeight;
+  return {relativeX * BaseSystemAPI::INTERNAL_WIDTH,
+          relativeY * BaseSystemAPI::INTERNAL_HEIGHT};
 }
 
 void RenderSystemAPI::DrawTextRaylib(const std::string &text, float x, float y,

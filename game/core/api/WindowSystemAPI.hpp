@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../config/GameConfig.hpp"
+
 namespace game {
 namespace core {
 
@@ -19,6 +21,13 @@ public:
   void SetFullscreen(bool fullscreen, int monitor);
   bool IsFPSDisplayEnabled() const;
   void SetFPSDisplayEnabled(bool enabled);
+  bool IsCursorDisplayEnabled() const;
+  void SetCursorDisplayEnabled(bool enabled);
+  
+  // ウィンドウモード関連
+  WindowMode GetWindowMode() const;
+  void SetWindowMode(WindowMode mode);
+  void SetWindowMode(WindowMode mode, int monitor);
   
   // モニター関連
   int GetMonitorCount() const;

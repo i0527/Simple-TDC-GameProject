@@ -7,6 +7,7 @@
 
 // プロジェクト内
 #include "../../api/GameplayDataAPI.hpp"
+#include "../../ecs/entities/TowerAttachment.hpp"
 
 namespace game {
 namespace core {
@@ -14,21 +15,12 @@ namespace core {
 using namespace gacha_internal;
 
 void GachaOverlay::ClearResultCards() {
-    if (!panel_) {
-        resultCards_.clear();
-        showMessageOverlay_ = false;
-        return;
-    }
-
-    for (auto& card : resultCards_) {
-        if (!card) {
-            continue;
-        }
-        panel_->RemoveChild(card);
-        card->Shutdown();
-    }
-    resultCards_.clear();
+    resultCardInfos_.clear();
     showMessageOverlay_ = false;
+    cardAnimationTimer_ = 0.0f;
+    // スクロール位置とフラグもリセット
+    scrollYDraw_ = 0.0f;
+    hasAutoScrolled_ = false;
 }
 
 void GachaOverlay::BuildGachaPool(const GameplayDataAPI& gameplayDataAPI) {
@@ -100,6 +92,39 @@ void GachaOverlay::BuildGachaPool(const GameplayDataAPI& gameplayDataAPI) {
         }
     }
 
+    // アタッチメントを統合プールに追加
+    const auto& masters = gameplayDataAPI.GetAllTowerAttachmentMasters();
+    for (const auto& [id, att] : masters) {
+        GachaRarity rarity = GachaRarity::R;
+        if (att.rarity == 2) {
+            rarity = GachaRarity::SR;
+        } else if (att.rarity == 3) {
+            rarity = GachaRarity::SSR;
+        }
+        const int weight = GetRarityWeightInternal(rarity);
+        GachaEntry entry;
+        entry.equipmentId = id;
+        entry.equipment = nullptr;
+        entry.attachment = &att;
+        entry.rarity = rarity;
+        entry.weight = weight;
+        pool_.push_back(entry);
+
+        totalWeight += weight;
+        switch (rarity) {
+        case GachaRarity::R: weightR += weight; break;
+        case GachaRarity::SR: weightSR += weight; break;
+        case GachaRarity::SSR: weightSSR += weight; break;
+        default: break;
+        }
+        if (rarity == GachaRarity::SR || rarity == GachaRarity::SSR) {
+            poolSrUp_.push_back(entry);
+        }
+        if (rarity == GachaRarity::SSR) {
+            poolSsr_.push_back(entry);
+        }
+    }
+
     if (totalWeight > 0) {
         rateN_ = static_cast<float>(weightN) * 100.0f /
                  static_cast<float>(totalWeight);
@@ -116,10 +141,7 @@ void GachaOverlay::BuildGachaPool(const GameplayDataAPI& gameplayDataAPI) {
 }
 
 void GachaOverlay::RefreshPoolList() {
-    if (!poolList_) {
-        return;
-    }
-    poolList_->ClearItems();
+    poolItemInfos_.clear();
 
     int totalWeight = 0;
     int maxWeight = 1;
@@ -136,7 +158,8 @@ void GachaOverlay::RefreshPoolList() {
               });
 
     for (const auto& entry : sorted) {
-        if (!entry.equipment) {
+        const bool hasItem = entry.equipment || entry.attachment;
+        if (!hasItem) {
             continue;
         }
         const float percent = totalWeight > 0
@@ -155,20 +178,18 @@ void GachaOverlay::RefreshPoolList() {
             "[" + std::string(filledCells, '#') +
             std::string(barCells - filledCells, '-') + "]";
 
-        ui::ListItem item;
-        item.id = entry.equipmentId;
-        item.label = entry.equipment->name;
-        item.value = RarityToString(entry.rarity) + " " + FormatPercent(percent) +
-                     "% " + bar;
-        poolList_->AddItem(item);
+        PoolItemInfo info;
+        info.equipmentId = entry.equipmentId;
+        info.name = entry.equipment ? entry.equipment->name : (entry.attachment ? entry.attachment->name : "");
+        info.rarity = RarityToString(entry.rarity);
+        info.percent = percent;
+        info.bar = bar;
+        poolItemInfos_.push_back(info);
     }
 }
 
 void GachaOverlay::RefreshHistoryList(const GameplayDataAPI& gameplayDataAPI) {
-    if (!historyList_) {
-        return;
-    }
-    historyList_->ClearItems();
+    historyItemInfos_.clear();
     const auto& history = gameplayDataAPI.GetGachaHistory();
     if (history.empty()) {
         return;
@@ -180,56 +201,42 @@ void GachaOverlay::RefreshHistoryList(const GameplayDataAPI& gameplayDataAPI) {
             break;
         }
         const auto& entry = *it;
-        ui::ListItem item;
-        item.id = std::to_string(entry.seq);
-        item.label = entry.rarity + " " + entry.equipmentId;
+        
+        // レアリティを文字列から判定
+        GachaRarity rarity = GachaRarity::R;
+        if (entry.rarity == "N") {
+            rarity = GachaRarity::N;
+        } else if (entry.rarity == "R") {
+            rarity = GachaRarity::R;
+        } else if (entry.rarity == "SR") {
+            rarity = GachaRarity::SR;
+        } else if (entry.rarity == "SSR") {
+            rarity = GachaRarity::SSR;
+        }
+        
+        std::string label = entry.rarity + " " + entry.equipmentId;
         if (cachedGameplayDataAPI_) {
-            if (const auto* eq =
-                    cachedGameplayDataAPI_->GetEquipment(entry.equipmentId)) {
-                item.label = entry.rarity + " " + eq->name;
+            if (const auto* eq = cachedGameplayDataAPI_->GetEquipment(entry.equipmentId)) {
+                label = entry.rarity + " " + eq->name;
+            } else if (const auto* att = cachedGameplayDataAPI_->GetTowerAttachment(entry.equipmentId)) {
+                label = entry.rarity + " " + att->name;
             }
         }
-        item.value = "所持: " + std::to_string(entry.countAfter);
-        historyList_->AddItem(item);
+        
+        HistoryItemInfo info;
+        info.itemId = std::to_string(entry.seq);
+        info.label = label;
+        info.value = "所持: " + std::to_string(entry.countAfter);
+        info.rarity = rarity;
+        historyItemInfos_.push_back(info);
+        
         count++;
     }
 }
 
 void GachaOverlay::UpdateTabVisibility() {
-    const bool drawVisible = currentTab_ == GachaTab::Draw;
-    const bool ratesVisible = currentTab_ == GachaTab::Rates;
-    const bool historyVisible = currentTab_ == GachaTab::History;
-    const bool exchangeVisible = currentTab_ == GachaTab::Exchange;
-    const bool cardsVisible = drawVisible || showMessageOverlay_;
-
-    if (singleGachaButton_) {
-        singleGachaButton_->SetVisible(drawVisible);
-    }
-    if (tenGachaButton_) {
-        tenGachaButton_->SetVisible(drawVisible);
-    }
-    if (skipRevealButton_) {
-        skipRevealButton_->SetVisible(drawVisible);
-    }
-
-    for (auto& card : resultCards_) {
-        if (card) {
-            card->SetVisible(cardsVisible);
-        }
-    }
-
-    if (poolList_) {
-        poolList_->SetVisible(ratesVisible);
-    }
-    if (historyList_) {
-        historyList_->SetVisible(historyVisible);
-    }
-    if (exchangeTicketButton_) {
-        exchangeTicketButton_->SetVisible(exchangeVisible);
-    }
-    if (exchangeTicketTenButton_) {
-        exchangeTicketTenButton_->SetVisible(exchangeVisible);
-    }
+    // UIコンポーネント非依存のため、この関数は不要になったが、
+    // 他のコードから呼ばれる可能性があるため空実装として残す
 }
 
 GachaOverlay::GachaResult
@@ -249,12 +256,15 @@ GachaOverlay::RollFromPool(const std::vector<GachaEntry>& pool) {
         acc += std::max(1, entry.weight);
         if (roll <= acc) {
             result.equipment = entry.equipment;
+            result.attachment = entry.attachment;
             result.rarity = entry.rarity;
             return result;
         }
     }
-    result.equipment = pool.back().equipment;
-    result.rarity = pool.back().rarity;
+    const auto& last = pool.back();
+    result.equipment = last.equipment;
+    result.attachment = last.attachment;
+    result.rarity = last.rarity;
     return result;
 }
 

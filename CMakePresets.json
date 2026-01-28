@@ -13,10 +13,13 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
       },
       "environment": {
-        "VSCMD_ARG_TGT_ARCH": "x64"
+        "VSCMD_ARG_TGT_ARCH": "x64",
+        "VSCMD_ARG_HOST_ARCH": "x64"
       }
     },
     {
@@ -26,10 +29,71 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
       },
       "environment": {
-        "VSCMD_ARG_TGT_ARCH": "x64"
+        "VSCMD_ARG_TGT_ARCH": "x64",
+        "VSCMD_ARG_HOST_ARCH": "x64"
+      }
+    },
+    {
+      "name": "ninja-release-static",
+      "displayName": "Ninja Release Static",
+      "description": "Build Release configuration with Ninja (Static Linking)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build_static",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_STATIC": "ON",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      },
+      "environment": {
+        "VSCMD_ARG_TGT_ARCH": "x64",
+        "VSCMD_ARG_HOST_ARCH": "x64"
+      }
+    },
+    {
+      "name": "ninja-debug-static",
+      "displayName": "Ninja Debug Static",
+      "description": "Build Debug configuration with Ninja (Static Linking)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build_static",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_STATIC": "ON",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      },
+      "environment": {
+        "VSCMD_ARG_TGT_ARCH": "x64",
+        "VSCMD_ARG_HOST_ARCH": "x64"
+      }
+    },
+    {
+      "name": "emscripten-release",
+      "displayName": "Emscripten Release",
+      "description": "Build WebAssembly Release with Emscripten",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build_web",
+      "toolchainFile": "Z:/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "PLATFORM": "Web"
+      }
+    },
+    {
+      "name": "emscripten-debug",
+      "displayName": "Emscripten Debug",
+      "description": "Build WebAssembly Debug with Emscripten",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build_web",
+      "toolchainFile": "Z:/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "PLATFORM": "Web"
       }
     },
     {
@@ -58,6 +122,36 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "vs2022-release-static",
+      "displayName": "Visual Studio 2022 Release Static",
+      "description": "Build Release configuration with Visual Studio 2022 (Static Linking)",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build_static",
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_STATIC": "ON"
+      }
+    },
+    {
+      "name": "vs2022-debug-static",
+      "displayName": "Visual Studio 2022 Debug Static",
+      "description": "Build Debug configuration with Visual Studio 2022 (Static Linking)",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build_static",
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_STATIC": "ON"
       }
     },
     {
@@ -103,6 +197,30 @@
       "configurePreset": "ninja-debug"
     },
     {
+      "name": "ninja-release-static",
+      "displayName": "Ninja Release Static",
+      "description": "Build Release configuration with Ninja (Static)",
+      "configurePreset": "ninja-release-static"
+    },
+    {
+      "name": "ninja-debug-static",
+      "displayName": "Ninja Debug Static",
+      "description": "Build Debug configuration with Ninja (Static)",
+      "configurePreset": "ninja-debug-static"
+    },
+    {
+      "name": "emscripten-release",
+      "displayName": "Emscripten Release",
+      "description": "Build WebAssembly Release with Emscripten",
+      "configurePreset": "emscripten-release"
+    },
+    {
+      "name": "emscripten-debug",
+      "displayName": "Emscripten Debug",
+      "description": "Build WebAssembly Debug with Emscripten",
+      "configurePreset": "emscripten-debug"
+    },
+    {
       "name": "vs2022-release",
       "displayName": "VS2022 Release",
       "description": "Build Release configuration with Visual Studio 2022",
@@ -114,6 +232,20 @@
       "displayName": "VS2022 Debug",
       "description": "Build Debug configuration with Visual Studio 2022",
       "configurePreset": "vs2022-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "vs2022-release-static",
+      "displayName": "VS2022 Release Static",
+      "description": "Build Release configuration with Visual Studio 2022 (Static)",
+      "configurePreset": "vs2022-release-static",
+      "configuration": "Release"
+    },
+    {
+      "name": "vs2022-debug-static",
+      "displayName": "VS2022 Debug Static",
+      "description": "Build Debug configuration with Visual Studio 2022 (Static)",
+      "configurePreset": "vs2022-debug-static",
       "configuration": "Debug"
     },
     {

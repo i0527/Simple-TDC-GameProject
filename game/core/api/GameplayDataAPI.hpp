@@ -23,8 +23,10 @@ namespace core {
 struct StageClearReport {
     std::vector<std::string> newCharacters;  // 新規解放されたキャラクターIDリスト
     int ticketsRewarded;                     // 付与されたチケット数
+    int rewardGold;                          // 付与されたゴールド数
+    float survivalTime;                      // 無限ステージの生存時間（秒）
     
-    StageClearReport() : ticketsRewarded(0) {}
+    StageClearReport() : ticketsRewarded(0), rewardGold(0), survivalTime(0.0f) {}
 };
 
 /// @brief ゲームプレイのデータアクセス統合API
@@ -92,8 +94,10 @@ public:
                            const PlayerDataManager::CharacterState& state);
     int GetOwnedEquipmentCount(const std::string& equipmentId) const;
     int GetOwnedPassiveCount(const std::string& passiveId) const;
+    int GetOwnedTowerAttachmentCount(const std::string& attachmentId) const;
     void SetOwnedEquipmentCount(const std::string& equipmentId, int count);
     void SetOwnedPassiveCount(const std::string& passiveId, int count);
+    void SetOwnedTowerAttachmentCount(const std::string& attachmentId, int count);
     int GetGold() const;
     void SetGold(int gold);
     void AddGold(int delta);

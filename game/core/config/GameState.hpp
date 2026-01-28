@@ -32,6 +32,7 @@ enum class OverlayState {
   BattleVictory = 8,
   BattleDefeat = 9,
   Pause = 10,
+  CustomStageEnemyQueue = 11,
 };
 
 } // namespace core

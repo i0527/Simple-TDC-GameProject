@@ -1,4 +1,5 @@
 #include "StageSelectOverlay.hpp"
+#include "CustomStageEnemyQueueOverlay.hpp"
 #include "../../../utils/Log.h"
 #include "../../api/BaseSystemAPI.hpp"
 #include "../../api/GameplayDataAPI.hpp"
@@ -67,12 +68,12 @@ void StageSelectOverlay::CalculateCardLayouts() {
   const int MARGIN_X = 100;
   const int MARGIN_LEFT = MARGIN_X + 20;
   const int HEADER_HEIGHT = 90;
-  const int MARGIN_TOP = HEADER_HEIGHT + 80; // ヘッダ + タイトル領域
+  const int MARGIN_TOP = HEADER_HEIGHT + 20; // ヘッダのみ（タイトルはヘッダーに表示）
 
   for (size_t i = 0; i < stages_.size(); ++i) {
-    CardLayout layout;
-    layout.gridX = i % COLS;
-    layout.gridY = i / COLS;
+    CardLayout layout{};
+    layout.gridX = static_cast<int>(i % COLS);
+    layout.gridY = static_cast<int>(i / COLS);
     layout.screenX = MARGIN_LEFT + layout.gridX * (CARD_W + SPACING_H);
     layout.screenY =
         MARGIN_TOP + layout.gridY * (CARD_H + SPACING_V) - scrollPosition_;
@@ -115,7 +116,7 @@ void StageSelectOverlay::HandleMouseInput(SharedContext &ctx) {
   if (!inputAPI)
     return;
 
-  auto mousePos = inputAPI->GetMousePosition();
+  auto mousePos = inputAPI->GetMousePositionInternal();
   int mouseX = static_cast<int>(mousePos.x);
   int mouseY = static_cast<int>(mousePos.y);
 
@@ -374,13 +375,8 @@ void StageSelectOverlay::RenderCards() {
   Color lightPanelTextColor = ui::OverlayColors::TEXT_PRIMARY;
 
   // タイトル
-  systemAPI_->Render().DrawTextDefault("ステージ選択", MARGIN_X + 20,
-                                       CONTENT_TOP + 15, 44.0f, panelTextColor);
 
   // 区刁E��緁E
-  systemAPI_->Render().DrawLine(
-      MARGIN_X + 20, CONTENT_TOP + 60, MARGIN_X + LEFT_PANEL_WIDTH - 20,
-      CONTENT_TOP + 60, 2.0f, Color{200, 170, 100, 100});
 
   // スクロールインジケーター
   const int CARD_H = 280;
@@ -587,22 +583,10 @@ void StageSelectOverlay::RenderDetailPanel(SharedContext &ctx) {
 
   float textAlpha = panelFadeAlpha_;
 
-  // ステージ画像プレースホルダー（枠線付き）
-  const int IMAGE_W = PANEL_W - 20;
-  const int IMAGE_H = 320;
-  systemAPI_->Render().DrawRectangle(PANEL_X + 10, PANEL_Y + 10, IMAGE_W,
-                                     IMAGE_H, ui::OverlayColors::PANEL_BG_DARK);
-  systemAPI_->Render().DrawRectangleLines(
-      PANEL_X + 10, PANEL_Y + 10, IMAGE_W, IMAGE_H, 2.0f,
-      Color{200, 170, 100, static_cast<unsigned char>(150 * textAlpha)});
+  // ステージ詳細テキスト（プレビューを廃止し上から表示して文字を多く見せる）
   Color detailTextColor = ui::OverlayColors::TEXT_PRIMARY;
-  Color previewTextColor = ui::OverlayColors::TEXT_PRIMARY;
-  systemAPI_->Render().DrawTextDefault("[Stage Preview]",
-                                       PANEL_X + PANEL_W / 2 - 60,
-                                       PANEL_Y + 160, 22.0f, previewTextColor);
-
-  // ステージ詳細テキスト
-  int textY = PANEL_Y + 340;
+  const int TEXT_TOP_MARGIN = 20;
+  int textY = PANEL_Y + TEXT_TOP_MARGIN;
 
   // Chapter番号:チャプター名
   std::string chapterInfo = "Chapter " +
@@ -643,19 +627,69 @@ void StageSelectOverlay::RenderDetailPanel(SharedContext &ctx) {
   systemAPI_->Render().DrawTextDefault(recLevelText, PANEL_X + 20, textY, 30.0f,
                                        detailTextColor);
   textY += 35;
+  
+  // ステージタイプ表示
+  if (selectedStageData->isTutorial) {
+    systemAPI_->Render().DrawTextDefault("タイプ: チュートリアル", PANEL_X + 20, textY, 28.0f,
+                                         detailTextColor);
+    textY += 35;
+  } else if (selectedStageData->isCustom) {
+    systemAPI_->Render().DrawTextDefault("タイプ: カスタムステージ", PANEL_X + 20, textY, 28.0f,
+                                         detailTextColor);
+    textY += 35;
+  } else if (selectedStageData->isInfinite) {
+    std::string infiniteText = "タイプ: 無限ステージ";
+    if (selectedStageData->difficultyLevel == 0) {
+      infiniteText += " (易)";
+    } else if (selectedStageData->difficultyLevel == 1) {
+      infiniteText += " (難)";
+    }
+    systemAPI_->Render().DrawTextDefault(infiniteText, PANEL_X + 20, textY, 28.0f,
+                                         detailTextColor);
+    textY += 35;
+  }
 
-  // Wave数
-  std::string waveText =
-      "敵数: " + std::to_string(selectedStageData->waveCount) + " Wave";
-  // Wave数は詳細ウィンドウに移動（削除）
-  textY += 50;
+  // Wave数（無限ステージの場合は表示しない）
+  if (!selectedStageData->isInfinite) {
+    std::string waveText =
+        "敵数: " + std::to_string(selectedStageData->waveCount) + " Wave";
+    // Wave数は詳細ウィンドウに移動（削除）
+    textY += 50;
+  } else {
+    textY += 20;
+  }
 
-  // クリア基本報酬
-  std::string rewardText =
-      "クリア基本報酬: " + std::to_string(selectedStageData->rewardGold) + " G";
-  systemAPI_->Render().DrawTextDefault(rewardText, PANEL_X + 20, textY, 30.0f,
-                                       detailTextColor);
-  textY += 40;
+  // クリア報酬（JSONの rewardGold / rewardTickets / rewardMonsters を表示）
+  if (selectedStageData->isInfinite) {
+    std::string rewardText = "報酬: 生存時間に応じて変動";
+    systemAPI_->Render().DrawTextDefault(rewardText, PANEL_X + 20, textY, 30.0f,
+                                         detailTextColor);
+    textY += 40;
+  } else {
+    systemAPI_->Render().DrawTextDefault("クリア報酬", PANEL_X + 20, textY, 30.0f,
+                                         detailTextColor);
+    textY += 38;
+    std::string rewardLine =
+        "・ゴールド: " + std::to_string(selectedStageData->rewardGold) + " G";
+    if (selectedStageData->rewardTickets > 0) {
+      rewardLine += "  チケット: " + std::to_string(selectedStageData->rewardTickets);
+    }
+    systemAPI_->Render().DrawTextDefault(rewardLine, PANEL_X + 30, textY, 26.0f,
+                                         detailTextColor);
+    textY += 32;
+    if (!selectedStageData->rewardMonsters.empty()) {
+      std::string charLine = "・獲得キャラ: ";
+      for (size_t i = 0; i < selectedStageData->rewardMonsters.size(); ++i) {
+        if (i > 0) charLine += ", ";
+        const auto& m = selectedStageData->rewardMonsters[i];
+        charLine += m.monsterId + " Lv." + std::to_string(m.level);
+      }
+      systemAPI_->Render().DrawTextDefault(charLine, PANEL_X + 30, textY, 26.0f,
+                                           detailTextColor);
+      textY += 32;
+    }
+    textY += 12;
+  }
 
   // 報酬ボーナス条件
   if (!selectedStageData->bonusConditions.empty()) {
@@ -688,7 +722,7 @@ void StageSelectOverlay::RenderDetailPanel(SharedContext &ctx) {
 
   bool isLocked = selectedStageData->isLocked;
   auto mousePos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+      ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal() : Vec2{0.0f, 0.0f};
   bool startBtnHover =
       (mousePos.x >= startBtnX && mousePos.x < startBtnX + startBtnW &&
        mousePos.y >= startBtnY && mousePos.y < startBtnY + startBtnH);
@@ -828,7 +862,7 @@ void StageSelectOverlay::RenderDetailWindow(SharedContext &ctx) {
 
   // 閉じるボタン
   auto mousePos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+      ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal() : Vec2{0.0f, 0.0f};
   const float CLOSE_BTN_SIZE = 40.0f;
   const float CLOSE_BTN_X = WINDOW_X + WINDOW_W - CLOSE_BTN_SIZE - 20;
   const float CLOSE_BTN_Y = WINDOW_Y + 20;
@@ -938,6 +972,19 @@ void StageSelectOverlay::RenderDetailWindow(SharedContext &ctx) {
       LOG_INFO("Detail window closed");
     }
   }
+}
+
+std::string StageSelectOverlay::GetStageBackgroundPath(const std::string& stageId) const {
+  // previewImageIdが直接テクスチャキーとして使える場合はそのまま返す
+  // 必要に応じてパス解決を行う
+  if (stageId.empty()) {
+    return "";
+  }
+  
+  // StageDataからpreviewImageIdを取得する必要がある場合は、
+  // この関数を使う前にStageDataを参照する必要がある
+  // 現状はpreviewImageIdを直接使用するため、この関数は未使用
+  return "";
 }
 
 } // namespace core

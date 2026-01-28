@@ -135,6 +135,12 @@ void BattleProgressAPI::UpdateBattle(float deltaTime) {
     if (!ecsAPI_ || !setupAPI_) {
         return;
     }
+    
+    // 無限ステージの処理
+    if (isInfinite_) {
+        survivalTime_ += deltaTime;
+        UpdateInfiniteDifficulty(deltaTime);
+    }
 
     // ===== お財布（最大値）が時間で増える =====
     // 上限が上がらないように無効化
@@ -449,8 +455,136 @@ void BattleProgressAPI::UpdateBattle(float deltaTime) {
     ecsAPI_->FlushDestroyQueue();
 }
 
+void BattleProgressAPI::UpdateInfiniteDifficulty(float deltaTime) {
+    // 30秒ごとに難易度を5%増加
+    constexpr float DIFFICULTY_UPDATE_INTERVAL = 30.0f;
+    constexpr float DIFFICULTY_INCREASE_RATE = 0.05f;
+    
+    if (survivalTime_ - lastDifficultyUpdateTime_ >= DIFFICULTY_UPDATE_INTERVAL) {
+        enemyStatMultiplier_ += DIFFICULTY_INCREASE_RATE;
+        enemySpawnRateMultiplier_ += DIFFICULTY_INCREASE_RATE * 0.5f; // スポーン率は半分の増加率
+        lastDifficultyUpdateTime_ = survivalTime_;
+        currentWaveNumber_++;
+        
+        LOG_DEBUG("Infinite stage difficulty updated: multiplier={:.2f}, spawnRate={:.2f}, wave={}", 
+                 enemyStatMultiplier_, enemySpawnRateMultiplier_, currentWaveNumber_);
+    }
+    
+    // 無限ステージでは定期的に敵をスポーン
+    // 基本スポーン間隔を難易度に応じて調整
+    const float baseSpawnInterval = difficultyLevel_ == 0 ? 3.0f : 1.5f;
+    const float adjustedInterval = baseSpawnInterval / enemySpawnRateMultiplier_;
+    
+    waveTimer_ += deltaTime;
+    if (waveTimer_ >= adjustedInterval && !spawnSchedule_.empty()) {
+        waveTimer_ = 0.0f;
+        
+        // 最初のウェーブから敵をスポーン（レベルを難易度倍率で調整）
+        for (const auto& event : spawnSchedule_) {
+            if (event.time <= 1.0f) { // 最初の1秒以内のイベントのみ
+                const int adjustedLevel = std::max(1, static_cast<int>(std::round(
+                    static_cast<float>(event.level) * enemyStatMultiplier_)));
+                
+                // 敵をスポーン（既存のスポーンロジックを再利用）
+                if (!gameplayDataAPI_) {
+                    continue;
+                }
+                
+                std::string characterId;
+                if (gameplayDataAPI_->HasCharacter(event.enemyId)) {
+                    characterId = event.enemyId;
+                } else {
+                    auto mapIt = enemyToCharacterId_.find(event.enemyId);
+                    if (mapIt != enemyToCharacterId_.end()) {
+                        characterId = mapIt->second;
+                    }
+                }
+                
+                if (characterId.empty()) {
+                    continue;
+                }
+                
+                auto character = gameplayDataAPI_->GetCharacterTemplate(characterId);
+                if (!character) {
+                    continue;
+                }
+                
+                const float y = lane_.y - static_cast<float>(character->move_sprite.frame_height);
+                
+                system::TowerEnhancementMultipliers towerMul;
+                if (gameplayDataAPI_) {
+                    const auto te = gameplayDataAPI_->GetTowerEnhancements();
+                    const auto attachments = gameplayDataAPI_->GetTowerAttachments();
+                    const auto& masters = gameplayDataAPI_->GetAllTowerAttachmentMasters();
+                    towerMul = system::CalculateTowerEnhancementMultipliers(te, attachments, masters);
+                }
+                
+                entities::EntityCreationData creationData;
+                creationData.character_id = character->id;
+                creationData.position = {enemyTower_.x + 40.0f, y};
+                creationData.level = adjustedLevel;
+                
+                SpawnOverrides overrides;
+                overrides.maxHp = std::max(1, static_cast<int>(std::round(
+                    static_cast<float>(character->GetTotalHP()) * towerMul.enemyHpMul * enemyStatMultiplier_)));
+                overrides.attack = std::max(0, static_cast<int>(std::round(
+                    static_cast<float>(character->GetTotalAttack()) * towerMul.enemyAttackMul * enemyStatMultiplier_)));
+                overrides.defense = character->GetTotalDefense();
+                overrides.moveSpeed = std::max(0.0f, character->move_speed * towerMul.enemyMoveSpeedMul);
+                overrides.attackSize = character->attack_size;
+                overrides.attackSpan = character->attack_span;
+                
+                setupAPI_->CreateBattleEntityFromCharacter(*character, creationData, 
+                    ecs::components::Faction::Enemy, &overrides);
+            }
+        }
+    }
+}
+
+int BattleProgressAPI::CalculateInfiniteReward(float survivalTime, int difficultyLevel) const {
+    // 基本報酬: 生存時間（秒） * 難易度係数
+    // 難易度0（易）: 1G/秒
+    // 難易度1（難）: 2G/秒
+    const float baseRewardPerSecond = difficultyLevel == 0 ? 1.0f : 2.0f;
+    int baseReward = static_cast<int>(survivalTime * baseRewardPerSecond);
+    
+    // ボーナス: 5分ごとに10%追加
+    const int bonusMinutes = static_cast<int>(survivalTime / 300.0f);
+    int bonusReward = static_cast<int>(baseReward * 0.1f * bonusMinutes);
+    
+    return baseReward + bonusReward;
+}
+
 void BattleProgressAPI::CheckBattleEnd() {
     if (battleResult_ != BattleResult::InProgress) {
+        return;
+    }
+    
+    // 無限ステージのギブアップ処理
+    if (isInfinite_ && giveUpRequested_) {
+        battleResult_ = BattleResult::Victory;
+        gameStateText_ = "Give Up";
+        isPaused_ = true;
+        LOG_INFO("Battle finished: Give Up (survival time: {:.1f}s)", survivalTime_);
+        if (gameplayDataAPI_ && sharedContext_ && !sharedContext_->currentStageId.empty()) {
+            // ギブアップ時の報酬計算
+            int rewardGold = CalculateInfiniteReward(survivalTime_, difficultyLevel_);
+            BattleStats stats = GetBattleStats();
+            stats.clearTime = survivalTime_;
+            
+            // ステージデータを取得して報酬を一時的に設定
+            auto stage = gameplayDataAPI_->GetStageDataById(sharedContext_->currentStageId);
+            if (stage) {
+                // 一時的に報酬を設定（MarkStageClearedで使用される）
+                stage->rewardGold = rewardGold;
+            }
+            
+            gameplayDataAPI_->MarkStageCleared(sharedContext_->currentStageId, 1, &stats);
+            LOG_INFO("Give up reward: {} gold", rewardGold);
+        }
+        if (sceneOverlayAPI_) {
+            sceneOverlayAPI_->PushOverlay(OverlayState::BattleVictory);
+        }
         return;
     }
 

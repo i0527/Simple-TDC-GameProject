@@ -14,6 +14,9 @@ namespace states {
 namespace overlays {
 namespace home {
 
+// 前方宣言
+enum class HomeTab;
+
 // ゲーム内リソース
 struct PlayerResources {
     int gold;           // ゲーム内金貨
@@ -34,6 +37,9 @@ public:
     void SetResources(const PlayerResources& resources);
     const PlayerResources& GetResources() const { return resources_; }
 
+    // 現在のタブ設定
+    void SetCurrentTab(HomeTab tab);
+
     // UI描画
     void Update(float deltaTime);
     void Render(BaseSystemAPI* systemAPI);
@@ -46,6 +52,12 @@ private:
     
     // アニメーション用
     float gold_display_current_;   // 現在の表示値（増減アニメ用）
+    
+    // 現在のタブ
+    HomeTab current_tab_;
+    
+    // タブ名を取得するヘルパー関数
+    std::string GetTabDisplayName(HomeTab tab) const;
 };
 
 } // namespace home

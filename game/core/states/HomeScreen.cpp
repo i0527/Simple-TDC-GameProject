@@ -100,6 +100,11 @@ void HomeScreen::Update(float deltaTime) {
         tabbar_->Update(deltaTime);
     }
     
+    // 現在のタブをヘッダーに通知
+    if (header_ && tabbar_) {
+        header_->SetCurrentTab(tabbar_->GetSelectedTab());
+    }
+    
     // コンチE��チE��新
     if (content_ && sharedContext_) {
         content_->Update(deltaTime, *sharedContext_);
@@ -167,7 +172,7 @@ void HomeScreen::HandleMouseInput() {
         return;
     }
     
-    auto mousePos = inputAPI_->GetMousePosition();
+    auto mousePos = inputAPI_->GetMousePositionInternal();
     
     // タブバーのマウスホバー
     tabbar_->OnMouseHover(mousePos.x, mousePos.y);

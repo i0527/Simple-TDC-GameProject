@@ -1,4 +1,4 @@
-﻿#include "../BaseSystemAPI.hpp"
+#include "../BaseSystemAPI.hpp"
 #include "../../../utils/Log.h"
 #include <iostream>
 
@@ -16,7 +16,7 @@ BaseSystemAPI::BaseSystemAPI()
       imGuiJapaneseFont_(nullptr), currentResourceIndex_(0),
       scanningCompleted_(false), masterVolume_(1.0f), seVolume_(1.0f),
       bgmVolume_(1.0f), currentMusic_(nullptr), currentMusicName_(""),
-      fpsDisplayEnabled_(false), logInitialized_(false), logDirectory_("logs"),
+      fpsDisplayEnabled_(false), cursorDisplayEnabled_(false), logInitialized_(false), logDirectory_("logs"),
       logFileName_("game.log"), renderAPI_(this), resourceAPI_(this),
       audioAPI_(this), windowAPI_(this), timingAPI_(this), collisionAPI_(this) {
   GenerateFontCodepoints();
@@ -31,12 +31,8 @@ BaseSystemAPI::~BaseSystemAPI() {
 // ========== 初期化・終了 ==========
 
 bool BaseSystemAPI::Initialize(Resolution initialResolution) {
-  try {
-    InitializeLogSystem();
-  } catch (const std::exception &e) {
-    std::cerr << "BaseSystemAPI::Initialize: Log system initialization failed: "
-              << e.what() << ". Continuing without file logging." << std::endl;
-  }
+  // ログシステムを初期化（Emscriptenでは無効化される）
+  InitializeLogSystem();
 
   screenWidth_ = GetResolutionWidth(initialResolution);
   screenHeight_ = GetResolutionHeight(initialResolution);
@@ -44,12 +40,11 @@ bool BaseSystemAPI::Initialize(Resolution initialResolution) {
 
   InitWindow(screenWidth_, screenHeight_, "tower of defense (´・ω・｀)");
   if (!IsWindowReady()) {
-    if (logger_) {
-      logger_->error("BaseSystemAPI: Failed to initialize Raylib window");
-    } else {
-      std::cerr << "BaseSystemAPI: Failed to initialize Raylib window"
-                << std::endl;
-    }
+#if !defined(EMSCRIPTEN) && !defined(__EMSCRIPTEN__)
+    LOG_ERROR("BaseSystemAPI: Failed to initialize Raylib window");
+#else
+    std::cerr << "BaseSystemAPI: Failed to initialize Raylib window" << std::endl;
+#endif
     return false;
   }
 
@@ -61,11 +56,11 @@ bool BaseSystemAPI::Initialize(Resolution initialResolution) {
 
   RecreateRenderTexture();
   if (mainRenderTexture_.id == 0) {
-    if (logger_) {
-      logger_->error("BaseSystemAPI: Failed to create RenderTexture");
-    } else {
-      std::cerr << "BaseSystemAPI: Failed to create RenderTexture" << std::endl;
-    }
+#if !defined(EMSCRIPTEN) && !defined(__EMSCRIPTEN__)
+    LOG_ERROR("BaseSystemAPI: Failed to create RenderTexture");
+#else
+    std::cerr << "BaseSystemAPI: Failed to create RenderTexture" << std::endl;
+#endif
     CloseAudioDevice();
     CloseWindow();
     return false;
@@ -73,11 +68,9 @@ bool BaseSystemAPI::Initialize(Resolution initialResolution) {
 
   isInitialized_ = true;
 
-  if (logger_) {
-    logger_->info(
-        "BaseSystemAPI: Initialized with resolution {}x{} (internal {}x{})",
-        screenWidth_, screenHeight_, INTERNAL_WIDTH, INTERNAL_HEIGHT);
-  }
+  LOG_INFO(
+      "BaseSystemAPI: Initialized with resolution {}x{} (internal {}x{})",
+      screenWidth_, screenHeight_, INTERNAL_WIDTH, INTERNAL_HEIGHT);
   return true;
 }
 

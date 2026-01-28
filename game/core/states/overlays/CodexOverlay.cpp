@@ -87,6 +87,7 @@ void CodexOverlay::Update(SharedContext &ctx, float deltaTime) {
 
   LayoutPanels();
   EnsureEntriesLoaded(ctx);
+  RefreshCharacterUnlockedState(ctx);
 
   // 試着状態�E初期化（キャラ選択が変わったら保存状態から復允E��E
   if (activeTab_ == CodexTab::Characters) {
@@ -151,7 +152,7 @@ void CodexOverlay::Update(SharedContext &ctx, float deltaTime) {
   const float panelStartY =
       contentOffsetY + tabBarHeight + tabBarGap; // タブバーの下に配置
   const auto mouse_pos =
-      ctx.inputAPI ? ctx.inputAPI->GetMousePosition() : Vec2{0.0f, 0.0f};
+      ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal() : Vec2{0.0f, 0.0f};
 
   // コンチE��チE��域冁E�E相対座標に変換�E�パネル座標系�E�E
   const float relative_x = mouse_pos.x - contentOffsetX;
@@ -1108,31 +1109,6 @@ void CodexOverlay::RenderSortUI() {
   systemAPI_->Render().DrawTextDefault(
       asc ? "↑昇順" : "↓降順", toggle_x + 8.0f, sort_btn_y + 6.0f, 14.0f,
       OverlayColors::TEXT_SECONDARY);
-  
-  // 保持チェックボックス（キャラクタータブのみ）
-  if (activeTab_ == CodexTab::Characters) {
-    const float checkbox_w = 20.0f;
-    const float checkbox_h = 20.0f;
-    const float checkbox_x = x + 10.0f;
-    const float checkbox_y = sort_bar_y - 25.0f;
-    
-    systemAPI_->Render().DrawRectangle(
-        checkbox_x, checkbox_y, checkbox_w, checkbox_h,
-        showOwnedOnly_[ti] ? OverlayColors::CARD_BG_SELECTED : OverlayColors::CARD_BG_NORMAL);
-    systemAPI_->Render().DrawRectangleLines(
-        checkbox_x, checkbox_y, checkbox_w, checkbox_h, 2.0f,
-        OverlayColors::BORDER_DEFAULT);
-    
-    if (showOwnedOnly_[ti]) {
-      systemAPI_->Render().DrawTextDefault(
-          "✓", checkbox_x + 4.0f, checkbox_y + 2.0f, 16.0f,
-          OverlayColors::TEXT_PRIMARY);
-    }
-    
-    systemAPI_->Render().DrawTextDefault(
-        "保持", checkbox_x + checkbox_w + 6.0f, checkbox_y + 2.0f, 16.0f,
-        OverlayColors::TEXT_PRIMARY);
-  }
 }
 
 void CodexOverlay::RenderCharacterViewport() {
@@ -1185,11 +1161,19 @@ void CodexOverlay::RenderCharacterViewport() {
           if (texturePtr) {
             Texture2D *texture = static_cast<Texture2D *>(texturePtr);
 
-            // 現在のフレームのソース矩形を計箁E
-            int frame_x =
-                character_viewport_.animation_frame * sprite_info->frame_width;
+            // 現在のフレームのソース矩形（グリッド対応: 正方形シート等）
+            const int cols = (sprite_info->frame_width > 0)
+                ? (texture->width / sprite_info->frame_width) : 1;
+            const int rows = (cols > 0 && sprite_info->frame_height > 0)
+                ? (texture->height / sprite_info->frame_height) : 1;
+            const int total = cols * rows;
+            const int safeFrame = (total > 0)
+                ? (character_viewport_.animation_frame % total) : 0;
+            const int row = (cols > 0) ? (safeFrame / cols) : 0;
+            const int col = (cols > 0) ? (safeFrame % cols) : safeFrame;
             Rectangle sourceRect = {
-                static_cast<float>(frame_x), 0.0f,
+                static_cast<float>(col * sprite_info->frame_width),
+                static_cast<float>(row * sprite_info->frame_height),
                 static_cast<float>(sprite_info->frame_width),
                 static_cast<float>(sprite_info->frame_height)};
 
@@ -2106,16 +2090,6 @@ void CodexOverlay::SortEntries(int tabIndex, SharedContext& ctx) {
   
   std::sort(entries.begin(), entries.end(),
             [this, tabIndex, ascending, sortKey, &ctx](const CodexEntry &a, const CodexEntry &b) {
-              // 保持チェックボックスがONの場合、ロック解除→ロック順でソート（キャラクタータブのみ）
-              if (tabIndex == TabIndex(CodexTab::Characters) && showOwnedOnly_[tabIndex]) {
-                bool ownedA = a.is_discovered;
-                bool ownedB = b.is_discovered;
-                if (ownedA != ownedB) {
-                  // ロック解除（ownedA=true）を先に
-                  return ownedA && !ownedB;
-                }
-              }
-              
               auto cmpInt = [ascending](int lhs, int rhs) {
                 return ascending ? (lhs < rhs) : (lhs > rhs);
               };
@@ -2185,14 +2159,6 @@ void CodexOverlay::EnsureEntriesLoaded(SharedContext &ctx) {
     auto &out = tabEntries_[TabIndex(CodexTab::Characters)];
     out.reserve(masters.size());
     for (const auto &[id, ch] : masters) {
-      // 未所持の非表示処理
-      if (showOwnedOnly_[TabIndex(CodexTab::Characters)]) {
-        const auto st = ctx.gameplayDataAPI->GetCharacterState(id);
-        if (!st.unlocked) {
-          continue;  // ロックされたキャラクターを除外
-        }
-      }
-      
       CodexEntry e;
       e.type = CodexEntry::Type::Character;
       e.id = id;
@@ -2257,6 +2223,15 @@ void CodexOverlay::EnsureEntriesLoaded(SharedContext &ctx) {
         tabSelectedIndex_[TabIndex(CodexTab::Passives)] = 0;
       LOG_INFO("CodexOverlay: Loaded {} passives", out.size());
     }
+  }
+}
+
+void CodexOverlay::RefreshCharacterUnlockedState(SharedContext& ctx) {
+  if (!ctx.gameplayDataAPI) return;
+  auto& chars = tabEntries_[TabIndex(CodexTab::Characters)];
+  for (auto& e : chars) {
+    if (e.type != CodexEntry::Type::Character || e.id.empty()) continue;
+    e.is_discovered = ctx.gameplayDataAPI->GetCharacterState(e.id).unlocked;
   }
 }
 

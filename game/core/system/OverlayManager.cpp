@@ -9,6 +9,7 @@
 #include "../states/overlays/LicenseOverlay.hpp"
 #include "../states/overlays/BattleResultOverlay.hpp"
 #include "../states/overlays/PauseOverlay.hpp"
+#include "../states/overlays/CustomStageEnemyQueueOverlay.hpp"
 #include "../../utils/Log.h"
 #include "../api/BaseSystemAPI.hpp"
 
@@ -173,6 +174,9 @@ std::unique_ptr<IOverlay> OverlayManager::CreateOverlay(OverlayState state, Base
 
     case OverlayState::Pause:
         return std::make_unique<PauseOverlay>();
+    
+    case OverlayState::CustomStageEnemyQueue:
+        return std::make_unique<CustomStageEnemyQueueOverlay>();
     
     case OverlayState::None:
     default:

@@ -1,10 +1,36 @@
-﻿cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.19)
 
 project(CatTDGame LANGUAGES CXX)
 
 # C++標準設定
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# ============================================================================
+# プラットフォーム検出
+# ============================================================================
+if(EMSCRIPTEN OR "${PLATFORM}" STREQUAL "Web")
+    set(PLATFORM_WEB TRUE)
+    message(STATUS "Platform: Web (Emscripten)")
+    add_definitions(-DPLATFORM_WEB)
+else()
+    set(PLATFORM_WEB FALSE)
+    message(STATUS "Platform: Desktop")
+endif()
+
+# ============================================================================
+# 静的ビルドオプション（Desktop のみ）
+# ============================================================================
+if(NOT PLATFORM_WEB)
+    option(BUILD_STATIC "Build with static linking" OFF)
+
+    if(MSVC AND BUILD_STATIC)
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC runtime library")
+        message(STATUS "Static build enabled: Using /MT runtime")
+    else()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "MSVC runtime library")
+    endif()
+endif()
 
 # 依存関係
 # 注意: 親CMakeLists.txtで既にFetchContentがincludeされ、FETCHCONTENT_BASE_DIRが設定されています
@@ -36,11 +62,21 @@ if(NOT TARGET raylib)
 
     set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     
+    if(PLATFORM_WEB)
+        set(PLATFORM "Web" CACHE STRING "" FORCE)
+    elseif(BUILD_STATIC)
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    endif()
+    
     FetchContent_MakeAvailable(raylib)
     
     # Visual Studioのランタイムライブラリ設定
-    if(MSVC)
-        set_property(TARGET raylib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(MSVC AND NOT PLATFORM_WEB)
+        if(BUILD_STATIC)
+            set_property(TARGET raylib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        else()
+            set_property(TARGET raylib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+        endif()
     endif()
 endif()
 
@@ -59,11 +95,6 @@ if(NOT TARGET EnTT::EnTT)
     )
 
     FetchContent_MakeAvailable(entt)
-    
-    # Visual Studioのランタイムライブラリ設定
-    if(MSVC AND TARGET EnTT)
-        set_property(TARGET EnTT PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-    endif()
 endif()
 
 # nlohmann/json - JSON パース・シリアライズライブラリ
@@ -81,12 +112,10 @@ if(NOT TARGET nlohmann_json::nlohmann_json)
     )
 
     FetchContent_MakeAvailable(json)
-    
-    # nlohmann/jsonはヘッダーオンリーライブラリ（INTERFACE）のため、MSVC_RUNTIME_LIBRARY設定は不要
 endif()
 
 # spdlog - 高速ログライブラリ（Webビルドでは不要）
-if(NOT EMSCRIPTEN AND NOT CATTD_WEB_BUILD AND NOT TARGET spdlog::spdlog)
+if(NOT PLATFORM_WEB AND NOT TARGET spdlog::spdlog)
     set(_spdlog_local "${FETCHCONTENT_BASE_DIR}/spdlog-src")
     if(EXISTS "${_spdlog_local}/CMakeLists.txt")
         message(STATUS "Using local spdlog from: ${_spdlog_local}")
@@ -102,10 +131,10 @@ if(NOT EMSCRIPTEN AND NOT CATTD_WEB_BUILD AND NOT TARGET spdlog::spdlog)
     set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
     set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "" FORCE)
+    if(BUILD_STATIC)
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    endif()
     FetchContent_MakeAvailable(spdlog)
-    
-    # spdlog::spdlogはALIASターゲットのため、MSVC_RUNTIME_LIBRARY設定は不要
-    # グローバル設定が適用されます
 endif()
 
 # ImGui - デバッグUI・エディタ機能（dockingブランチ使用）
@@ -130,13 +159,17 @@ if(NOT TARGET imgui_lib)
         ${imgui_SOURCE_DIR}/imgui_draw.cpp
         ${imgui_SOURCE_DIR}/imgui_tables.cpp
         ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-     )
+    )
 
     target_include_directories(imgui_lib PUBLIC ${imgui_SOURCE_DIR})
     
     # Visual Studioのランタイムライブラリ設定
-    if(MSVC)
-        set_property(TARGET imgui_lib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(MSVC AND NOT PLATFORM_WEB)
+        if(BUILD_STATIC)
+            set_property(TARGET imgui_lib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        else()
+            set_property(TARGET imgui_lib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+        endif()
     endif()
 endif()
 
@@ -158,7 +191,7 @@ if(NOT TARGET rlimgui_lib)
 
     add_library(rlimgui_lib STATIC
         ${rlimgui_SOURCE_DIR}/rlImGui.cpp
-     )
+    )
 
     target_include_directories(rlimgui_lib PUBLIC
         ${rlimgui_SOURCE_DIR}
@@ -168,8 +201,12 @@ if(NOT TARGET rlimgui_lib)
     target_compile_definitions(rlimgui_lib PUBLIC IMGUI_ENABLE_DOCKING IMGUI_ENABLE_VIEWPORTS)
     
     # Visual Studioのランタイムライブラリ設定
-    if(MSVC)
-        set_property(TARGET rlimgui_lib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(MSVC AND NOT PLATFORM_WEB)
+        if(BUILD_STATIC)
+            set_property(TARGET rlimgui_lib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        else()
+            set_property(TARGET rlimgui_lib PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+        endif()
     endif()
 endif()
 
@@ -275,6 +312,17 @@ list(APPEND GAME_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/GachaOverlay.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/LicenseOverlay.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/LicenseOverlay.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/BattleResultOverlay.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/BattleResultOverlay.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/PauseOverlay.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/PauseOverlay.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CustomStageEnemyQueueOverlay.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/CustomStageEnemyQueueOverlay.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/EnhancementOverlay.Core.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/EnhancementOverlay.Update.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/EnhancementOverlay.Render.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/EnhancementOverlay.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/EnhancementOverlayInternal.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/core/states/overlays/IOverlay.hpp"
     # UIコンポーネント
     "${CMAKE_CURRENT_SOURCE_DIR}/core/ui/IUIComponent.hpp"
@@ -360,94 +408,157 @@ target_link_libraries(CatTDGame
 )
 
 # Webビルドではspdlogをリンクしない
-if(NOT EMSCRIPTEN AND NOT CATTD_WEB_BUILD)
+if(NOT PLATFORM_WEB)
     target_link_libraries(CatTDGame PRIVATE spdlog::spdlog)
 endif()
 
-# Emscripten向け設定
-if(EMSCRIPTEN OR CATTD_WEB_BUILD)
-    target_compile_definitions(CatTDGame PRIVATE EMSCRIPTEN)
+# ============================================================================
+# プラットフォーム固有の設定
+# ============================================================================
 
-    set(EMSCRIPTEN_LINK_FLAGS
-        "-s USE_GLFW=3"
-        "-s ALLOW_MEMORY_GROWTH=1"
-        "-s WASM=1"
-        "-s ASSERTIONS=1"
-        "-s FORCE_FILESYSTEM=1"
-        "--preload-file ${PROJECT_ROOT_DIR}/assets@/assets"
-        "--preload-file ${PROJECT_ROOT_DIR}/data@/data"
-    )
+if(PLATFORM_WEB)
+    # Emscripten向け設定
+    message(STATUS "Configuring for Emscripten build")
+    
+    target_compile_definitions(CatTDGame PRIVATE PLATFORM_WEB)
+    
+    # プロジェクトルートディレクトリを取得（親CMakeLists.txtから継承）
+    if(NOT DEFINED PROJECT_ROOT_DIR)
+        get_filename_component(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)
+    endif()
+    
+    message(STATUS "Project root directory: ${PROJECT_ROOT_DIR}")
+    
+    # アセットとデータディレクトリの存在確認
+    set(ASSETS_DIR "${PROJECT_ROOT_DIR}/assets")
+    set(DATA_DIR "${PROJECT_ROOT_DIR}/data")
+    
+    # Windowsパスをスラッシュに変換
+    file(TO_CMAKE_PATH "${ASSETS_DIR}" ASSETS_DIR_NORMALIZED)
+    file(TO_CMAKE_PATH "${DATA_DIR}" DATA_DIR_NORMALIZED)
+    
+    # Emscriptenリンクフラグ（基本設定）
+    set(EMSCRIPTEN_LINK_FLAGS)
+    list(APPEND EMSCRIPTEN_LINK_FLAGS "-sUSE_GLFW=3")
+    list(APPEND EMSCRIPTEN_LINK_FLAGS "-sALLOW_MEMORY_GROWTH=1")
+    list(APPEND EMSCRIPTEN_LINK_FLAGS "-sWASM=1")
+    list(APPEND EMSCRIPTEN_LINK_FLAGS "-sASYNCIFY")
+    list(APPEND EMSCRIPTEN_LINK_FLAGS "-sINITIAL_MEMORY=268435456")
+    list(APPEND EMSCRIPTEN_LINK_FLAGS "-sFORCE_FILESYSTEM=1")
+    list(APPEND EMSCRIPTEN_LINK_FLAGS "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','FS','IDBFS']")
+    list(APPEND EMSCRIPTEN_LINK_FLAGS "-lidbfs.js")
+    
+    # シェルファイルの設定
+    set(SHELL_FILE "${PROJECT_ROOT_DIR}/tools/shell_minimal.html")
+    if(EXISTS "${SHELL_FILE}")
+        file(TO_CMAKE_PATH "${SHELL_FILE}" SHELL_FILE_NORMALIZED)
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "--shell-file=${SHELL_FILE_NORMALIZED}")
+        message(STATUS "Using custom shell file: ${SHELL_FILE_NORMALIZED}")
+    else()
+        message(WARNING "Shell file not found: ${SHELL_FILE}, using default")
+    endif()
+    
+    # アセットのプリロード
+    if(EXISTS "${ASSETS_DIR}")
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "--preload-file=${ASSETS_DIR_NORMALIZED}@/assets")
+        message(STATUS "Preloading assets from: ${ASSETS_DIR_NORMALIZED}")
+    else()
+        message(WARNING "Assets directory not found: ${ASSETS_DIR}")
+    endif()
+    
+    if(EXISTS "${DATA_DIR}")
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "--preload-file=${DATA_DIR_NORMALIZED}@/data")
+        message(STATUS "Preloading data from: ${DATA_DIR_NORMALIZED}")
+    else()
+        message(WARNING "Data directory not found: ${DATA_DIR}")
+    endif()
+    
+    # ビルドタイプ別のフラグ
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "-sASSERTIONS=1")
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "-sSTACK_OVERFLOW_CHECK=2")
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "-gsource-map")
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "--source-map-base=http://localhost:8000/")
+        message(STATUS "Debug build: Enabled assertions and source maps")
+    else()
+        # 最適化を有効化（Closure Compilerは無効）
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "-O3")
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "-sEXPORT_NAME=Module")
+        list(APPEND EMSCRIPTEN_LINK_FLAGS "-sMODULARIZE=0")
+        message(STATUS "Release build: Enabled optimizations (Closure disabled)")
+    endif()
+    
+    # リンクオプションを適用
     target_link_options(CatTDGame PRIVATE ${EMSCRIPTEN_LINK_FLAGS})
-endif()
-
-# std::filesystem サポート（GCC/Clangの場合）
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_link_libraries(CatTDGame PRIVATE stdc++fs)
+    
+    # 出力ファイル名を設定
+    set_target_properties(CatTDGame PROPERTIES
+        OUTPUT_NAME "CatTDGame"
+        SUFFIX ".html"
+    )
+    
+    # デバッグ用: リンクフラグを表示
+    string(REPLACE ";" " " LINK_FLAGS_STR "${EMSCRIPTEN_LINK_FLAGS}")
+    message(STATUS "Emscripten link flags: ${LINK_FLAGS_STR}")
+    
 elseif(MSVC)
-    # MSVC: legacy_stdio_definitions.lib をリンク（stdio関数のために必要な場合がある）
-    # 標準ライブラリは自動的にリンクされる
-endif()
-
-# MSVC特有の設定を追加（CRTランタイムの問題解決）
-if(MSVC)
-    # マルチスレッド対応CRTライブラリ
-    target_compile_options(CatTDGame PRIVATE /MD$<$<CONFIG:Debug>:d>)
-endif()
-
-# ============================================================================
-# コンパイラ警告設定・ランタイムライブラリ設定
-# ============================================================================
-if(MSVC)
-    # Visual Studioのランタイムライブラリ設定（標準ライブラリのリンクに必要）
-    # すべてのターゲットに対して一括設定
+    # MSVC特有の設定
+    if(BUILD_STATIC)
+        target_compile_options(CatTDGame PRIVATE /MT$<$<CONFIG:Debug>:d>)
+    else()
+        target_compile_options(CatTDGame PRIVATE /MD$<$<CONFIG:Debug>:d>)
+    endif()
+    
     foreach(LANG C CXX)
-        set(CMAKE_${LANG}_FLAGS_DEBUG "${CMAKE_${LANG}_FLAGS_DEBUG} /MDd")
-        set(CMAKE_${LANG}_FLAGS_RELEASE "${CMAKE_${LANG}_FLAGS_RELEASE} /MD")
-        # グローバルに警告を抑制（すべてのターゲットに適用）
+        if(BUILD_STATIC)
+            set(CMAKE_${LANG}_FLAGS_DEBUG "${CMAKE_${LANG}_FLAGS_DEBUG} /MTd")
+            set(CMAKE_${LANG}_FLAGS_RELEASE "${CMAKE_${LANG}_FLAGS_RELEASE} /MT")
+        else()
+            set(CMAKE_${LANG}_FLAGS_DEBUG "${CMAKE_${LANG}_FLAGS_DEBUG} /MDd")
+            set(CMAKE_${LANG}_FLAGS_RELEASE "${CMAKE_${LANG}_FLAGS_RELEASE} /MD")
+        endif()
         set(CMAKE_${LANG}_FLAGS "${CMAKE_${LANG}_FLAGS} /W0 /WX-")
     endforeach()
     
-    set_property(GLOBAL PROPERTY MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
-    set_property(TARGET CatTDGame PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-    # 警告を出力ログに出さない設定 (/W0: 警告を無効化, /WX-: 警告をエラーとして扱わない)
-    # C4576を警告として扱い、警告抑制設定で抑制できるようにする
-    # spdlogの警告を抑制するマクロ定義を追加
+    if(BUILD_STATIC)
+        set_property(GLOBAL PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded)
+        set_property(TARGET CatTDGame PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    else()
+        set_property(GLOBAL PROPERTY MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+        set_property(TARGET CatTDGame PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    endif()
+    
     target_compile_definitions(CatTDGame PRIVATE _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS)
     target_compile_options(CatTDGame PRIVATE /W0 /WX- /wd4576 /utf-8)
-else()
+    
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_link_libraries(CatTDGame PRIVATE stdc++fs)
     target_compile_options(CatTDGame PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 # ============================================================================
-# アセット・データディレクトリのコピー（ビルド後）
-# 参考: .cursorrules - assets/ と data/ は POST_BUILD でバンドル
+# アセット・データディレクトリのコピー（Desktop のみ）
 # ============================================================================
-# プロジェクトルートディレクトリを取得（親ディレクトリ）
-get_filename_component(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)
+if(NOT PLATFORM_WEB)
+    get_filename_component(PROJECT_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)
 
-# アセットディレクトリを実行ファイルの隣にコピー
-# ディレクトリが存在する場合のみコピー
-if(EXISTS "${PROJECT_ROOT_DIR}/assets")
-    add_custom_command(TARGET CatTDGame POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${PROJECT_ROOT_DIR}/assets
-            $<TARGET_FILE_DIR:CatTDGame>/assets
-        COMMENT "Copying assets to build directory..."
-    )
-else()
-    message(WARNING "assets directory not found at ${PROJECT_ROOT_DIR}/assets")
-endif()
+    if(EXISTS "${PROJECT_ROOT_DIR}/assets")
+        add_custom_command(TARGET CatTDGame POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${PROJECT_ROOT_DIR}/assets
+                $<TARGET_FILE_DIR:CatTDGame>/assets
+            COMMENT "Copying assets to build directory..."
+        )
+    endif()
 
-# データディレクトリも同様にコピー
-if(EXISTS "${PROJECT_ROOT_DIR}/data")
-    add_custom_command(TARGET CatTDGame POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${PROJECT_ROOT_DIR}/data
-            $<TARGET_FILE_DIR:CatTDGame>/data
-        COMMENT "Copying data to build directory..."
-    )
-else()
-    message(WARNING "data directory not found at ${PROJECT_ROOT_DIR}/data")
+    if(EXISTS "${PROJECT_ROOT_DIR}/data")
+        add_custom_command(TARGET CatTDGame POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${PROJECT_ROOT_DIR}/data
+                $<TARGET_FILE_DIR:CatTDGame>/data
+            COMMENT "Copying data to build directory..."
+        )
+    endif()
 endif()
 
 # ============================================================================
@@ -458,4 +569,5 @@ list(LENGTH GAME_SOURCES SOURCE_COUNT)
 message(STATUS "Found ${SOURCE_COUNT} source file(s) in game/ directory")
 message(STATUS "CatTDGame configured successfully")
 message(STATUS "  - Entry point: main/main.cpp")
-message(STATUS "  - Source collection: All .c, .cpp, .h, .hpp files in game/")
+message(STATUS "  - Platform: ${PLATFORM_WEB}")
+message(STATUS "  - Build Type: ${CMAKE_BUILD_TYPE}")

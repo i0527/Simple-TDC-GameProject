@@ -1,9 +1,12 @@
 #include "GameSystem.hpp"
 #include "../../utils/Log.h"
 #include "../ui/UiAssetKeys.hpp"
-#include <fstream>
-#include <nlohmann/json.hpp>
 #include <rlImGui.h>
+#include <fstream>
+#include <filesystem>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 namespace game {
 namespace core {
@@ -15,8 +18,59 @@ GameSystem::GameSystem()
       sceneOverlayAPI_(std::make_unique<SceneOverlayControlAPI>()),
       currentState_(GameState::Initializing), requestShutdown_(false) {}
 
+GameSystem::StartupSettings GameSystem::LoadStartupSettings() {
+  StartupSettings settings;
+  const std::string settingsPath = "data/settings.json";
+  
+  try {
+    std::ifstream file(settingsPath);
+    if (!file.is_open()) {
+      LOG_INFO("GameSystem: Settings file not found, using defaults");
+      return settings;
+    }
+    
+    json data;
+    file >> data;
+    
+    // 解像度（WQHD 削除済み。旧 0=WQHD,1=FHD,2=HD,3=SD → 0=FHD,1=HD,2=SD にマップ）
+    int resolutionInt = data.value("resolution", static_cast<int>(Resolution::FHD));
+    switch (resolutionInt) {
+      case 0: settings.resolution = Resolution::FHD; break;
+      case 1: settings.resolution = Resolution::FHD; break;
+      case 2: settings.resolution = Resolution::HD; break;
+      case 3: settings.resolution = Resolution::SD; break;
+      default: settings.resolution = Resolution::FHD; break;
+    }
+    
+    // ウィンドウモード
+    int windowModeInt = data.value("windowMode", -1);
+    if (windowModeInt >= 0 && windowModeInt <= static_cast<int>(WindowMode::Borderless)) {
+      settings.windowMode = static_cast<WindowMode>(windowModeInt);
+    } else {
+      // 後方互換性: isFullscreenからwindowModeを推測
+      bool isFullscreen = data.value("isFullscreen", false);
+      settings.windowMode = isFullscreen ? WindowMode::Fullscreen : WindowMode::Windowed;
+    }
+
+    // カーソル表示
+    settings.showCursor = data.value("showCursor", false);
+    
+    LOG_INFO("GameSystem: Startup settings loaded: resolution={}, windowMode={}, showCursor={}",
+             static_cast<int>(settings.resolution),
+             static_cast<int>(settings.windowMode),
+             settings.showCursor);
+  } catch (const json::parse_error& e) {
+    LOG_WARN("GameSystem: Failed to parse settings.json: {}. Using defaults.", e.what());
+  } catch (const std::exception& e) {
+    LOG_WARN("GameSystem: Exception while loading startup settings: {}. Using defaults.", e.what());
+  }
+  
+  return settings;
+}
+
 int GameSystem::Initialize() {
-  if (!InitializeBaseSystem()) {
+  StartupSettings startupSettings = LoadStartupSettings();
+  if (!InitializeBaseSystem(startupSettings)) {
     return 1;
   }
   if (!InitializeAudio()) {
@@ -82,27 +136,6 @@ int GameSystem::Run() {
     // 入力状態�E更新
     inputAPI_->UpdateInput();
 
-    // フルスクリーントグル（Alt+Enter）
-    if (inputAPI_->IsKeyDown(KEY_LEFT_ALT) ||
-        inputAPI_->IsKeyDown(KEY_RIGHT_ALT)) {
-      if (inputAPI_->IsKeyPressed(KEY_ENTER)) {
-        systemAPI_->Window().ToggleFullscreen();
-        LOG_INFO("Fullscreen toggled via Alt+Enter");
-      }
-    }
-
-    // 解像度切り替え（F3: FHD ⇔ HD）
-    if (inputAPI_->IsKeyPressed(KEY_F3)) {
-      Resolution current = systemAPI_->Render().GetCurrentResolution();
-      Resolution next =
-          (current == Resolution::FHD) ? Resolution::HD : Resolution::FHD;
-      if (systemAPI_->Render().SetResolution(next)) {
-        LOG_INFO("Resolution toggled via F3: {} -> {}",
-                 current == Resolution::FHD ? "FHD" : "HD",
-                 next == Resolution::FHD ? "FHD" : "HD");
-      }
-    }
-
     // オーチE��オ更新
     if (audioAPI_) {
       audioAPI_->Update(deltaTime);
@@ -126,8 +159,8 @@ int GameSystem::Run() {
     sceneOverlayAPI_->Render(currentState_);
 
     // UIカーソル追従！ESカーソルは残す�E�E
-    {
-      auto mouse = inputAPI_->GetMousePosition();
+    if (systemAPI_->Window().IsCursorDisplayEnabled()) {
+      auto mouse = inputAPI_->GetMousePositionInternal();
       systemAPI_->Render().DrawUiCursor(ui::UiAssetKeys::CursorPointer, mouse,
                                         Vec2{2.0f, 2.0f}, 1.0f, WHITE);
     }
@@ -213,45 +246,21 @@ void GameSystem::Shutdown() {
   // こ�E時点以降ではログ出力を行わなぁE��と
 }
 
-bool GameSystem::InitializeBaseSystem() {
+bool GameSystem::InitializeBaseSystem(StartupSettings settings) {
   // BaseSystemAPIの作�Eと初期化（ログシスチE��も�E動的に初期化される�E�E
   systemAPI_ = std::make_unique<BaseSystemAPI>();
-
-  // 解像度設定を読み込む（設定ファイルから）
-  Resolution initialResolution = Resolution::FHD; // デフォルトはFHD
-
-  try {
-    std::ifstream file("data/settings.json");
-    if (file.is_open()) {
-      nlohmann::json data;
-      file >> data;
-      std::string resolutionStr = data.value("resolution", "FHD");
-      if (resolutionStr == "HD") {
-        initialResolution = Resolution::HD;
-      } else if (resolutionStr == "SD") {
-        initialResolution = Resolution::SD;
-      } else {
-        initialResolution = Resolution::FHD;
-      }
-      LOG_INFO("Resolution loaded from settings: {}", resolutionStr);
-    } else {
-      LOG_INFO("Settings file not found, using default resolution FHD");
-    }
-  } catch (const std::exception &e) {
-    LOG_WARN("Failed to load resolution from settings: {}. Using default FHD.",
-             e.what());
-    initialResolution = Resolution::FHD;
-  }
-
-  if (!systemAPI_->Initialize(initialResolution)) {
+  if (!systemAPI_->Initialize(settings.resolution)) {
     LOG_ERROR("Failed to initialize BaseSystemAPI!");
     return false;
   }
+  
+  systemAPI_->Window().SetWindowMode(settings.windowMode);
+  systemAPI_->Window().SetCursorDisplayEnabled(settings.showCursor);
+  
   LOG_INFO("=== tower of defense - Game Initialization ===");
-  LOG_INFO("BaseSystemAPI initialized with resolution {}",
-           initialResolution == Resolution::FHD  ? "FHD"
-           : initialResolution == Resolution::HD ? "HD"
-                                                 : "SD");
+  LOG_INFO("BaseSystemAPI initialized with resolution {} and window mode {}",
+           static_cast<int>(settings.resolution),
+           static_cast<int>(settings.windowMode));
   return true;
 }
 
@@ -265,7 +274,7 @@ bool GameSystem::InitializeAudio() {
 }
 
 bool GameSystem::InitializeInput() {
-  if (!inputAPI_->Initialize()) {
+  if (!inputAPI_->Initialize(systemAPI_.get())) {
     LOG_ERROR("Failed to initialize InputSystemAPI!");
     return false;
   }

@@ -61,6 +61,18 @@ private:
             int base = 0;
             int bonus = 0;
         };
+        
+        // 元の状態（saved_character_state_）からの変化量計算用
+        struct OriginalStatValue {
+            int total = 0;  // 元の状態での合計値
+        };
+        
+        OriginalStatValue original_hp;
+        OriginalStatValue original_attack;
+        OriginalStatValue original_defense;
+        OriginalStatValue original_speed;
+        OriginalStatValue original_range;
+        int original_level = 1;
 
         StatValue hp;
         StatValue attack;
@@ -91,10 +103,17 @@ private:
         
         // タブEり替ぁE
         enum class TabType {
-            Enhancement,  // パッシブスキル
-            Equipment     // 裁E
+            BaseEnhancement,  // 基礎強化
+            Slot               // スロット
         };
-        TabType active_tab = TabType::Enhancement;
+        TabType active_tab = TabType::BaseEnhancement;
+        
+        // スロットタブ用のサブタブ
+        enum class SlotSubTabType {
+            Passive,   // パッシブスキル
+            Equipment  // 装備
+        };
+        SlotSubTabType active_slot_subtab = SlotSubTabType::Passive;
     
         
         // パッシブスロチE (3つ、横並び)
@@ -229,8 +248,10 @@ private:
     void RenderItemPopup(SharedContext& ctx);
     
     // タブ別描画
-    void RenderEnhancementTab(SharedContext& ctx);
-    void RenderEquipmentTab(SharedContext& ctx);
+    void RenderBaseEnhancementTab(SharedContext& ctx);
+    void RenderSlotTab(SharedContext& ctx);
+    void RenderPassiveSubTab(SharedContext& ctx);
+    void RenderEquipmentSubTab(SharedContext& ctx);
     
     // パEチE画
     void RenderPassiveSlot(SharedContext& ctx, const OperationPanel::PassiveSlot& slot);
@@ -240,6 +261,7 @@ private:
     // イベントE琁E
     void OnUnitListItemClick(SharedContext& ctx, int index);
     void OnTabClick(OperationPanel::TabType tab);
+    void OnSlotSubTabClick(OperationPanel::SlotSubTabType subtab);
     void OnPassiveSlotClick(int slot_id);
     void OnPassivePopupOption(SharedContext& ctx, int option);  // 0=ランダム付丁E強匁E 1=ランダム変更, 2=削除, 3=キャンセル
     void OnItemSlotClick(int slot_id);

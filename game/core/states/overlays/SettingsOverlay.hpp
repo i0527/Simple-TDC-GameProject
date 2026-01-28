@@ -2,6 +2,7 @@
 
 #include "IOverlay.hpp"
 #include "../../config/RenderPrimitives.hpp"
+#include "../../config/GameConfig.hpp"
 #include <memory>
 #include <string>
 
@@ -15,10 +16,11 @@ struct SettingsData {
     float masterVolume = 1.0f;
     float bgmVolume = 1.0f;
     float seVolume = 1.0f;
-    bool isFullscreen = false;
-    int selectedMonitor = 0;  // フルスクリーン時のモニター選択（0=プライマリ）
+    bool isFullscreen = false;  // 後方互換性のため残す（windowModeに移行予定）
     bool showFPS = false;
-    std::string resolution = "FHD";  // 解像度: "FHD", "HD", "SD"（次回起動時に有効）
+    bool showCursor = false;  // カーソル表示（デフォルト: オフ）
+    Resolution resolution = Resolution::FHD;  // 解像度プリセット
+    WindowMode windowMode = WindowMode::Windowed;  // ウィンドウモード
 };
 
 /// @brief 設定オーバ�Eレイ
@@ -59,17 +61,17 @@ private:
     int draggedSliderId_ = -1;  // 0=マスター, 1=BGM, 2=SE
     
     // UIホバー状慁E
-    bool applyButtonHovered_ = false;
     bool resetButtonHovered_ = false;
     bool closeButtonHovered_ = false;
     bool titleButtonHovered_ = false;
     bool quitButtonHovered_ = false;
     bool fullscreenButtonHovered_ = false;
-    bool monitorPrevButtonHovered_ = false;
-    bool monitorNextButtonHovered_ = false;
     bool fpsCheckboxHovered_ = false;
-    bool resolutionPrevButtonHovered_ = false;
-    bool resolutionNextButtonHovered_ = false;
+    bool cursorCheckboxHovered_ = false;
+    bool resolutionFHDButtonHovered_ = false;
+    bool resolutionHDButtonHovered_ = false;
+    bool windowModeWindowedButtonHovered_ = false;
+    bool windowModeFullscreenButtonHovered_ = false;
     mutable bool requestQuit_ = false;
     
     // プライベ�EトメソチE��

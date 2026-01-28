@@ -7,19 +7,23 @@
 // プロジェクト内
 #include "../config/RenderPrimitives.hpp"
 
-
 namespace game {
 namespace core {
+
+class BaseSystemAPI;
 
 /// @brief 入力統合API
 ///
 /// BaseSystemAPI の入力機能をまとめ、シーン共通で利用するためのラッパー。
+/// 論理座標（1920x1080）でのマウス位置は GetMousePositionInternal() で取得する。
 class InputSystemAPI {
 public:
     InputSystemAPI();
     ~InputSystemAPI();
 
+    /// @brief 初期化。BaseSystemAPI を渡すと GetMousePositionInternal で論理座標変換を行う。
     bool Initialize();
+    bool Initialize(BaseSystemAPI* systemAPI);
     void Shutdown();
     bool IsInitialized() const;
 
@@ -56,13 +60,15 @@ public:
     void ConsumeMouseButton(int button);
 
     Vec2 GetMousePosition() const;
+    /// @brief 論理座標（内部解像度 1920x1080）でのマウス位置。Initialize(BaseSystemAPI*) 済み時のみ変換。
+    Vec2 GetMousePositionInternal() const;
     Vec2 GetMouseDelta() const;
     int GetMouseX() const;
     int GetMouseY() const;
     float GetMouseWheelMove() const;
     Vec2 GetMouseWheelMoveV() const;
 
-    // 座標補助
+    // 座標補助（論理座標の rect / グリッド用。GetMousePositionInternal を使用）
     bool IsMouseOverRect(float x, float y, float width, float height) const;
     std::pair<int, int> GetMouseGridPosition(float originX, float originY,
                                              int cellSize, int gridWidth, int gridHeight) const;
@@ -79,6 +85,7 @@ public:
 
 private:
     bool isInitialized_;
+    BaseSystemAPI* systemAPI_ = nullptr;
 
     struct InputState {
         float mouseX = 0.0f;

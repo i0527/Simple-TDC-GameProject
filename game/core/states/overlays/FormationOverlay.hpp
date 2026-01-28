@@ -70,13 +70,13 @@ private:
   struct CharacterListView {
     std::vector<const entities::Character *> available_characters;
     int scroll_offset = 0;
-    int visible_columns = 5;
+    int visible_columns = 6;  // 5 → 6 に変更
     int visible_rows = 5;
     int selected_character_index = -1;
 
     const float CARD_WIDTH = 140.0f;
     const float CARD_HEIGHT = 120.0f;
-    const float CARD_SPACING_X = 180.0f;
+    const float CARD_SPACING_X = 183.0f;  // 180.0f → 183.0f に調整（6列で1100.0f幅に収まるように）
     const float CARD_SPACING_Y = 150.0f;
   };
 
@@ -151,7 +151,6 @@ private:
   void SortAvailableCharacters(const GameplayDataAPI *gameplayDataAPI);
 
   // 描画メソッド
-  void RenderTitleBar();
   void RenderSortUI();
   void RenderSquadSlots();
   void RenderSlot(const SquadSlot &slot);

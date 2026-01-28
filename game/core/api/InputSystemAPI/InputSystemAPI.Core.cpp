@@ -1,4 +1,5 @@
 #include "../InputSystemAPI.hpp"
+#include "../BaseSystemAPI.hpp"
 
 // 外部ライブラリ
 #include <raylib.h>
@@ -9,13 +10,21 @@
 namespace game {
 namespace core {
 
-InputSystemAPI::InputSystemAPI() : isInitialized_(false) {}
+InputSystemAPI::InputSystemAPI() : isInitialized_(false), systemAPI_(nullptr) {}
 
 InputSystemAPI::~InputSystemAPI() = default;
 
 bool InputSystemAPI::Initialize() {
     isInitialized_ = true;
+    systemAPI_ = nullptr;
     LOG_INFO("InputSystemAPI initialized");
+    return true;
+}
+
+bool InputSystemAPI::Initialize(BaseSystemAPI* systemAPI) {
+    isInitialized_ = true;
+    systemAPI_ = systemAPI;
+    LOG_INFO("InputSystemAPI initialized with systemAPI (logical mouse supported)");
     return true;
 }
 
@@ -23,6 +32,7 @@ void InputSystemAPI::Shutdown() {
     if (!isInitialized_) {
         return;
     }
+    systemAPI_ = nullptr;
     LOG_INFO("InputSystemAPI shutdown");
     isInitialized_ = false;
 }
@@ -126,6 +136,14 @@ Vec2 InputSystemAPI::GetMousePosition() const {
     return {inputState_.mouseX, inputState_.mouseY};
 }
 
+Vec2 InputSystemAPI::GetMousePositionInternal() const {
+    Vec2 screen = GetMousePosition();
+    if (!systemAPI_) {
+        return screen;
+    }
+    return systemAPI_->Render().ScreenToInternal(screen);
+}
+
 Vec2 InputSystemAPI::GetMouseDelta() const {
     return {inputState_.mouseDeltaX, inputState_.mouseDeltaY};
 }
@@ -146,7 +164,7 @@ Vec2 InputSystemAPI::GetMouseWheelMoveV() const {
 }
 
 bool InputSystemAPI::IsMouseOverRect(float x, float y, float width, float height) const {
-    const Vec2 mouse = GetMousePosition();
+    const Vec2 mouse = GetMousePositionInternal();
     return mouse.x >= x && mouse.x <= x + width &&
            mouse.y >= y && mouse.y <= y + height;
 }
@@ -157,7 +175,7 @@ std::pair<int, int> InputSystemAPI::GetMouseGridPosition(
         return {-1, -1};
     }
 
-    const Vec2 mouse = GetMousePosition();
+    const Vec2 mouse = GetMousePositionInternal();
     const int gx = static_cast<int>((mouse.x - originX) / cellSize);
     const int gy = static_cast<int>((mouse.y - originY) / cellSize);
 

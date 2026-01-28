@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Tower Defense</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        #header {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        #header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        #header p {
+            margin: 0;
+            color: #888;
+        }
+        
+        #canvas-container {
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            display: block;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        #status {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        #progress-container {
+            width: 400px;
+            height: 30px;
+            background-color: #333;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px auto;
+        }
+        
+        #progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        #status-text {
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+        
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #4ecdc4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: transform 0.2s;
+        }
+        
+        .button:hover {
+            transform: scale(1.05);
+        }
+        
+        .button:active {
+            transform: scale(0.95);
+        }
+        
+        #footer {
+            margin-top: 30px;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>🐱 Cat Tower Defense 🐱</h1>
+        <p>猫ちゃんたちでタワーディフェンス！</p>
+    </div>
+    
+    <div id="canvas-container">
+        <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    </div>
+    
+    <div id="status">
+        <div class="spinner"></div>
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <div id="status-text">ゲームを読み込んでいます...</div>
+    </div>
+    
+    <div id="controls" style="display: none;">
+        <button class="button" onclick="Module.requestFullscreen(false, false)">フルスクリーン</button>
+    </div>
+    
+    <div id="footer">
+        <p>© 2025 Cat Tower Defense Project | Built with Raylib & Emscripten</p>
+        <p>キーボード・マウス操作対応 | 推奨ブラウザ: Chrome, Firefox, Edge</p>
+    </div>
+    
+    <script type='text/javascript'>
+        var statusElement = document.getElementById('status');
+        var progressBar = document.getElementById('progress-bar');
+        var statusText = document.getElementById('status-text');
+        var spinner = document.querySelector('.spinner');
+        var controls = document.getElementById('controls');
+        
+        var Module = {
+            noInitialRun: true,
+            preRun: [],
+            postRun: [],
+            print: (function() {
+                return function(text) {
+                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                    console.log(text);
+                };
+            })(),
+            printErr: function(text) {
+                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                console.error(text);
+            },
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+                canvas.addEventListener("webglcontextlost", function(e) { 
+                    alert('WebGL context lost. You will need to reload the page.'); 
+                    e.preventDefault(); 
+                }, false);
+                return canvas;
+            })(),
+            setStatus: function(text) {
+                if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+                if (text === Module.setStatus.last.text) return;
+                
+                var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+                var now = Date.now();
+                
+                if (m && now - Module.setStatus.last.time < 30) return;
+                Module.setStatus.last.time = now;
+                Module.setStatus.last.text = text;
+                
+                if (m) {
+                    var progress = parseInt(m[2]) / parseInt(m[4]) * 100;
+                    progressBar.style.width = progress + '%';
+                    statusText.textContent = 'ダウンロード中... ' + progress.toFixed(0) + '%';
+                } else if (text) {
+                    statusText.textContent = text;
+                } else {
+                    spinner.style.display = 'none';
+                    statusElement.style.display = 'none';
+                    controls.style.display = 'block';
+                }
+            },
+            totalDependencies: 0,
+            monitorRunDependencies: function(left) {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+            },
+            onRuntimeInitialized: function() {
+                if (typeof FS === 'undefined' || typeof IDBFS === 'undefined') {
+                    Module.callMain([]);
+                    return;
+                }
+                try {
+                    var path = '/data/saves';
+                    try {
+                        if (!FS.analyzePath(path).exists) {
+                            FS.mkdir(path, 0777);
+                        }
+                    } catch (e) {}
+                    FS.mount(IDBFS, {}, path);
+                    FS.syncfs(true, function(err) {
+                        if (err) console.error('IDBFS load error', err);
+                        Module.callMain([]);
+                    });
+                } catch (e) {
+                    console.error('IDBFS setup error', e);
+                    Module.callMain([]);
+                }
+            },
+            syncSaveToPersistent: function() {
+                if (typeof FS !== 'undefined') {
+                    FS.syncfs(false, function(err) {
+                        if (err) console.error('IDBFS save sync error', err);
+                    });
+                }
+            }
+        };
+        
+        Module.setStatus('ゲームを読み込んでいます...');
+        
+        window.onerror = function(event) {
+            Module.setStatus('エラーが発生しました。詳細はコンソールを確認してください。');
+            spinner.style.display = 'none';
+        };
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>

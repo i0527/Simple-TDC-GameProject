@@ -157,7 +157,6 @@ private:
     };
     std::array<SortKey, 3> currentSortKey_{{SortKey::Owned, SortKey::Name, SortKey::Name}};
     std::array<bool, 3> sortAscending_{{false, false, false}};
-    std::array<bool, 3> showOwnedOnly_{{false, false, false}};
     
     // ========== シスチE�� ==========
     BaseSystemAPI* systemAPI_;
@@ -193,6 +192,7 @@ private:
     void SortCharactersById(std::vector<CodexEntry>& entries);
     void SortEntries(int tabIndex, SharedContext& ctx);
     void EnsureEntriesLoaded(SharedContext& ctx);
+    void RefreshCharacterUnlockedState(SharedContext& ctx);
 };
 
 } // namespace core

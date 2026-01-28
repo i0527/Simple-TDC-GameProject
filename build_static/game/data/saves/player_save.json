@@ -1,0 +1,602 @@
+{
+  "characters": {
+    "char_sub_bat_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_blueslime_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_chainsword_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_crystalgolem_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_greenbossslime_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_hatslime_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_kimoisogin_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_lanterfish_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_longtailedtit_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": true
+    },
+    "char_sub_mushmeramera_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_orca_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_poisonjellyfish_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_rainbow_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_seahorse_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_seaserpent_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    },
+    "char_sub_yodarehaki_001": {
+      "equipment": [
+        "",
+        "",
+        ""
+      ],
+      "level": 1,
+      "passives": [
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        },
+        {
+          "id": "",
+          "level": 1
+        }
+      ],
+      "unlocked": false
+    }
+  },
+  "formation": {
+    "slots": [
+      {
+        "character_id": "char_sub_hatslime_001",
+        "slot": 0
+      },
+      {
+        "character_id": "char_sub_longtailedtit_001",
+        "slot": 1
+      },
+      {
+        "character_id": "char_sub_blueslime_001",
+        "slot": 2
+      }
+    ]
+  },
+  "gacha_dust": 0,
+  "gacha_history": [],
+  "gacha_pity": 0,
+  "gacha_roll_seq": 0,
+  "gems": 0,
+  "gold": 10000,
+  "inventory": {
+    "equipment": {
+      "eq_amulet_001": 0,
+      "eq_amulet_002": 0,
+      "eq_armor_001": 1,
+      "eq_armor_002": 0,
+      "eq_armor_003": 0,
+      "eq_armor_004": 0,
+      "eq_boots_001": 0,
+      "eq_boots_002": 0,
+      "eq_helmet_001": 1,
+      "eq_helmet_002": 0,
+      "eq_helmet_003": 0,
+      "eq_r_001": 0,
+      "eq_r_002": 0,
+      "eq_r_003": 0,
+      "eq_r_004": 0,
+      "eq_r_005": 0,
+      "eq_r_006": 0,
+      "eq_r_007": 0,
+      "eq_r_008": 0,
+      "eq_r_009": 0,
+      "eq_r_010": 0,
+      "eq_ring_001": 1,
+      "eq_ring_002": 1,
+      "eq_ring_003": 0,
+      "eq_ring_004": 0,
+      "eq_ring_005": 0,
+      "eq_ring_006": 0,
+      "eq_shield_001": 1,
+      "eq_shield_002": 1,
+      "eq_shield_003": 0,
+      "eq_shield_004": 0,
+      "eq_shield_005": 0,
+      "eq_shield_006": 0,
+      "eq_sr_001": 0,
+      "eq_sr_002": 0,
+      "eq_sr_003": 0,
+      "eq_sr_004": 0,
+      "eq_sr_005": 0,
+      "eq_sr_006": 0,
+      "eq_sr_007": 0,
+      "eq_sr_008": 0,
+      "eq_sr_009": 0,
+      "eq_sr_010": 0,
+      "eq_ssr_001": 0,
+      "eq_ssr_002": 0,
+      "eq_ssr_003": 0,
+      "eq_ssr_004": 0,
+      "eq_ssr_005": 0,
+      "eq_staff_001": 1,
+      "eq_sword_001": 1,
+      "eq_sword_002": 1,
+      "eq_sword_003": 0,
+      "eq_sword_004": 0,
+      "eq_sword_005": 0,
+      "eq_sword_006": 0,
+      "eq_ussr_001": 0
+    },
+    "passives": {
+      "skill_atk_flat_1": 10,
+      "skill_atk_up_1": 1,
+      "skill_atk_up_2": 1,
+      "skill_atk_up_3": 10,
+      "skill_atk_up_4": 10,
+      "skill_atk_up_5": 10,
+      "skill_atkspd_flat_1": 10,
+      "skill_atkspd_flat_2": 10,
+      "skill_atkspd_up_1": 10,
+      "skill_atkspd_up_2": 10,
+      "skill_crit_up_1": 1,
+      "skill_def_flat_1": 10,
+      "skill_def_up_1": 1,
+      "skill_def_up_2": 1,
+      "skill_def_up_3": 10,
+      "skill_def_up_4": 10,
+      "skill_def_up_5": 10,
+      "skill_hp_flat_1": 10,
+      "skill_hp_up_1": 1,
+      "skill_hp_up_2": 1,
+      "skill_hp_up_3": 10,
+      "skill_hp_up_4": 10,
+      "skill_hp_up_5": 10,
+      "skill_range_flat_1": 10,
+      "skill_range_up_1": 1,
+      "skill_range_up_2": 10,
+      "skill_range_up_3": 10,
+      "skill_range_up_4": 10,
+      "skill_range_up_5": 10,
+      "skill_speed_flat_1": 10,
+      "skill_speed_up_1": 1,
+      "skill_speed_up_2": 1,
+      "skill_speed_up_3": 10,
+      "skill_speed_up_4": 10,
+      "skill_speed_up_5": 10
+    },
+    "tower_attachments": {
+      "tower_core_hp": 1,
+      "tower_cost_capacitor": 1,
+      "tower_wallet_gear": 1
+    }
+  },
+  "max_tickets": 1000,
+  "stages": {
+    "0": {
+      "is_cleared": false,
+      "is_locked": false,
+      "stars_earned": 0
+    },
+    "0-1": {
+      "is_cleared": false,
+      "is_locked": false,
+      "stars_earned": 0
+    },
+    "0-2": {
+      "is_cleared": false,
+      "is_locked": false,
+      "stars_earned": 0
+    },
+    "0-3": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "1": {
+      "is_cleared": false,
+      "is_locked": false,
+      "stars_earned": 0
+    },
+    "10": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "11": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "12": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "2": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "3": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "4": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "5": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "6": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "7": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "8": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    },
+    "9": {
+      "is_cleared": false,
+      "is_locked": true,
+      "stars_earned": 0
+    }
+  },
+  "tickets": 30,
+  "tower_attachments": [
+    {
+      "id": "",
+      "level": 1
+    },
+    {
+      "id": "",
+      "level": 1
+    },
+    {
+      "id": "",
+      "level": 1
+    }
+  ],
+  "tower_enhancements": {
+    "ally_attack_level": 0,
+    "ally_hp_level": 0,
+    "cost_regen_level": 0,
+    "tower_hp_level": 0,
+    "wallet_growth_level": 0
+  },
+  "version": 5
+}

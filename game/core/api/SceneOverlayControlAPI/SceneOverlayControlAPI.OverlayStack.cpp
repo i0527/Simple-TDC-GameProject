@@ -3,6 +3,7 @@
 // プロジェクト内
 #include "../../../utils/Log.h"
 #include "../../system/OverlayManager.hpp"
+#include "../../states/overlays/IOverlay.hpp"
 
 namespace game {
 namespace core {
@@ -33,6 +34,10 @@ bool SceneOverlayControlAPI::HasActiveOverlay() const {
 
 bool SceneOverlayControlAPI::IsOverlayActive(OverlayState state) const {
     return overlayManager_ && overlayManager_->IsOverlayActive(state);
+}
+
+IOverlay* SceneOverlayControlAPI::GetTopOverlay() const {
+    return overlayManager_ ? overlayManager_->GetTopOverlay() : nullptr;
 }
 
 } // namespace core

@@ -39,10 +39,10 @@ public:
 
     struct PlayerSaveData {
         int version = 5;
-        int gold = 1000; // 強化用の初期所持Gold（保存データに存在しない場合のデフォルト）
+        int gold = 10000; // 強化用の初期所持Gold（保存データに存在しない場合のデフォルト）
         int gems = 0; // プレミアム通貨
         int tickets = 30; // チケット（現状値）
-        int maxTickets = 100; // チケット最大値
+        int maxTickets = 1000; // チケット最大値
         int gachaDust = 0;
         int gachaPityCounter = 0;
         int gachaRollSequence = 0;
@@ -50,6 +50,7 @@ public:
         std::unordered_map<std::string, CharacterState> characters;
         std::unordered_map<std::string, int> ownedEquipment;
         std::unordered_map<std::string, int> ownedPassives;
+        std::unordered_map<std::string, int> ownedTowerAttachments;
         struct GachaHistoryEntry {
             int seq = 0;
             std::string equipmentId;
@@ -111,8 +112,10 @@ public:
 
     int GetOwnedEquipmentCount(const std::string& equipmentId) const;
     int GetOwnedPassiveCount(const std::string& passiveId) const;
+    int GetOwnedTowerAttachmentCount(const std::string& attachmentId) const;
     void SetOwnedEquipmentCount(const std::string& equipmentId, int count);
     void SetOwnedPassiveCount(const std::string& passiveId, int count);
+    void SetOwnedTowerAttachmentCount(const std::string& attachmentId, int count);
 
     int GetGold() const { return data_.gold; }
     void SetGold(int gold) { data_.gold = std::max(0, gold); }

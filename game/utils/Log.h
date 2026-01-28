@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <iostream>
+#include <cstdio>
 
 #if !defined(EMSCRIPTEN) && !defined(__EMSCRIPTEN__)
 #include <spdlog/spdlog.h>
@@ -93,6 +95,8 @@ namespace game {
 
 #else
 
+// Emscriptenビルド用: ログを無効化（コンソールに出力しない）
+// パフォーマンスのため、Webビルドではログを最小限に抑える
 #define LOG_TRACE(...) ((void)0)
 #define LOG_DEBUG(...) ((void)0)
 #define LOG_INFO(...) ((void)0)

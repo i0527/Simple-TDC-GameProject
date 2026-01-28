@@ -66,12 +66,14 @@ inline TowerEnhancementMultipliers CalculateTowerEnhancementMultipliers(
     m.allyAttackMul = detail::MulFromPercentPerLevel(allyAtkLv, ALLY_ATK_PERCENT_PER_LV);
     m.allyHpMul = detail::MulFromPercentPerLevel(allyHpLv, ALLY_HP_PERCENT_PER_LV);
 
+    // アタッチメント効果は常に Lv20 で固定（レベル機能なし）
+    constexpr int ATTACHMENT_FIXED_LEVEL = 20;
     for (const auto& slot : attachments) {
         if (slot.id.empty()) continue;
         auto it = attachmentMasters.find(slot.id);
         if (it == attachmentMasters.end()) continue;
         const auto& attachment = it->second;
-        const int level = detail::ClampLevel(slot.level, std::max(1, attachment.max_level));
+        const int level = std::min(ATTACHMENT_FIXED_LEVEL, std::max(1, attachment.max_level));
         const float mul = std::max(0.0f, 1.0f + attachment.value_per_level * static_cast<float>(level));
 
         switch (attachment.target_stat) {

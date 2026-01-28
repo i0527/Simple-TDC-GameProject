@@ -76,7 +76,7 @@ void BattleRenderer::RenderEntity(const ecs::components::Position& pos,
     }
 
     const bool flip = (team && team->faction == ecs::components::Faction::Player);
-    Rectangle src = MakeSourceRect(sprite, anim, flip);
+    Rectangle src = MakeSourceRect(sprite, anim, texture->width, texture->height, flip);
 
     // 描画サイズ（2倍スケール）
     const float drawWidth = static_cast<float>(sprite.frame_width) * 2.0f;
@@ -105,20 +105,31 @@ void BattleRenderer::RenderEntity(const ecs::components::Position& pos,
 
 Rectangle BattleRenderer::MakeSourceRect(const ecs::components::Sprite& sprite,
                                         const ecs::components::Animation* anim,
+                                        int sheetWidth,
+                                        int sheetHeight,
                                         bool flipHorizontally) {
     const int frame = (anim) ? anim->current_frame : 0;
     const float fw = static_cast<float>(sprite.frame_width);
     const float fh = static_cast<float>(sprite.frame_height);
+    if (sprite.frame_width <= 0 || sprite.frame_height <= 0) {
+        return Rectangle{0.0f, 0.0f, fw, fh};
+    }
+    // 正方形アスペクトなどグリッド対応: 1行のコマ数で row/col を算出
+    const int cols = sheetWidth / sprite.frame_width;
+    const int rows = (cols > 0) ? (sheetHeight / sprite.frame_height) : 1;
+    const int totalCells = cols * rows;
+    const int safeFrame = (totalCells > 0) ? (frame % totalCells) : 0;
+    const int row = (cols > 0) ? (safeFrame / cols) : 0;
+    const int col = (cols > 0) ? (safeFrame % cols) : safeFrame;
 
     Rectangle src{
-        fw * static_cast<float>(frame),
-        0.0f,
+        fw * static_cast<float>(col),
+        fh * static_cast<float>(row),
         fw,
         fh
     };
 
     if (flipHorizontally) {
-        // DrawTextureProで水平反転: sourceRect.widthを負にする
         src.x += fw;
         src.width = -fw;
     }

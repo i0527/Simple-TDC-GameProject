@@ -56,6 +56,14 @@ constexpr float GACHA_TAB_BG_R = 0.07f;
 constexpr float GACHA_TAB_BG_G = 0.08f;
 constexpr float GACHA_TAB_BG_B = 0.1f;
 constexpr float GACHA_TAB_BG_A = 0.6f;
+constexpr float GACHA_TAB_ACTIVE_BG_R = 0.12f;
+constexpr float GACHA_TAB_ACTIVE_BG_G = 0.13f;
+constexpr float GACHA_TAB_ACTIVE_BG_B = 0.16f;
+constexpr float GACHA_TAB_ACTIVE_BG_A = 0.8f;
+constexpr float GACHA_TAB_HOVER_BG_R = 0.1f;
+constexpr float GACHA_TAB_HOVER_BG_G = 0.11f;
+constexpr float GACHA_TAB_HOVER_BG_B = 0.13f;
+constexpr float GACHA_TAB_HOVER_BG_A = 0.7f;
 
 constexpr float GACHA_CONTENT_BG_R = 0.06f;
 constexpr float GACHA_CONTENT_BG_G = 0.07f;
@@ -71,6 +79,47 @@ constexpr float GACHA_ACCENT_R = 0.95f;
 constexpr float GACHA_ACCENT_G = 0.78f;
 constexpr float GACHA_ACCENT_B = 0.3f;
 constexpr float GACHA_ACCENT_A = 0.9f;
+
+// レアリティカラー定義
+// N: グレー系
+constexpr float GACHA_RARITY_N_BG_R = 0.25f;
+constexpr float GACHA_RARITY_N_BG_G = 0.25f;
+constexpr float GACHA_RARITY_N_BG_B = 0.25f;
+constexpr float GACHA_RARITY_N_BG_A = 0.8f;
+constexpr float GACHA_RARITY_N_BORDER_R = 0.4f;
+constexpr float GACHA_RARITY_N_BORDER_G = 0.4f;
+constexpr float GACHA_RARITY_N_BORDER_B = 0.4f;
+constexpr float GACHA_RARITY_N_BORDER_A = 0.9f;
+
+// R: 青系
+constexpr float GACHA_RARITY_R_BG_R = 0.2f;
+constexpr float GACHA_RARITY_R_BG_G = 0.3f;
+constexpr float GACHA_RARITY_R_BG_B = 0.5f;
+constexpr float GACHA_RARITY_R_BG_A = 0.8f;
+constexpr float GACHA_RARITY_R_BORDER_R = 0.48f;
+constexpr float GACHA_RARITY_R_BORDER_G = 0.64f;
+constexpr float GACHA_RARITY_R_BORDER_B = 0.97f;
+constexpr float GACHA_RARITY_R_BORDER_A = 0.9f;
+
+// SR: 紫系
+constexpr float GACHA_RARITY_SR_BG_R = 0.35f;
+constexpr float GACHA_RARITY_SR_BG_G = 0.2f;
+constexpr float GACHA_RARITY_SR_BG_B = 0.45f;
+constexpr float GACHA_RARITY_SR_BG_A = 0.8f;
+constexpr float GACHA_RARITY_SR_BORDER_R = 0.7f;
+constexpr float GACHA_RARITY_SR_BORDER_G = 0.4f;
+constexpr float GACHA_RARITY_SR_BORDER_B = 0.85f;
+constexpr float GACHA_RARITY_SR_BORDER_A = 0.9f;
+
+// SSR: 金色/オレンジ系
+constexpr float GACHA_RARITY_SSR_BG_R = 0.5f;
+constexpr float GACHA_RARITY_SSR_BG_G = 0.35f;
+constexpr float GACHA_RARITY_SSR_BG_B = 0.15f;
+constexpr float GACHA_RARITY_SSR_BG_A = 0.85f;
+constexpr float GACHA_RARITY_SSR_BORDER_R = 0.95f;
+constexpr float GACHA_RARITY_SSR_BORDER_G = 0.78f;
+constexpr float GACHA_RARITY_SSR_BORDER_B = 0.3f;
+constexpr float GACHA_RARITY_SSR_BORDER_A = 1.0f;
 
 inline int GetCostByRollCount(int rollCount) {
     return rollCount == 10 ? COST_TEN : COST_SINGLE;

@@ -1,0 +1,222 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.19"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "game",
+					"childIndexes" : 
+					[
+						2,
+						4,
+						5
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-game-Release-b67dffe3df9019a6d767.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.19"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "game",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						3
+					]
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/raylib-build",
+					"childIndexes" : 
+					[
+						3
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.local_cache.raylib-src-Release-876774e1ca49e2699e49.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 2,
+					"source" : "external/local_cache/raylib-src",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/raylib-build/raylib",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.local_cache.raylib-src.src-Release-91bfa2fb500114a1b5a4.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 2,
+					"source" : "external/local_cache/raylib-src/src",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/entt-build",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.local_cache.entt-src-Release-3167d60aea53a8599c6c.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15.7"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 3,
+					"source" : "external/local_cache/entt-src"
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/json-build",
+					"jsonFile" : "directory-external.local_cache.json-src-Release-16c5e8977f650df6e8e4.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 4,
+					"source" : "external/local_cache/json-src"
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "SimpleTDCGame_NewArch"
+				},
+				{
+					"childIndexes" : 
+					[
+						2,
+						3,
+						4
+					],
+					"directoryIndexes" : 
+					[
+						1
+					],
+					"name" : "CatTDGame",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						3
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						2,
+						3
+					],
+					"name" : "raylib",
+					"parentIndex" : 1,
+					"targetIndexes" : 
+					[
+						2,
+						4
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						4
+					],
+					"name" : "EnTT",
+					"parentIndex" : 1
+				},
+				{
+					"directoryIndexes" : 
+					[
+						5
+					],
+					"name" : "nlohmann_json",
+					"parentIndex" : 1
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "CatTDGame::@0c53ff3c4131f9152fd3",
+					"jsonFile" : "target-CatTDGame-Release-83ba1773c086780ca31d.json",
+					"name" : "CatTDGame",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "imgui_lib::@0c53ff3c4131f9152fd3",
+					"jsonFile" : "target-imgui_lib-Release-edcab62544a03fd50951.json",
+					"name" : "imgui_lib",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "raylib::@a3c28e6e2c2b0362456b",
+					"jsonFile" : "target-raylib-Release-a10d1f41a617d3d03d3f.json",
+					"name" : "raylib",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "rlimgui_lib::@0c53ff3c4131f9152fd3",
+					"jsonFile" : "target-rlimgui_lib-Release-95cc62a496846bd1c296.json",
+					"name" : "rlimgui_lib",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "uninstall::@7232031b15365c1b901d",
+					"jsonFile" : "target-uninstall-Release-41658a98007ca57e62a9.json",
+					"name" : "uninstall",
+					"projectIndex" : 2
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "Z:/kaken/build_web",
+		"source" : "Z:/kaken"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 8
+	}
+}

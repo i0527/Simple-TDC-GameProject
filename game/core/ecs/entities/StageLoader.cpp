@@ -288,6 +288,14 @@ bool StageLoader::LoadFromJSON(
                         stage.bossPhases.push_back(phase);
                     }
                 }
+                
+                // 新機能フィールド
+                stage.isInfinite = stage_json.value("isInfinite", false);
+                stage.isCustom = stage_json.value("isCustom", false);
+                stage.isTutorial = stage_json.value("isTutorial", false);
+                stage.difficultyLevel = stage_json.value("difficultyLevel", 0);
+                stage.allowGiveUp = stage_json.value("allowGiveUp", false);
+                stage.rewardCharacterOnEveryClear = stage_json.value("rewardCharacterOnEveryClear", false);
             } catch (const std::exception& e) {
                 LOG_WARN("StageLoader: Failed to parse extended fields for stage {}: {}", 
                          stage.id, e.what());

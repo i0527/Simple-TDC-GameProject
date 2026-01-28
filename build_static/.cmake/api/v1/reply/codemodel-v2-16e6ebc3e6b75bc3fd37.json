@@ -1,0 +1,325 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.19"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "game",
+					"childIndexes" : 
+					[
+						2,
+						6,
+						7,
+						8
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-game-Release-b67dffe3df9019a6d767.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.19"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "game",
+					"targetIndexes" : 
+					[
+						0,
+						2,
+						4
+					]
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/raylib-build",
+					"childIndexes" : 
+					[
+						3
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.local_cache.raylib-src-Release-876774e1ca49e2699e49.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 2,
+					"source" : "external/local_cache/raylib-src",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/raylib-build/raylib",
+					"childIndexes" : 
+					[
+						4
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.local_cache.raylib-src.src-Release-6e52cba3bc735929b6a0.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.5"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 2,
+					"source" : "external/local_cache/raylib-src/src",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/raylib-build/raylib/external/glfw",
+					"childIndexes" : 
+					[
+						5
+					],
+					"jsonFile" : "directory-external.local_cache.raylib-src.src.external.glfw-Release-bce81d55f83752224f69.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 3,
+					"source" : "external/local_cache/raylib-src/src/external/glfw"
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/raylib-build/raylib/external/glfw/src",
+					"jsonFile" : "directory-external.local_cache.raylib-src.src.external.glfw.src-Release-9a8096fb29a271c911f7.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 4,
+					"projectIndex" : 3,
+					"source" : "external/local_cache/raylib-src/src/external/glfw/src",
+					"targetIndexes" : 
+					[
+						1,
+						7
+					]
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/entt-build",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.local_cache.entt-src-Release-3167d60aea53a8599c6c.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15.7"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 4,
+					"source" : "external/local_cache/entt-src"
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/json-build",
+					"jsonFile" : "directory-external.local_cache.json-src-Release-16c5e8977f650df6e8e4.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.1"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 5,
+					"source" : "external/local_cache/json-src"
+				},
+				{
+					"build" : "Z:/kaken/external/local_cache/spdlog-build",
+					"jsonFile" : "directory-external.local_cache.spdlog-src-Release-b839d7871a4f923c1956.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.11"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 6,
+					"source" : "external/local_cache/spdlog-src",
+					"targetIndexes" : 
+					[
+						5
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "SimpleTDCGame_NewArch"
+				},
+				{
+					"childIndexes" : 
+					[
+						2,
+						4,
+						5,
+						6
+					],
+					"directoryIndexes" : 
+					[
+						1
+					],
+					"name" : "CatTDGame",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						0,
+						2,
+						4
+					]
+				},
+				{
+					"childIndexes" : 
+					[
+						3
+					],
+					"directoryIndexes" : 
+					[
+						2,
+						3
+					],
+					"name" : "raylib",
+					"parentIndex" : 1,
+					"targetIndexes" : 
+					[
+						3,
+						6
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						4,
+						5
+					],
+					"name" : "GLFW",
+					"parentIndex" : 2,
+					"targetIndexes" : 
+					[
+						1,
+						7
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						6
+					],
+					"name" : "EnTT",
+					"parentIndex" : 1
+				},
+				{
+					"directoryIndexes" : 
+					[
+						7
+					],
+					"name" : "nlohmann_json",
+					"parentIndex" : 1
+				},
+				{
+					"directoryIndexes" : 
+					[
+						8
+					],
+					"name" : "spdlog",
+					"parentIndex" : 1,
+					"targetIndexes" : 
+					[
+						5
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "CatTDGame::@0c53ff3c4131f9152fd3",
+					"jsonFile" : "target-CatTDGame-Release-8d3c4da24e0bd4a0107e.json",
+					"name" : "CatTDGame",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "glfw::@da7616e9559ea5be3a9d",
+					"jsonFile" : "target-glfw-Release-2803f3213e31afa50b18.json",
+					"name" : "glfw",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "imgui_lib::@0c53ff3c4131f9152fd3",
+					"jsonFile" : "target-imgui_lib-Release-2e143b2ecd35b1252aa0.json",
+					"name" : "imgui_lib",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "raylib::@a3c28e6e2c2b0362456b",
+					"jsonFile" : "target-raylib-Release-0f7dfa47046a71399d97.json",
+					"name" : "raylib",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "rlimgui_lib::@0c53ff3c4131f9152fd3",
+					"jsonFile" : "target-rlimgui_lib-Release-4c493ec08738b3333c79.json",
+					"name" : "rlimgui_lib",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 8,
+					"id" : "spdlog::@58ee2726ecc4023381d2",
+					"jsonFile" : "target-spdlog-Release-b6538fd85792f75fd17e.json",
+					"name" : "spdlog",
+					"projectIndex" : 6
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "uninstall::@7232031b15365c1b901d",
+					"jsonFile" : "target-uninstall-Release-41658a98007ca57e62a9.json",
+					"name" : "uninstall",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "update_mappings::@da7616e9559ea5be3a9d",
+					"jsonFile" : "target-update_mappings-Release-fadccb1c65419698cdf7.json",
+					"name" : "update_mappings",
+					"projectIndex" : 3
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "Z:/kaken/build_static",
+		"source" : "Z:/kaken"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 8
+	}
+}

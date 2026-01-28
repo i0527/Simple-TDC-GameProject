@@ -30,11 +30,9 @@ void SettingsOverlay::Update(SharedContext& ctx, float deltaTime) {
         ApplySettings();
     }
 
-    // ESCキーで閉じる
+    // ESCキーで閉じる（保存してから閉じる）
     if (ctx.inputAPI && ctx.inputAPI->IsEscapePressed()) {
-        if (HasUnsavedChanges()) {
-            LOG_WARN("SettingsOverlay: Unsaved changes detected, but closing anyway");
-        }
+        SaveSettings();
         requestClose_ = true;
     }
 
@@ -65,31 +63,34 @@ void SettingsOverlay::LoadSettings() {
 
         // 表示設定
         currentSettings_.isFullscreen = data.value("isFullscreen", false);
-        currentSettings_.selectedMonitor = data.value("selectedMonitor", 0);
         currentSettings_.showFPS = data.value("showFPS", false);
-        currentSettings_.resolution = data.value("resolution", "FHD");
+        currentSettings_.showCursor = data.value("showCursor", false);
         
-        // 解像度の妥当性チェック
-        if (currentSettings_.resolution != "FHD" && 
-            currentSettings_.resolution != "HD" && 
-            currentSettings_.resolution != "SD") {
-            currentSettings_.resolution = "FHD";
+        // 解像度（WQHD 削除済み。旧 0=WQHD,1=FHD,2=HD,3=SD → 0=FHD,1=HD,2=SD にマップ）
+        int resolutionInt = data.value("resolution", static_cast<int>(Resolution::FHD));
+        switch (resolutionInt) {
+            case 0: case 1: currentSettings_.resolution = Resolution::FHD; break;
+            case 2: currentSettings_.resolution = Resolution::HD; break;
+            case 3: currentSettings_.resolution = Resolution::SD; break;
+            default: currentSettings_.resolution = Resolution::FHD; break;
+        }
+        
+        int windowModeInt = data.value("windowMode", -1);
+        if (windowModeInt >= 0 && windowModeInt <= static_cast<int>(WindowMode::Borderless)) {
+            currentSettings_.windowMode = static_cast<WindowMode>(windowModeInt);
+        } else {
+            // 後方互換性: isFullscreenからwindowModeを推測
+            if (currentSettings_.isFullscreen) {
+                currentSettings_.windowMode = WindowMode::Fullscreen;
+            } else {
+                currentSettings_.windowMode = WindowMode::Windowed;
+            }
         }
 
         // 値をクランプ
         currentSettings_.masterVolume = std::max(0.0f, std::min(1.0f, currentSettings_.masterVolume));
         currentSettings_.bgmVolume = std::max(0.0f, std::min(1.0f, currentSettings_.bgmVolume));
         currentSettings_.seVolume = std::max(0.0f, std::min(1.0f, currentSettings_.seVolume));
-        
-        // モニター番号の妥当性チェック（systemAPI_が利用可能な場合のみ）
-        if (systemAPI_) {
-            int monitorCount = systemAPI_->Window().GetMonitorCount();
-            if (monitorCount > 0 && (currentSettings_.selectedMonitor < 0 || currentSettings_.selectedMonitor >= monitorCount)) {
-                currentSettings_.selectedMonitor = 0;
-            }
-        } else if (currentSettings_.selectedMonitor < 0) {
-            currentSettings_.selectedMonitor = 0;
-        }
 
         savedSettings_ = currentSettings_;
         LOG_INFO("SettingsOverlay: Settings loaded from {}", settingsFilePath_);
@@ -116,10 +117,11 @@ void SettingsOverlay::SaveSettings() {
         data["masterVolume"] = currentSettings_.masterVolume;
         data["bgmVolume"] = currentSettings_.bgmVolume;
         data["seVolume"] = currentSettings_.seVolume;
-        data["isFullscreen"] = currentSettings_.isFullscreen;
-        data["selectedMonitor"] = currentSettings_.selectedMonitor;
+        data["isFullscreen"] = currentSettings_.isFullscreen;  // 後方互換性のため残す
         data["showFPS"] = currentSettings_.showFPS;
-        data["resolution"] = currentSettings_.resolution;
+        data["showCursor"] = currentSettings_.showCursor;
+        data["resolution"] = static_cast<int>(currentSettings_.resolution);
+        data["windowMode"] = static_cast<int>(currentSettings_.windowMode);
 
         std::ofstream file(settingsFilePath_);
         if (!file.is_open()) {
@@ -140,9 +142,10 @@ bool SettingsOverlay::HasUnsavedChanges() const {
            currentSettings_.bgmVolume != savedSettings_.bgmVolume ||
            currentSettings_.seVolume != savedSettings_.seVolume ||
            currentSettings_.isFullscreen != savedSettings_.isFullscreen ||
-           currentSettings_.selectedMonitor != savedSettings_.selectedMonitor ||
            currentSettings_.showFPS != savedSettings_.showFPS ||
-           currentSettings_.resolution != savedSettings_.resolution;
+           currentSettings_.showCursor != savedSettings_.showCursor ||
+           currentSettings_.resolution != savedSettings_.resolution ||
+           currentSettings_.windowMode != savedSettings_.windowMode;
 }
 
 void SettingsOverlay::ApplySettings() {
@@ -157,25 +160,26 @@ void SettingsOverlay::ApplySettings() {
         systemAPI_->Audio().SetSEVolume(currentSettings_.seVolume);
     }
 
-    // フルスクリーン設定を適用
+    // 解像度設定を適用
     if (systemAPI_) {
-        if (currentSettings_.isFullscreen) {
-            // モニター番号の妥当性チェック
-            int monitorCount = systemAPI_->Window().GetMonitorCount();
-            int monitor = currentSettings_.selectedMonitor;
-            if (monitor < 0 || monitor >= monitorCount) {
-                monitor = 0;
-                currentSettings_.selectedMonitor = 0;
-            }
-            systemAPI_->Window().SetFullscreen(true, monitor);
-        } else {
-            systemAPI_->Window().SetFullscreen(false);
+        Resolution currentRes = systemAPI_->Render().GetCurrentResolution();
+        if (currentSettings_.resolution != currentRes) {
+            systemAPI_->Render().SetResolution(currentSettings_.resolution);
+        }
+    }
+    
+    // ウィンドウモード設定を適用（モニター切り替えは行わない）
+    if (systemAPI_) {
+        WindowMode currentMode = systemAPI_->Window().GetWindowMode();
+        if (currentSettings_.windowMode != currentMode) {
+            systemAPI_->Window().SetWindowMode(currentSettings_.windowMode);
         }
     }
 
     // FPS表示設定を適用
     if (systemAPI_) {
         systemAPI_->Window().SetFPSDisplayEnabled(currentSettings_.showFPS);
+        systemAPI_->Window().SetCursorDisplayEnabled(currentSettings_.showCursor);
     }
 
     LOG_DEBUG("SettingsOverlay: Settings applied");
@@ -194,8 +198,7 @@ bool SettingsOverlay::IsPointInRect(float x, float y, float width, float height,
 
 void SettingsOverlay::ProcessMouseInput(SharedContext& ctx) {
     InputSystemAPI* inputAPI = ctx.inputAPI;
-    auto mouse = inputAPI ? inputAPI->GetMousePosition()
-                          : Vec2{0.0f, 0.0f};
+    auto mouse = inputAPI ? inputAPI->GetMousePositionInternal() : Vec2{0.0f, 0.0f};
     const float windowX = 200.0f;
     const float windowY = 150.0f;
     const float windowWidth = 1520.0f;
@@ -204,32 +207,25 @@ void SettingsOverlay::ProcessMouseInput(SharedContext& ctx) {
     float buttonWidth = 150.0f;
     float buttonHeight = 40.0f;
     float buttonSpacing = 20.0f;
-    const int buttonCount = 5;
+    const int buttonCount = 4;
     float totalButtonWidth =
         buttonWidth * static_cast<float>(buttonCount) +
         buttonSpacing * static_cast<float>(buttonCount - 1);
-    float applyButtonX = windowX + (windowWidth - totalButtonWidth) / 2.0f;
-    float resetButtonX = applyButtonX + buttonWidth + buttonSpacing;
+    float resetButtonX = windowX + (windowWidth - totalButtonWidth) / 2.0f;
     float titleButtonX = resetButtonX + buttonWidth + buttonSpacing;
     float quitButtonX = titleButtonX + buttonWidth + buttonSpacing;
     float closeButtonX = quitButtonX + buttonWidth + buttonSpacing;
 
     if (inputAPI && inputAPI->IsLeftClickPressed()) {
-        // 適用ボタン
-        if (IsPointInRect(applyButtonX, buttonY, buttonWidth, buttonHeight, mouse)) {
-            ApplySettings();
-            SaveSettings();
-            inputAPI->ConsumeLeftClick();
-            LOG_INFO("SettingsOverlay: Settings applied and saved");
-        }
         // リセットボタン
-        else if (IsPointInRect(resetButtonX, buttonY, buttonWidth, buttonHeight, mouse)) {
+        if (IsPointInRect(resetButtonX, buttonY, buttonWidth, buttonHeight, mouse)) {
             ResetToDefaults();
             inputAPI->ConsumeLeftClick();
         }
         // タイトルへボタン（タイトル中は無効）
         else if (IsPointInRect(titleButtonX, buttonY, buttonWidth, buttonHeight, mouse)) {
             if (ctx.currentState != GameState::Title) {
+                SaveSettings();
                 hasTransitionRequest_ = true;
                 requestedNextState_ = GameState::Title;
                 inputAPI->ConsumeLeftClick();
@@ -237,118 +233,81 @@ void SettingsOverlay::ProcessMouseInput(SharedContext& ctx) {
         }
         // ゲーム終了ボタン
         else if (IsPointInRect(quitButtonX, buttonY, buttonWidth, buttonHeight, mouse)) {
+            SaveSettings();
             requestQuit_ = true;
             inputAPI->ConsumeLeftClick();
         }
-        // 閉じるボタン
+        // 閉じるボタン（保存してから閉じる）
         else if (IsPointInRect(closeButtonX, buttonY, buttonWidth, buttonHeight, mouse)) {
-            if (HasUnsavedChanges()) {
-                LOG_WARN("SettingsOverlay: Unsaved changes detected, but closing anyway");
-            }
+            SaveSettings();
             requestClose_ = true;
             inputAPI->ConsumeLeftClick();
         }
-        // フルスクリーンボタンとモニター選択、FPSチェックボックス
+        // 解像度・ウィンドウモード・モニター選択・FPSチェックボックス（Render と同一レイアウト）
         else {
-            float sectionY = windowY + 100.0f;
+            float sectionY = windowY + 20.0f;
             float sectionWidth = (windowWidth - 60.0f) / 2.0f;
             float displaySectionX = windowX + sectionWidth + 40.0f;
             float buttonSpacingLocal = 50.0f;
             float startY = sectionY + 40.0f;
-            float fullscreenButtonX = displaySectionX;
-            float fullscreenButtonY = startY;
-            float fullscreenButtonWidth = sectionWidth - 20.0f;
+            float resolutionButtonWidth = (sectionWidth - 20.0f - 120.0f) / 2.0f;
+            float resolutionButtonX = displaySectionX + 120.0f;
+            float windowModeButtonWidth = (sectionWidth - 20.0f - 180.0f) / 2.0f;
+            float windowModeButtonX = displaySectionX + 180.0f;
 
             bool clicked = false;
+            float windowModeY = startY + buttonSpacingLocal;
 
-            // フルスクリーンボタン
-            if (IsPointInRect(fullscreenButtonX, fullscreenButtonY, fullscreenButtonWidth, buttonHeight, mouse)) {
-                currentSettings_.isFullscreen = !currentSettings_.isFullscreen;
-                // フルスクリーンにした場合、モニター番号を現在のモニターに設定
-                if (currentSettings_.isFullscreen && systemAPI_) {
-                    currentSettings_.selectedMonitor = systemAPI_->Window().GetCurrentMonitor();
-                }
+            // 解像度選択ボタン（即時適用）FHD / HD
+            if (IsPointInRect(resolutionButtonX, startY, resolutionButtonWidth, buttonHeight, mouse)) {
+                currentSettings_.resolution = Resolution::FHD;
+                ApplySettings();
+                inputAPI->ConsumeLeftClick();
+                clicked = true;
+            } else if (IsPointInRect(resolutionButtonX + resolutionButtonWidth + 5.0f, startY,
+                                     resolutionButtonWidth, buttonHeight, mouse)) {
+                currentSettings_.resolution = Resolution::HD;
+                ApplySettings();
                 inputAPI->ConsumeLeftClick();
                 clicked = true;
             }
             
-            // モニター選択ボタンの処理（フルスクリーン時のみ）
-            if (!clicked && currentSettings_.isFullscreen && systemAPI_) {
-                int monitorCount = systemAPI_->Window().GetMonitorCount();
-                if (monitorCount > 1) {
-                    float monitorY = startY + buttonSpacingLocal;
-                    float monitorButtonWidth = 40.0f;
-                    float monitorTextWidth = fullscreenButtonWidth - monitorButtonWidth * 2.0f - 20.0f;
-                    float monitorPrevX = fullscreenButtonX;
-                    float monitorNextX = fullscreenButtonX + monitorButtonWidth + 10.0f + monitorTextWidth + 10.0f;
-                    
-                    // 前のモニターボタン
-                    if (IsPointInRect(monitorPrevX, monitorY, monitorButtonWidth, buttonHeight, mouse)) {
-                        currentSettings_.selectedMonitor = (currentSettings_.selectedMonitor - 1 + monitorCount) % monitorCount;
-                        inputAPI->ConsumeLeftClick();
-                        clicked = true;
-                    }
-                    // 次のモニターボタン
-                    else if (IsPointInRect(monitorNextX, monitorY, monitorButtonWidth, buttonHeight, mouse)) {
-                        currentSettings_.selectedMonitor = (currentSettings_.selectedMonitor + 1) % monitorCount;
-                        inputAPI->ConsumeLeftClick();
-                        clicked = true;
-                    }
+            // ウィンドウモード選択ボタン（即時適用。ウィンドウ / フルスクリーンのみ）
+            if (!clicked) {
+                if (IsPointInRect(windowModeButtonX, windowModeY, windowModeButtonWidth, buttonHeight, mouse)) {
+                    currentSettings_.windowMode = WindowMode::Windowed;
+                    ApplySettings();
+                    inputAPI->ConsumeLeftClick();
+                    clicked = true;
+                } else if (IsPointInRect(windowModeButtonX + windowModeButtonWidth + 5.0f, windowModeY,
+                                         windowModeButtonWidth, buttonHeight, mouse)) {
+                    currentSettings_.windowMode = WindowMode::Fullscreen;
+                    ApplySettings();
+                    inputAPI->ConsumeLeftClick();
+                    clicked = true;
                 }
             }
-            
-            // FPS表示チェックボックス
+
+            // FPS表示チェックボックス（即時適用）
             if (!clicked) {
-                float checkboxY = currentSettings_.isFullscreen && systemAPI_ && systemAPI_->Window().GetMonitorCount() > 1
-                    ? startY + buttonSpacingLocal * 2.0f
-                    : startY + buttonSpacingLocal;
+                float fpsCheckboxY = windowModeY + buttonSpacingLocal;
                 float checkboxSize = 30.0f;
-                if (IsPointInRect(fullscreenButtonX, checkboxY, checkboxSize + 200.0f, checkboxSize, mouse)) {
+                if (IsPointInRect(displaySectionX, fpsCheckboxY, checkboxSize + 200.0f, checkboxSize, mouse)) {
                     currentSettings_.showFPS = !currentSettings_.showFPS;
+                    ApplySettings();
                     inputAPI->ConsumeLeftClick();
                     clicked = true;
                 }
             }
-            
-            // 解像度選択ボタンの処理
+
+            // カーソル表示チェックボックス（即時適用）
             if (!clicked) {
-                float resolutionY;
-                if (currentSettings_.isFullscreen && systemAPI_ && systemAPI_->Window().GetMonitorCount() > 1) {
-                    resolutionY = startY + buttonSpacingLocal * 3.0f;
-                } else if (currentSettings_.isFullscreen) {
-                    resolutionY = startY + buttonSpacingLocal * 2.0f;
-                } else {
-                    resolutionY = startY + buttonSpacingLocal * 2.0f;
-                }
-                
-                float resolutionButtonWidth = 40.0f;
-                float resolutionTextWidth = fullscreenButtonWidth - resolutionButtonWidth * 2.0f - 20.0f;
-                float resolutionPrevX = fullscreenButtonX;
-                float resolutionNextX = fullscreenButtonX + resolutionButtonWidth + 10.0f + resolutionTextWidth + 10.0f;
-                
-                // 前の解像度ボタン
-                if (IsPointInRect(resolutionPrevX, resolutionY, resolutionButtonWidth, buttonHeight, mouse)) {
-                    if (currentSettings_.resolution == "FHD") {
-                        currentSettings_.resolution = "SD";
-                    } else if (currentSettings_.resolution == "HD") {
-                        currentSettings_.resolution = "FHD";
-                    } else { // SD
-                        currentSettings_.resolution = "HD";
-                    }
+                float cursorCheckboxY = windowModeY + buttonSpacingLocal * 2.0f;
+                float checkboxSize = 30.0f;
+                if (IsPointInRect(displaySectionX, cursorCheckboxY, checkboxSize + 200.0f, checkboxSize, mouse)) {
+                    currentSettings_.showCursor = !currentSettings_.showCursor;
+                    ApplySettings();
                     inputAPI->ConsumeLeftClick();
-                    clicked = true;
-                }
-                // 次の解像度ボタン
-                else if (IsPointInRect(resolutionNextX, resolutionY, resolutionButtonWidth, buttonHeight, mouse)) {
-                    if (currentSettings_.resolution == "FHD") {
-                        currentSettings_.resolution = "HD";
-                    } else if (currentSettings_.resolution == "HD") {
-                        currentSettings_.resolution = "SD";
-                    } else { // SD
-                        currentSettings_.resolution = "FHD";
-                    }
-                    inputAPI->ConsumeLeftClick();
-                    clicked = true;
                 }
             }
         }
@@ -357,11 +316,10 @@ void SettingsOverlay::ProcessMouseInput(SharedContext& ctx) {
 
 void SettingsOverlay::ProcessSliderDrag(SharedContext& ctx) {
     InputSystemAPI* inputAPI = ctx.inputAPI;
-    auto mouse = inputAPI ? inputAPI->GetMousePosition()
-                          : Vec2{0.0f, 0.0f};
+    auto mouse = inputAPI ? inputAPI->GetMousePositionInternal() : Vec2{0.0f, 0.0f};
     const float windowX = 200.0f;
     const float windowY = 150.0f;
-    float sectionY = windowY + 100.0f;
+    float sectionY = windowY + 20.0f;
     float sectionWidth = (1520.0f - 60.0f) / 2.0f;
     float volumeSectionX = windowX + 20.0f;
     float sliderHeight = 40.0f;
@@ -369,10 +327,10 @@ void SettingsOverlay::ProcessSliderDrag(SharedContext& ctx) {
     float startY = sectionY + 40.0f;
     float labelWidth = 120.0f;
     float sliderBarHeight = 8.0f;
-    // スライダーの位置を計算
+    // スライダー位置（RenderVolumeSection / RenderSlider と同一）
     auto getSliderRect = [&](int sliderId) -> std::pair<float, float> {
         float sliderX = volumeSectionX + labelWidth;
-        float sliderWidth = sectionWidth - labelWidth - 100.0f;
+        float sliderWidth = (sectionWidth - 20.0f) - labelWidth - 100.0f;
         return {sliderX, sliderX + sliderWidth};
     };
 

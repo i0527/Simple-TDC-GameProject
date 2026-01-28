@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background: #111; color: #ccc; font-family: system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #canvas-container { position: relative; }
+    #canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+    #status { margin-top: 16px; text-align: center; font-size: 14px; }
+    #progress-container { width: 240px; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin: 8px auto; }
+    #progress-bar { height: 100%; background: #555; width: 0%; transition: width .2s ease; }
+    .spinner { width: 24px; height: 24px; border: 2px solid #333; border-top-color: #666; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #controls { margin-top: 12px; display: none; }
+    #controls .button { background: #333; border: none; color: #ccc; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    #controls .button:hover { background: #444; }
+  </style>
+</head>
+<body>
+  <div id="canvas-container">
+    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+  </div>
+  <div id="status">
+    <div class="spinner"></div>
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    <div id="status-text">読み込み中...</div>
+  </div>
+  <div id="controls">
+    <button class="button" onclick="Module.requestFullscreen(!1,!1)">フルスクリーン</button>
+  </div>
+  <script>
+    var statusElement = document.getElementById("status"),
+        progressBar = document.getElementById("progress-bar"),
+        statusText = document.getElementById("status-text"),
+        spinner = document.querySelector(".spinner"),
+        controls = document.getElementById("controls"),
+        Module = {
+          preRun: [], postRun: [],
+          print: function(t){ arguments.length > 1 && (t = Array.prototype.slice.call(arguments).join(" ")); console.log(t); },
+          printErr: function(t){ arguments.length > 1 && (t = Array.prototype.slice.call(arguments).join(" ")); console.error(t); },
+          canvas: (function(){
+            var t = document.getElementById("canvas");
+            t.addEventListener("webglcontextlost", function(e){ alert("WebGL context lost. Reload the page."); e.preventDefault(); }, false);
+            return t;
+          })(),
+          setStatus: function(t){
+            if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: "" };
+            if (t !== Module.setStatus.last.text) {
+              var m = t.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/), n = Date.now();
+              if (!(m && n - Module.setStatus.last.time < 30)) {
+                Module.setStatus.last.time = n;
+                Module.setStatus.last.text = t;
+                if (m) {
+                  var pct = parseInt(m[2]) / parseInt(m[4]) * 100;
+                  progressBar.style.width = pct + "%";
+                  statusText.textContent = "読み込み中... " + pct.toFixed(0) + "%";
+                } else {
+                  statusText.textContent = t || "";
+                  if (!t) { spinner.style.display = "none"; statusElement.style.display = "none"; controls.style.display = "block"; }
+                }
+              }
+            }
+          },
+          totalDependencies: 0,
+          monitorRunDependencies: function(n){ this.totalDependencies = Math.max(this.totalDependencies, n); Module.setStatus(n ? "Preparing... (" + (this.totalDependencies - n) + "/" + this.totalDependencies + ")" : "All downloads complete."); }
+        };
+    Module.setStatus("読み込み中...");
+    window.onerror = function(){ Module.setStatus("エラーが発生しました。"); spinner.style.display = "none"; };
+  </script>
+  <script async src="CatTDGame.js"></script>
+</body>
+</html>

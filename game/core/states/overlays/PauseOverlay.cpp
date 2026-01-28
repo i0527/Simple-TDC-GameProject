@@ -84,7 +84,7 @@ void PauseOverlay::Render(SharedContext& ctx) {
     Rect retryRect{ btnX, btnY0 + (btnH + gapY), btnW, btnH };
     Rect homeRect{ btnX, btnY0 + (btnH + gapY) * 2.0f, btnW, btnH };
 
-    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
+    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
                               : Vec2{0.0f, 0.0f};
     auto drawBtn = [&](Rect r, const char* label) {
         bool hovered = mouse.x >= r.x && mouse.x <= r.x + r.width &&
@@ -149,7 +149,7 @@ void PauseOverlay::HandleMouseInput(SharedContext& ctx) {
     Rect retryRect{ btnX, btnY0 + (btnH + gapY), btnW, btnH };
     Rect homeRect{ btnX, btnY0 + (btnH + gapY) * 2.0f, btnW, btnH };
 
-    auto mouse = ctx.inputAPI->GetMousePosition();
+    auto mouse = ctx.inputAPI->GetMousePositionInternal();
     auto inRect = [&](Rect r) {
         return mouse.x >= r.x && mouse.x <= r.x + r.width &&
                mouse.y >= r.y && mouse.y <= r.y + r.height;

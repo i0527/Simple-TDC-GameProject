@@ -122,6 +122,7 @@ private:
   std::unordered_map<std::string, Sound *> playingSounds_;
 
   bool fpsDisplayEnabled_;
+  bool cursorDisplayEnabled_;
 
   std::unordered_map<std::string, float> textureLuminanceCache_;
   std::unordered_map<std::string, Color> textureTextColorCache_;

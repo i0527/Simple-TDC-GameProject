@@ -131,7 +131,7 @@ void TitleScreen::Update(float deltaTime) {
 
   // ========== マウスクリチE��処琁E==========
   if (inputAPI_ && inputAPI_->IsLeftClickPressed()) {
-    auto mouse = inputAPI_->GetMousePosition();
+    auto mouse = inputAPI_->GetMousePositionInternal();
 
     // ゲーム開始�Eタン判宁E
     if (start_button_.IsPointInside(mouse.x, mouse.y)) {
@@ -336,7 +336,7 @@ void TitleScreen::OnMenuItemClick(int item_index) {
 }
 
 void TitleScreen::UpdateHoverStates() {
-  auto mouse = inputAPI_ ? inputAPI_->GetMousePosition() : Vec2{0.0f, 0.0f};
+  auto mouse = inputAPI_ ? inputAPI_->GetMousePositionInternal() : Vec2{0.0f, 0.0f};
 
   // ボタンホバー
   start_button_.is_hovered = start_button_.IsPointInside(mouse.x, mouse.y);

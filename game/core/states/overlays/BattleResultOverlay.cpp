@@ -86,7 +86,7 @@ void BattleResultOverlay::Render(SharedContext& ctx) {
     float descY = titleY + 90.0f;
     systemAPI_->Render().DrawTextDefault(desc, windowX + 80.0f, descY,
                                          24.0f,
-                                         ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+                                         ToCoreColor(ui::OverlayColors::TEXT_DARK));
 
     // 報酬報告（勝利時のみ）
     if (isVictory_ && ctx.gameplayDataAPI) {
@@ -104,7 +104,7 @@ void BattleResultOverlay::Render(SharedContext& ctx) {
             }
             systemAPI_->Render().DrawTextDefault(charText, windowX + 80.0f, reportY,
                                                  22.0f,
-                                                 ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+                                                 ToCoreColor(ui::OverlayColors::TEXT_DARK));
             reportY += 35.0f;
         }
         
@@ -113,7 +113,27 @@ void BattleResultOverlay::Render(SharedContext& ctx) {
             std::string ticketText = "チケット: +" + std::to_string(report.ticketsRewarded);
             systemAPI_->Render().DrawTextDefault(ticketText, windowX + 80.0f, reportY,
                                                  22.0f,
-                                                 ToCoreColor(ui::OverlayColors::TEXT_PRIMARY));
+                                                 ToCoreColor(ui::OverlayColors::TEXT_DARK));
+            reportY += 35.0f;
+        }
+        
+        // ゴールド報告
+        if (report.rewardGold > 0) {
+            std::string goldText = "ゴールド: +" + std::to_string(report.rewardGold);
+            systemAPI_->Render().DrawTextDefault(goldText, windowX + 80.0f, reportY,
+                                                 22.0f,
+                                                 ToCoreColor(ui::OverlayColors::TEXT_DARK));
+            reportY += 35.0f;
+        }
+        
+        // 無限ステージの生存時間表示
+        if (report.survivalTime > 0.0f) {
+            int minutes = static_cast<int>(report.survivalTime / 60.0f);
+            int seconds = static_cast<int>(report.survivalTime) % 60;
+            std::string timeText = "生存時間: " + std::to_string(minutes) + "分" + std::to_string(seconds) + "秒";
+            systemAPI_->Render().DrawTextDefault(timeText, windowX + 80.0f, reportY,
+                                                 22.0f,
+                                                 ToCoreColor(ui::OverlayColors::TEXT_DARK));
         }
     }
 
@@ -126,7 +146,7 @@ void BattleResultOverlay::Render(SharedContext& ctx) {
 
     // 左�E��Eーム
     Rect homeRect{ btnX0, btnY, btnW, btnH };
-    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePosition()
+    auto mouse = ctx.inputAPI ? ctx.inputAPI->GetMousePositionInternal()
                               : Vec2{0.0f, 0.0f};
     bool homeHovered = mouse.x >= homeRect.x && mouse.x <= homeRect.x + homeRect.width &&
                        mouse.y >= homeRect.y && mouse.y <= homeRect.y + homeRect.height;
@@ -230,7 +250,7 @@ void BattleResultOverlay::HandleMouseInput(SharedContext& ctx) {
     Rect homeRect{ btnX0, btnY, btnW, btnH };
     Rect rightRect{ btnX0 + btnW + btnGap, btnY, btnW, btnH };
 
-    auto mouse = ctx.inputAPI->GetMousePosition();
+    auto mouse = ctx.inputAPI->GetMousePositionInternal();
     auto inRect = [&](Rect r) {
         return mouse.x >= r.x && mouse.x <= r.x + r.width &&
                mouse.y >= r.y && mouse.y <= r.y + r.height;

@@ -10,6 +10,13 @@ namespace game {
             SD    ///< SD: 854x480
         };
 
+        /// @brief ウィンドウモード定義
+        enum class WindowMode {
+            Windowed,   ///< 通常ウィンドウ
+            Fullscreen, ///< 排他フルスクリーン
+            Borderless   ///< フルスクリーンウィンドウ（ボーダーレス）
+        };
+
         /// @brief 指定された解像度の幅を取得
         /// @param res 解像度プリセット
         /// @return 幅（ピクセル）

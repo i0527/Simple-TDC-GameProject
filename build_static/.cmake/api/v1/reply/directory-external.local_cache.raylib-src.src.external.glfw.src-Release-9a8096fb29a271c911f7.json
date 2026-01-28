@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "Z:/kaken/external/local_cache/raylib-build/raylib/external/glfw/src",
+		"source" : "external/local_cache/raylib-src/src/external/glfw/src"
+	}
+}

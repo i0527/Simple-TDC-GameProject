@@ -15,6 +15,44 @@ namespace core {
 namespace {
 const std::unordered_map<std::string, entities::StageData> kEmptyStageMap{};
 
+// stages.json の rewardMonsters.monsterId（短縮名）を characters.json の id に解決する
+std::string ResolveRewardCharacterId(entities::CharacterManager* characterManager,
+                                     const std::string& monsterId) {
+    if (!characterManager || monsterId.empty()) {
+        return monsterId;
+    }
+    if (characterManager->HasCharacter(monsterId)) {
+        return monsterId;
+    }
+    // 短縮名 -> キャラID のマッピング（パターンに当てはまらないもの）
+    static const std::unordered_map<std::string, std::string> kMonsterIdToCharacterId{
+        {"dkurage", "char_sub_poisonjellyfish_001"},
+        {"kimokimo", "char_sub_kimoisogin_001"},
+        {"mush", "char_sub_mushmeramera_001"},
+        {"seaserpentboss", "char_sub_seaserpent_001"},
+        {"crystalboss", "char_sub_crystalgolem_001"},
+        {"anglerfish", "char_sub_lanterfish_001"},
+    };
+    auto it = kMonsterIdToCharacterId.find(monsterId);
+    if (it != kMonsterIdToCharacterId.end() && characterManager->HasCharacter(it->second)) {
+        return it->second;
+    }
+    // char_sub_XXX_001 の XXX が monsterId と一致するものを探す
+    const std::string prefix = "char_sub_";
+    const std::string suffix = "_001";
+    for (const std::string& id : characterManager->GetAllCharacterIds()) {
+        if (id.size() > prefix.size() + suffix.size() &&
+            id.compare(0, prefix.size(), prefix) == 0 &&
+            id.compare(id.size() - suffix.size(), suffix.size(), suffix) == 0) {
+            std::string middle = id.substr(prefix.size(), id.size() - prefix.size() - suffix.size());
+            if (middle == monsterId) {
+                return id;
+            }
+        }
+    }
+    return monsterId;
+}
+
 void ApplyStageState(PlayerDataManager* playerDataManager,
                      entities::StageData& stage) {
     if (!playerDataManager) {
@@ -147,13 +185,19 @@ void GameplayDataAPI::MarkStageCleared(const std::string& stageId, int starsEarn
 
     // 報酬レポートをリセット
     lastClearReport_ = StageClearReport();
+    
+    // 無限ステージの生存時間を記録
+    if (battleStats) {
+        lastClearReport_.survivalTime = battleStats->clearTime;
+    }
 
     // ステージ報酬（ゴールド）
     int rewardGold = stage->rewardGold;
     playerDataManager_->AddGold(rewardGold);
+    lastClearReport_.rewardGold = rewardGold;
     LOG_INFO("Stage {} cleared: base reward {} gold", stageId, rewardGold);
 
-    // チケット報酬（毎回クリアで付与）
+    // チケット報酬（毎回クリアで付与。JSONの rewardTickets で設定）
     int rewardTickets = stage->rewardTickets;
     if (rewardTickets > 0) {
         playerDataManager_->AddTickets(rewardTickets);
@@ -161,24 +205,40 @@ void GameplayDataAPI::MarkStageCleared(const std::string& stageId, int starsEarn
         LOG_INFO("Stage {} cleared: reward {} tickets", stageId, rewardTickets);
     }
 
-    // 初回クリア報酬（キャラクター） - 既に所持しているキャラクターは除外
-    if (isFirstClear && !stage->rewardMonsters.empty()) {
+    // キャラクター報酬処理
+    // rewardCharacterOnEveryClearがtrueの場合、毎回クリア時にキャラクター報酬を付与
+    // そうでない場合、初回クリア時のみ付与
+    bool shouldRewardCharacter = stage->rewardCharacterOnEveryClear || isFirstClear;
+    if (shouldRewardCharacter && !stage->rewardMonsters.empty() && characterManager_) {
         for (const auto& rewardMonster : stage->rewardMonsters) {
-            const auto& charState = playerDataManager_->GetCharacterState(rewardMonster.monsterId);
+            std::string characterId = ResolveRewardCharacterId(characterManager_.get(), rewardMonster.monsterId);
+            if (!characterManager_->HasCharacter(characterId)) {
+                LOG_WARN("Character reward skipped: no master for id '{}' (monsterId '{}')",
+                        characterId, rewardMonster.monsterId);
+                continue;
+            }
+            const auto& charState = playerDataManager_->GetCharacterState(characterId);
+            auto newCharState = charState;
+
             if (!charState.unlocked) {
-                // 未所持のキャラクターのみ付与
-                auto newCharState = charState;
+                // 未所持の場合は新規解放（編成・ユニットで利用可能に）
                 newCharState.unlocked = true;
                 newCharState.level = rewardMonster.level;
-                playerDataManager_->SetCharacterState(rewardMonster.monsterId, newCharState);
-                // レポートに新規キャラを追加
-                lastClearReport_.newCharacters.push_back(rewardMonster.monsterId);
-                LOG_INFO("First clear reward: unlocked character {} (level {})", 
-                        rewardMonster.monsterId, rewardMonster.level);
+                lastClearReport_.newCharacters.push_back(characterId);
+                LOG_INFO("Character reward: unlocked character {} (level {})",
+                        characterId, rewardMonster.level);
+            } else if (stage->rewardCharacterOnEveryClear) {
+                // 既に所持・毎回クリア時: レベルを報酬値との最大に
+                newCharState.level = std::max(newCharState.level, rewardMonster.level);
+                LOG_INFO("Character reward: updated character {} level to {}",
+                        characterId, newCharState.level);
             } else {
-                LOG_INFO("First clear reward: character {} already owned, skipping", 
-                        rewardMonster.monsterId);
+                // 初回のみ・重複: Lv+10（上限50）
+                newCharState.level = std::min(50, newCharState.level + 10);
+                LOG_INFO("Character reward: duplicate first-clear, {} Lv+10 -> {}",
+                        characterId, newCharState.level);
             }
+            playerDataManager_->SetCharacterState(characterId, newCharState);
         }
     }
 

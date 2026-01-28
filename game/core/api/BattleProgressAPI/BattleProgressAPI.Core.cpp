@@ -28,9 +28,9 @@ BattleProgressAPI::BattleProgressAPI()
       totalWaves_(1),
       spawnCursor_(0),
       gold_(500),
-      goldMaxCap_(9999),
-      goldMaxCurrent_(9999.0f),
-      goldMaxGrowthPerSecond_(30.0f),
+      goldMaxCap_(2000),
+      goldMaxCurrent_(2000.0f),
+      goldMaxGrowthPerSecond_(60.0f),
       goldRegenPerSecond_(10.0f),
       goldRegenAccumulator_(0.0f),
       gameSpeed_(1.0f),
@@ -73,14 +73,25 @@ void BattleProgressAPI::InitializeFromStage() {
     battleTime_ = 0.0f;
     battleResult_ = BattleResult::InProgress;
     gold_ = 500;
-    goldMaxCap_ = 9999;
+    goldMaxCap_ = 2000;
     goldMaxCurrent_ = static_cast<float>(goldMaxCap_);
-    goldMaxGrowthPerSecond_ = 30.0f;
+    goldMaxGrowthPerSecond_ = 60.0f;
     goldRegenPerSecond_ = 10.0f;
     goldRegenAccumulator_ = 0.0f;
     gameSpeed_ = 1.0f;
     isPaused_ = false;
     unitCooldownUntil_.clear();
+    
+    // 無限ステージ関連の初期化
+    isInfinite_ = false;
+    giveUpRequested_ = false;
+    survivalTime_ = 0.0f;
+    difficultyLevel_ = 0;
+    waveTimer_ = 0.0f;
+    currentWaveNumber_ = 1;
+    enemyStatMultiplier_ = 1.0f;
+    enemySpawnRateMultiplier_ = 1.0f;
+    lastDifficultyUpdateTime_ = 0.0f;
 
     // SharedContextからステージ情報を取得
     if (!sharedContext_ || !gameplayDataAPI_ || sharedContext_->currentStageId.empty()) {
@@ -113,19 +124,49 @@ void BattleProgressAPI::InitializeFromStage() {
                 LOG_WARN("Failed to read minGap from stage json: {}", e.what());
             }
 
-            // wave count（後続TODOでWaveLoader接続）
-            totalWaves_ = stageData->waveCount > 0 ? stageData->waveCount : 1;
-            currentWave_ = 1;
-            if (setupAPI_) {
-                spawnSchedule_ = setupAPI_->LoadStageSpawnEvents(stageData->data);
-            } else {
+            // カスタムステージの場合はカスタムキューから読み込み
+            if (stageData->isCustom && stageData->data.contains("customEnemyQueue") &&
+                stageData->data["customEnemyQueue"].is_array()) {
                 spawnSchedule_.clear();
-            }
-            spawnCursor_ = 0;
-            if (!spawnSchedule_.empty()) {
-                LOG_INFO("Spawn schedule loaded: {} events", spawnSchedule_.size());
+                float currentTime = 0.0f;
+                for (const auto& entryJson : stageData->data["customEnemyQueue"]) {
+                    try {
+                        std::string enemyId = entryJson.value("enemyId", "");
+                        int level = entryJson.value("level", 1);
+                        float spawnDelay = entryJson.value("spawnDelay", 1.0f);
+                        
+                        if (!enemyId.empty()) {
+                            ::game::core::game::SpawnEvent event;
+                            event.time = currentTime;
+                            event.enemyId = enemyId;
+                            event.lane = 0;
+                            event.level = level;
+                            spawnSchedule_.push_back(event);
+                            currentTime += spawnDelay;
+                        }
+                    } catch (const std::exception& e) {
+                        LOG_WARN("Failed to parse custom queue entry: {}", e.what());
+                    }
+                }
+                totalWaves_ = 1;
+                currentWave_ = 1;
+                spawnCursor_ = 0;
+                LOG_INFO("Custom queue loaded: {} events", spawnSchedule_.size());
             } else {
-                LOG_INFO("Spawn schedule is empty");
+                // 通常のwave処理
+                totalWaves_ = stageData->waveCount > 0 ? stageData->waveCount : 1;
+                currentWave_ = 1;
+                if (setupAPI_) {
+                    spawnSchedule_ = setupAPI_->LoadStageSpawnEvents(stageData->data);
+                } else {
+                    spawnSchedule_.clear();
+                }
+                spawnCursor_ = 0;
+                if (!spawnSchedule_.empty()) {
+                    LOG_INFO("Spawn schedule loaded: {} events", spawnSchedule_.size());
+                } else {
+                    LOG_INFO("Spawn schedule is empty");
+                }
             }
 
             // gold
@@ -176,6 +217,21 @@ void BattleProgressAPI::InitializeFromStage() {
 
             playerTower_.maxHp = playerTower_.currentHp = playerHp;
             enemyTower_.maxHp = enemyTower_.currentHp = enemyHp;
+            
+            // 無限ステージフラグの設定
+            isInfinite_ = stageData->isInfinite;
+            difficultyLevel_ = stageData->difficultyLevel;
+            giveUpRequested_ = false;
+            survivalTime_ = 0.0f;
+            waveTimer_ = 0.0f;
+            currentWaveNumber_ = 1;
+            enemyStatMultiplier_ = 1.0f;
+            enemySpawnRateMultiplier_ = 1.0f;
+            lastDifficultyUpdateTime_ = 0.0f;
+            
+            if (isInfinite_) {
+                LOG_INFO("Infinite stage initialized: difficultyLevel={}", difficultyLevel_);
+            }
         }
     }
 
@@ -234,9 +290,9 @@ void BattleProgressAPI::InitializeFromSetupData(const BattleSetupData& data) {
     battleTime_ = 0.0f;
     battleResult_ = BattleResult::InProgress;
     gold_ = 500;
-    goldMaxCap_ = 9999;
+    goldMaxCap_ = 2000;
     goldMaxCurrent_ = static_cast<float>(goldMaxCap_);
-    goldMaxGrowthPerSecond_ = 30.0f;
+    goldMaxGrowthPerSecond_ = 60.0f;
     goldRegenPerSecond_ = 10.0f;
     goldRegenAccumulator_ = 0.0f;
     gameSpeed_ = 1.0f;
@@ -277,6 +333,17 @@ void BattleProgressAPI::InitializeFromSetupData(const BattleSetupData& data) {
     // 統計情報をリセット
     spawnedUnitCount_ = 0;
     totalGoldSpent_ = 0;
+    
+    // 無限ステージ関連の初期化（SetupDataからは設定されないため、デフォルト値）
+    isInfinite_ = false;
+    giveUpRequested_ = false;
+    survivalTime_ = 0.0f;
+    difficultyLevel_ = 0;
+    waveTimer_ = 0.0f;
+    currentWaveNumber_ = 1;
+    enemyStatMultiplier_ = 1.0f;
+    enemySpawnRateMultiplier_ = 1.0f;
+    lastDifficultyUpdateTime_ = 0.0f;
 
     if (!spawnSchedule_.empty()) {
         LOG_INFO("Spawn schedule loaded: {} events", spawnSchedule_.size());

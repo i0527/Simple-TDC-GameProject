@@ -11,6 +11,23 @@
 namespace game {
 namespace core {
 
+/// @brief カスタムステージの敵キューエントリ
+struct CustomEnemyEntry {
+    std::string enemyId;    // キャラクターID
+    int level;              // レベル（1～保有レベル）
+    float spawnDelay;       // 前のエントリからの遅延（秒）
+    
+    CustomEnemyEntry() : enemyId(""), level(1), spawnDelay(1.0f) {}
+};
+
+/// @brief カスタムステージの敵キュー
+struct CustomEnemyQueue {
+    std::vector<CustomEnemyEntry> queue;
+    bool isValid = false;
+    
+    CustomEnemyQueue() : isValid(false) {}
+};
+
 /// @brief 戦闘セットアップ用データ
 struct BattleSetupData {
     struct LaneConfig {
@@ -43,15 +60,17 @@ struct BattleSetupData {
     std::vector<::game::core::game::SpawnEvent> spawnSchedule;
 
     int gold = 500;
-    int goldMaxCap = 9999;
-    float goldMaxCurrent = 9999.0f;
-    float goldMaxGrowthPerSecond = 30.0f;
+    int goldMaxCap = 2000;
+    float goldMaxCurrent = 2000.0f;
+    float goldMaxGrowthPerSecond = 60.0f;
     float goldRegenPerSecond = 10.0f;
 
     float gameSpeed = 1.0f;
     bool isPaused = false;
 
     std::vector<std::pair<int, std::string>> formationSlots;
+    
+    CustomEnemyQueue customQueue;
 };
 
 } // namespace core
